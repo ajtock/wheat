@@ -1,0 +1,30 @@
+THREADS: 32
+SAMPLE: "H3_input_SRR6350669"
+FEATURES:
+      superfamName: ["CACTA_DTC",
+                     "Copia_LTR_RLC",
+                     "Gyspy_LTR_RLG",
+                     "Harbinger_DTH",
+                     "hAT_DTA",
+                     "Helitrons_DHH",
+                     "LINE_RIX",
+                     "Mariner_DTT",
+                     "Mutator_DTM",
+                     "SINE_SIX",
+                     "Unclassified_class_2_DXX",
+                     "Unclassified_LTR_RLX",
+                     "Unclassified_repeats_XXX",
+                     "Unclassified_with_TIRs_DTX"]
+MAPPING:
+      mode: "both"
+      reference: "data/index/wheat_v1.0"
+COVERAGE:
+      bodyLength: 1400
+      startLabel: "Start"
+      endLabel: "End"
+      upstream: 2000
+      downstream: 2000
+      flankName: "2kb"
+      binSize: 20
+      binName: "20bp"
+      sortRegions: "keep"

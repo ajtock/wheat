@@ -1,0 +1,6 @@
+study_accession	experiment_title	fastq_ftp
+PRJNA420988	NextSeq 500 sequencing; ChIP on 10-day old wheat seedlings: H3K27me3	ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/006/SRR6350666/SRR6350666_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/006/SRR6350666/SRR6350666_2.fastq.gz
+PRJNA420988	NextSeq 500 sequencing; ChIP on 10-day old wheat seedlings: H3K9ac	ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/007/SRR6350667/SRR6350667_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/007/SRR6350667/SRR6350667_2.fastq.gz
+PRJNA420988	NextSeq 500 sequencing; ChIP on 10-day old wheat seedlings: H3K4me3	ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/008/SRR6350668/SRR6350668_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/008/SRR6350668/SRR6350668_2.fastq.gz
+PRJNA420988	NextSeq 500 sequencing; ChIP on 10-day old wheat seedlings: Input	ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/009/SRR6350669/SRR6350669_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/009/SRR6350669/SRR6350669_2.fastq.gz
+PRJNA420988	NextSeq 500 sequencing; ChIP on 10-day old wheat seedlings: H3K36me3	ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/000/SRR6350670/SRR6350670_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR635/000/SRR6350670/SRR6350670_2.fastq.gz

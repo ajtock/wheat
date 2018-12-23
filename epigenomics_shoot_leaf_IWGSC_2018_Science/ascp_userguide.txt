@@ -1,0 +1,67 @@
+From https://www.biostars.org/p/325010/
+By ATpoint
+
+As questions on how to retrieve published sequencing data fast and efficiently are posted here on Biostars quiet frequently, this little tutorial demonstrates how to perform bulk download of fastq files from the European Nucleitode Archive (ENA). Typically people ask on how to get a certain SRA file from NCBI and how to convert it to fastq. The common answer is prefetch followed by fastq-dump, but especially the latter is rather slow, so total file processing might take some time, especially if CPU (and disk) ressources are limited. Luckily, most published (and unrestricted) sequencing data are mirrored at the ENA directly in fastq format, and there is a simple and efficient way to retrieve them. In this tutorial, we will examplarily download an entire dataset of ChIP-seq and ATAC-seq data, requiring minimal preprocessing work. We will use the Aspera client for download rates of several tens of Mb/s up to few hundred Mb/s (depending on the connection, I/O capacity and distance to the download location). This example code should work on Linux and Mac.
+
+--- last modified: 21.11.18: Some typos
+ Step-1: Get the Aspera client
+
+## Download the tarball:
+wget https://download.asperasoft.com/download/sw/connect/3.8.0/ibm-aspera-connect-3.8.0.158555-linux-g2.12-64.tar.gz 
+## Decompress:
+tar zxvf ibm-aspera-connect-3.8.0.158555-linux-g2.12-64.tar.gz 
+## Make it executable:
+chmod +x ibm-aspera-connect-3.8.0.158555-linux-g2.12-64.sh
+## and run the installer:
+./ibm-aspera-connect-3.8.0.158555-linux-g2.12-64.sh
+
+## On Mac, use the installer:
+wget https://download.asperasoft.com/download/sw/connect/3.8.1/IBMAsperaConnectInstaller-3.8.1.161274.dmg
+
+Doing so, there now will be these executables/files:
+
+Linux:
+
+$HOME/.aspera/connect/bin/ascp --- the executable
+
+$HOME/.aspera/connect/etc/asperaweb_id_dsa.openssh --- openssh file that we'll need later
+
+Mac:
+
+$HOME/Applications/Aspera\ Connect.app/Contents/Resources/ascp --- the executable
+
+$HOME/Applications/Aspera\ Connect.app/Contents/Resources/asperaweb_id_dsa.openssh --- openssh file that we'll need later
+
+
+ Step-2: Choose your dataset
+
+Once you know which data you want to download, check if they are backed up on the ENA, which is true for most unrestricted data. For this tutorial, we will download the entire dataset from the ChIPmentation paper of 2015. When you check the paper for the NCBI accession, you'll find GSE70482. Following this link, you find the BioSample accession number PRJNA288801. So you go to the ENA, enter this PRJNA288801 in the search field and find a summary page with all available data for download. Scrolling down a bit, you see a table with accession numbers and all kinds of metadata. As typically we do not need most of these metadata, we use the field Select columns to select the essential metadata we need for the download, which are Study Accession, FASTQ files (FTP) and Experiment title. After selecting these, and unselecting everything else, you press TEXT and save the file as accessions.txt in your project folder.
+
+ Step-3: Download the data
+
+As you'll see in accessions.txt, the download paths direct you to the ENA ftp-server, which is rather slow. We want to download with the Aspera client (up to 200Mb/s at my workplace). Therefore, we awk around a bit to change the download paths to the era-fasp server. As you'll see in case of paired-end data, the paths to the two mate fastq files in accessions.txt are separated by semicolon, which we take into account. The output of this snippet is download.txt.
+
+Linux:
+
+awk 'FS="\t", OFS="\t" { gsub("ftp.sra.ebi.ac.uk", "era-fasp@fasp.sra.ebi.ac.uk:"); print }' accessions.txt | cut -f3 | awk -F ";" 'OFS="\n" {print $1, $2}' | awk NF | awk 'NR > 1, OFS="\n" {print "ascp -QT -l 300m -P33001 -i $HOME/.aspera/connect/etc/asperaweb_id_dsa.openssh" " " $1 " ."}' > download.txt
+
+Mac:
+
+awk 'FS="\t", OFS="\t" { gsub("ftp.sra.ebi.ac.uk", "era-fasp@fasp.sra.ebi.ac.uk:"); print }' accessions.txt | cut -f3 | awk -F ";" 'OFS="\n" {print $1, $2}' | awk NF | awk 'NR > 1, OFS="\n" {print "ascp -QT -l 300m -P33001 -i $HOME/Applications/Aspera\ Connect.app/Contents/Resources/asperaweb_id_dsa.openssh" " " $1 " ."}' > download.txt
+
+The output is a simple list of download commands using ascp. 
+
+That's it. Now, we only have to run the download commands.
+
+Edit (23.07.18): The download paths are always like era-fasp@fasp.sra.ebi.ac.uk:/vol1(...). I point that out because of a recent post (328182) where OP accidentally forgot the ":" after the .ac.uk and used fasp@ instead of era-fasp@.
+
+Lets download:
+
+## Either by a simple loop:
+while read LIST; do
+$LIST; done < download.txt
+
+## or by using GNU parallel to have things parallelized:
+cat download.txt | parallel "{}"
+
+Once the download is complete, one can play around using the accessions.txt to rename the files with e.g. information from the Experiment title field (column 2), or other metadata you may retrieve from ENA.

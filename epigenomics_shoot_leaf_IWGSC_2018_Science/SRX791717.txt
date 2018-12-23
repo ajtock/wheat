@@ -1,0 +1,2 @@
+study_accession	experiment_title	fastq_ftp
+PRJNA268976	Illumina HiSeq 2000 sequencing; GSM1556676: CENH3-ChIPseq-CS; Triticum aestivum; ChIP-Seq	ftp.sra.ebi.ac.uk/vol1/fastq/SRR168/009/SRR1686799/SRR1686799_1.fastq.gz;ftp.sra.ebi.ac.uk/vol1/fastq/SRR168/009/SRR1686799/SRR1686799_2.fastq.gz
