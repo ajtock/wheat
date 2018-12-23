@@ -1,0 +1,41 @@
+SAMPLES:
+      "CS+_2_LIB18613_LDI16228"
+THREADS: 48
+FILTER:
+  cutadapt:
+      adapter: TGGAATTCTCGGGTGCCAAGG # -a
+      quality-filter: 20 # -q
+      minimum-overlap: 3 # -O (default: 3)
+      minimum-length: 15 # -m
+      maximum-length: 43 # -M
+      extra-params:
+# NOTE: reference genome-specific mapping parameters
+MAPPING:
+      # -k 1 (default): Report up to <int> valid alignments per read
+      mode: "both" # (both: --best) (unique: -m 1)
+      mismatches: 0 # -v <int>
+      reference: "data/index/wheat_v1.0"
+      sortMemory: "5G"
+# Specify small RNA sizes based on trimmed FastQC "Sequence Length Distribution"
+sRNA_SIZE: 34 # [20, 21, 22, 23, 24, 33, 34]
+COVERAGE:
+      normalizeUsing: "CPM"
+      ignoreForNormalization: "chrUn" # Reference genome-specific parameter
+      binSize: 1
+      genomeBinSize: 10000
+      genomeBinName: "10kb"
+
+# Seb Mueller:
+# Changed the Illumina small RNA sequence used for auto-detection to 'TGGAATTCTCGG' (from formerly 'ATGGAATTCTCG'). 
+# The reason for this is that smallRNA libraries have ssRNA adapters ligated to their -OH end, a signature of dicer cleavage, so there is no A-tailing involved. Thanks to Q. Gouil for bringing this to our attention
+# f ($nextera){
+# $adapter = 'CTGTCTCTTATA';
+# $adapter_name = 'Nextera Transposase sequence; user defined';
+# }
+# elsif($small_rna){
+# $adapter = 'TGGAATTCTCGG';
+# $adapter_name = 'Illumina small RNA adapter; user defined';
+# }
+# elsif($illumina){
+# $adapter = 'AGATCGGAAGAGC';
+# $adapter_name = 'Illumina TruSeq, Sanger iPCR; user defined';
