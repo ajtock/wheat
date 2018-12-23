@@ -1,0 +1,73 @@
+# Snakemake workflow for creating a matrix of
+# coverage values for genomic features and flanking regions 
+
+# Usage (snakemake --cores should reflect available cores):
+# conda env create --file environment.yaml --name ChIPseq_mapping
+# source activate ChIPseq_mapping
+# snakemake -p --cores 48
+# source deactivate
+
+import os
+
+# To make the per_base_coverage rule work with a shell script invoked using the "shell" directive,
+# we need to determine the base path of Snakefile since we expect the scripts directory to be there as well
+SRCDIR = srcdir("")
+
+# Specify config file parameters
+configfile: "config.yaml"
+sample        = config["SAMPLE"]
+featuresName  = config["FEATURES"]["name"]
+featuresFile  = config["FEATURES"]["file"]
+reference     = config["MAPPING"]["reference"]
+refbase       = os.path.basename(reference)
+mode          = config["MAPPING"]["mode"]
+flankName     = config["COVERAGE"]["flankName"]
+binName       = config["COVERAGE"]["binName"]
+
+# Specify the desired end target file(s)
+rule all:
+    input:
+        expand("matrices/{sample}_MappedOn_{refbase}_lowXM_{mode}_sort_norm_{featuresName}_matrix_bin{binName}_flank{flankName}.tab",
+               mode = mode,
+               sample = sample,
+               refbase = refbase,
+               featuresName = featuresName,
+               binName = binName,
+               flankName = flankName)
+
+# Use computeMatrix function from deepTools to create a matrix of
+# coverage values for genomic features and flanking regions
+rule compute_matrix:
+    """Create matrix of coverage values for genomic features"""
+    input:
+        featuresFile = featuresFile,
+        BW = "../{mode}/bw/{sample}_MappedOn_{refbase}_lowXM_{mode}_sort_norm.bw"
+    output:
+        gz  = "matrices/{sample}_MappedOn_{refbase}_lowXM_{mode}_sort_norm_{featuresName}_matrix_bin{binName}_flank{flankName}.gz",
+        tab = "matrices/{sample}_MappedOn_{refbase}_lowXM_{mode}_sort_norm_{featuresName}_matrix_bin{binName}_flank{flankName}.tab"
+    params:
+        bodyLength  = config["COVERAGE"]["bodyLength"],
+        startLabel  = config["COVERAGE"]["startLabel"],
+        endLabel    = config["COVERAGE"]["endLabel"],
+        upstream    = config["COVERAGE"]["upstream"],
+        downstream  = config["COVERAGE"]["downstream"],
+        binSize     = config["COVERAGE"]["binSize"],
+        sortRegions = config["COVERAGE"]["sortRegions"]
+    log:
+        "logs/computeMatrix/{sample}_MappedOn_{refbase}_lowXM_{mode}_sort_norm_{featuresName}_matrix_bin{binName}_flank{flankName}.log"
+    threads:
+        config["THREADS"]  
+    shell:
+        "(computeMatrix scale-regions"
+        " --regionsFileName {input.featuresFile}"
+        " --scoreFileName {input.BW}"
+        " --outFileName {output.gz}"
+        " --outFileNameMatrix {output.tab}"
+        " --regionBodyLength {params.bodyLength}"
+        " --startLabel {params.startLabel}"
+        " --endLabel {params.endLabel}"
+        " --upstream {params.upstream}"
+        " --downstream {params.downstream}"
+        " --binSize {params.binSize}"
+        " --sortRegions {params.sortRegions}"
+        " --numberOfProcessors {threads}) 2> {log}"
