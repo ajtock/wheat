@@ -34,7 +34,7 @@ superfamCode <- c("RLG",
                   "DTA",
                   "DHH",
                   "XXX")
-superfamName <- c("Gyspy_LTR",
+superfamName <- c("Gypsy_LTR",
                   "Copia_LTR",
                   "Unclassified_LTR", 
                   "LINE",
