@@ -27,7 +27,7 @@ date <- as.character(args[7])
 superfamName <- c(
                   "CACTA_DTC",
                   "Copia_LTR_RLC",
-                  "Gyspy_LTR_RLG",
+                  "Gypsy_LTR_RLG",
                   "Harbinger_DTH",
                   "hAT_DTA",
                   "Helitrons_DHH",
