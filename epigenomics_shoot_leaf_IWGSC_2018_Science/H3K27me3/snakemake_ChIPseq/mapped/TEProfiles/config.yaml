@@ -3,7 +3,7 @@ SAMPLE: "H3K27me3_ChIP_SRR6350666"
 FEATURES:
       superfamName: ["CACTA_DTC",
                      "Copia_LTR_RLC",
-                     "Gyspy_LTR_RLG",
+                     "Gypsy_LTR_RLG",
                      "Harbinger_DTH",
                      "hAT_DTA",
                      "Helitrons_DHH",
