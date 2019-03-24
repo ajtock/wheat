@@ -3,19 +3,19 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_ChIPseq_MNaseSeq_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP both 1Mb 1000000 15 forestgreen magenta3 190219 200
+# ./chrProfilesPlot_IWGSC_ChIPseq_MNaseSeq_x2_cMMb.R H3K27me3 H3K27me3_ChIP_SRR6350666 H3K27me1 H3K27me1_Rep1_ChIP both 1Mb 1000000 15 navy firebrick1 220219 200
 
-#markChIPA <- "H3K4me3"
-#libNameChIPA <- "H3K4me3_Rep1_ChIP"
-#markChIPB <- "H3K9me2"
-#libNameChIPB <- "H3K9me2_Rep1_ChIP"
+#markChIPA <- "H3K27me3"
+#libNameChIPA <- "H3K27me3_ChIP_SRR6350666"
+#markChIPB <- "H3K27me1"
+#libNameChIPB <- "H3K27me1_Rep1_ChIP"
 #align <- "both"
 #winName <- "1Mb"
 #winSize <- 1000000
 #N <- 15
-#colourA <- "forestgreen"
-#colourB <- "magenta3"
-#date <- 180219
+#colourA <- "navy"
+#colourB <- "firebrick1"
+#date <- 220219
 #minMarkerDist <- 200
 
 args <- commandArgs(trailingOnly = T)
@@ -61,7 +61,7 @@ centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_W
 plotDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/plots/"
 
 ## ChIPA profile
-covDirChIPA <- paste0("/home/ajt200/analysis/wheat/",
+covDirChIPA <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
                       markChIPA, "/snakemake_ChIPseq/mapped/",
                       align, "/bg/")
 

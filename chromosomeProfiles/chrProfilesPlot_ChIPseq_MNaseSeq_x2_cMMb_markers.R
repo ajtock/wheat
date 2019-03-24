@@ -3,20 +3,19 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_ChIPseq_MNaseSeq_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP both 1Mb 1000000 15 forestgreen magenta3 190219 200
+# ./chrProfilesPlot_ChIPseq_MNaseSeq_x2_cMMb_markers.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP both 1Mb 1000000 15 forestgreen magenta3 181218
 
-#markChIPA <- "H3K4me3"
-#libNameChIPA <- "H3K4me3_Rep1_ChIP"
-#markChIPB <- "H3K9me2"
-#libNameChIPB <- "H3K9me2_Rep1_ChIP"
-#align <- "both"
-#winName <- "1Mb"
-#winSize <- 1000000
-#N <- 15
-#colourA <- "forestgreen"
-#colourB <- "magenta3"
-#date <- 180219
-#minMarkerDist <- 200
+markChIPA <- "H3K4me3"
+libNameChIPA <- "H3K4me3_Rep1_ChIP"
+markChIPB <- "H3K9me2"
+libNameChIPB <- "H3K9me2_Rep1_ChIP"
+align <- "both"
+winName <- "1Mb"
+winSize <- 1000000
+N <- 15
+colourA <- "forestgreen"
+colourB <- "magenta3"
+date <- 181218
 
 args <- commandArgs(trailingOnly = T)
 markChIPA <- args[1]
@@ -30,7 +29,6 @@ N <- as.numeric(args[8])
 colourA <- args[9]
 colourB <- args[10]
 date <- args[11]
-minMarkerDist <- as.numeric(args[12])
 
 makeTransparent <- function(thisColour, alpha = 150)
 {
@@ -55,8 +53,8 @@ chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Marti
 chrs <- chrs[-length(chrs)]
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
 chrLens <- chrLens[-length(chrLens)]
-centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,2])
-centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,3])
+centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11.txt")[,2])
+centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11.txt")[,3])
 
 plotDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/plots/"
 
@@ -232,39 +230,37 @@ maxCPM <- max(unlist(mclapply(seq_along(filt_chrProfilesA),
 
 
 # Feature frequency chromosome profiles
-cMMbProfile <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                                 as.character(minMarkerDist), "bp_", winName, ".txt"),
-                          header = T)
+profileFeatureFiles <- system("ls /home/irh25/wheat_files/chr*_w1mb_cMMb_v1.txt",
+                              intern = T)
 chrProfilesFeature <- mclapply(seq_along(chrs), function(x) {
-  cMMbProfile[cMMbProfile$chr == chrs[x],]
+  read.table(profileFeatureFiles[x], header = T)
 }, mc.cores = length(chrs))
 
 filt_chrProfilesFeature <- mclapply(seq_along(chrProfilesFeature), function(x) {
-  filt_chrProfileFeature <- stats::filter(x = chrProfilesFeature[[x]]$cMMb,
+  filt_chrProfileFeature <- stats::filter(x = chrProfilesFeature[[x]]$win.vals,
                                           filter = f,
                                           sides = 2)
   filt_chrProfileFeature[1:flank] <- filt_chrProfileFeature[flank+1]
   filt_chrProfileFeature[(length(filt_chrProfileFeature)-flank+1):length(filt_chrProfileFeature)] <- filt_chrProfileFeature[(length(filt_chrProfileFeature)-flank)]
-  data.frame(chr = as.character(chrProfilesFeature[[x]]$chr),
-             window = as.integer(chrProfilesFeature[[x]]$window),
+  data.frame(chr = as.character(chrProfilesFeature[[x]]$seqnames),
+             window = as.integer(chrProfilesFeature[[x]]$start),
              filt_feature = as.numeric(filt_chrProfileFeature),
              stringsAsFactors = F)
 }, mc.cores = length(chrProfilesFeature))
 
 minFeature <- min(unlist(mclapply(seq_along(filt_chrProfilesFeature),
   function(x) {
-    min(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
+    min(filt_chrProfilesFeature[[x]]$filt_feature)
 }, mc.cores = length(filt_chrProfilesFeature))))
 maxFeature <- max(unlist(mclapply(seq_along(filt_chrProfilesFeature),
   function(x) {
-    max(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
+    max(filt_chrProfilesFeature[[x]]$filt_feature)
 }, mc.cores = length(filt_chrProfilesFeature))))
 
 # Plot
 pdf(paste0(plotDir, "Wheat_", libNameChIPA, "_", libNameChIPB, "_",
-           align, "_cMMb_chrPlot_winSize", winName, "_smooth", N,
-           "_minInterMarkerDist", as.character(minMarkerDist),
-           "bp_v", date, ".pdf"),
+           align, "_OLDcMMb_chrPlot_winSize", winName, "_smooth", N,
+           "_v", date, ".pdf"),
     height = 21, width = 30)
 par(mfrow = c(7, 3))
 par(mar = c(2.1, 4.1, 2.1, 4.1))
@@ -288,5 +284,12 @@ for(x in 1:length(filt_chrProfilesA)) {
                    col2 = "deepskyblue",
                    Ylab2 = "cM/Mb",
                    min2 = minFeature, max2 = maxFeature)
+  if(x == 8) {
+    markers3B <- c(14162637, 21346054, 66953459)
+    abline(v = markers3B, lty = 3, lwd = 2.5, col = "darkorange")
+    text(x = markers3B, y = 3.75e-12,
+         labels = c("AX-94566571", "AX-94468489", "AX-95144587"),
+         pos = 2, srt = 90, cex = 0.8)
+  }
 }
 dev.off()

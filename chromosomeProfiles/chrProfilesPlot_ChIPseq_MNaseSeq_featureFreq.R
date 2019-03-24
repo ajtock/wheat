@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_ChIPseq_MNaseSeq_featureFreq.R H3K9me2 H3K9me2_Rep1_ChIP both 1Mb 1000000 15 magenta3 281118 48 ./TEs/superfamilies/TE_frequency_per_1Mb_superfamily_Gyspy_LTR_RLG.txt Gyspy_LTR_RLG
+# ./chrProfilesPlot_ChIPseq_MNaseSeq_featureFreq.R H3K9me2 H3K9me2_Rep1_ChIP both 1Mb 1000000 15 magenta3 281118 48 ./TEs/superfamilies/TE_frequency_per_1Mb_superfamily_Gypsy_LTR_RLG.txt Gypsy_LTR_RLG
 
 markChIP <- "H3K9me2"
 libNameChIP <- "H3K9me2_Rep1_ChIP"
@@ -14,8 +14,8 @@ N <- 15
 colour <- "magenta3"
 date <- 281118
 cores <- 48
-feature <- "./TEs/superfamilies/TE_frequency_per_1Mb_superfamily_Gyspy_LTR_RLG.txt"
-featureName <- "Gyspy_LTR_RLG"
+feature <- "./TEs/superfamilies/TE_frequency_per_1Mb_superfamily_Gypsy_LTR_RLG.txt"
+featureName <- "Gypsy_LTR_RLG"
 
 args <- commandArgs(trailingOnly = T)
 markChIP <- args[1]

@@ -26,6 +26,8 @@ N <- as.numeric(args[7])
 colour1 <- args[8]
 date <- args[9]
 
+# Source functions
+source("/projects/ajt200/Rfunctions/wheatPlotFunctions.R")
 library(parallel)
 library(plyr)
 library(data.table)
@@ -53,22 +55,46 @@ profile1_bigWins <- profile1[profile1$V3-profile1$V2 > winSize,]
 profile1 <- profile1[profile1$V3-profile1$V2 == winSize,]
 
 # Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
+# or < winSize if at chromosome end 
 profile1_bigWinsList <- mclapply(seq_along(1:dim(profile1_bigWins)[1]), function(x) {
   bigWinsSplit <- seq(from = profile1_bigWins[x,]$V2,
-                      to = profile1_bigWins[x,]$V3-winSize,
+                      to = profile1_bigWins[x,]$V3,
                       by = winSize)
-  data.frame(V1 = profile1_bigWins[x,]$V1,
-             V2 = as.integer(bigWinsSplit),
-             V3 = as.integer(bigWinsSplit+winSize),
-             V4 = as.numeric(profile1_bigWins[x,]$V4))
+
+  if(bigWinsSplit[length(bigWinsSplit)] < profile1_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(profile1_bigWins[x,]$V1),
+               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
+                                 bigWinsSplit[length(bigWinsSplit)])),
+               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
+                                 profile1_bigWins[x,]$V3)),
+               V4 = as.numeric(profile1_bigWins[x,]$V4))
+  } else if (bigWinsSplit[length(bigWinsSplit)] == profile1_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(profile1_bigWins[x,]$V1),
+               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
+               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
+               V4 = as.numeric(profile1_bigWins[x,]$V4))
+  }
 }, mc.cores = detectCores())
 
 profile1_bigWinsDT <- rbindlist(profile1_bigWinsList)
 profile1 <- rbind.fill(profile1, profile1_bigWinsDT)
 profile1 <- profile1[order(profile1$V1, profile1$V2),]
+
+chrLenValsList <- mclapply(seq_along(chrs), function (x) {
+  chrProfile1 <- profile1[profile1$V1 == chrs[x],]
+  if(chrProfile1[dim(chrProfile1)[1],]$V3 < chrLens[x]) {
+    data.frame(V1 = chrs[x],
+               V2 = as.integer(chrProfile1[dim(chrProfile1)[1],]$V3),
+               V3 = as.integer(chrLens[x]),
+               V4 = as.numeric(chrProfile1[dim(chrProfile1)[1],]$V4))
+  }
+}, mc.cores = detectCores())
+profile1_chrLenValsDT <- rbindlist(chrLenValsList)
+profile1 <- rbind.fill(profile1, profile1_chrLenValsDT)
+profile1 <- profile1[order(profile1$V1, profile1$V2),]
+
 profile1 <- data.frame(chr = as.character(profile1$V1),
-                       midWin = as.numeric(profile1$V2+(winSize/2)),
+                       window = as.integer(profile1$V2+1),
                        CPM = as.numeric(profile1$V4),
                        stringsAsFactors = F)
 
@@ -90,7 +116,7 @@ filt_chrProfiles1 <- mclapply(seq_along(chrProfiles1), function(x) {
   filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
   filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
   data.frame(chr = as.character(chrProfiles1[[x]]$chr),
-             midWin = as.numeric(chrProfiles1[[x]]$midWin),
+             window = as.integer(chrProfiles1[[x]]$window),
              filt_CPM = as.numeric(filt_chrProfile),
              stringsAsFactors = F)
 }, mc.cores = length(chrProfiles1))
@@ -104,40 +130,23 @@ maxCPM1 <- max(unlist(mclapply(seq_along(filt_chrProfiles1),
     max(filt_chrProfiles1[[x]]$filt_CPM)
 }, mc.cores = length(filt_chrProfiles1))))
 
-# Function to plot chromosome profiles
-chrPlot <- function(xplot, title, cenStart, cenEnd,
-                    dat1, col1, Ylab1, min1, max1) {
-  plot(xplot, dat1, col = col1, type = "h", lwd = 0.5,
-       ylim = c(min1,
-                max1),
-       xlim = c(0, max(chrLens)),
-       xlab = "", ylab = "",
-       xaxt = "n", yaxt = "n",
-       main = title, cex.main = 2.5)
-  mtext(side = 2, line = 2.25, cex = 1.5, text = Ylab1, col = col1)
-  axis(side = 2, cex.axis = 1.5, lwd.tick = 1.5)
-  axis(side = 1, cex.axis = 1.5, lwd.tick = 1.5)
-  abline(v = c(cenStart, cenEnd), lty = 5, lwd = 0.75, col = "black")
-  box(lwd = 1.5)
-}
-
 # Plot
 pdf(paste0(plotDir, "Wheat_sRNAseq_", libName1, "_",
            align, name1, "_chrPlot_winSize", winName, "_smooth", N,
            "_v", date, ".pdf"),
-    height = 21, width = 30)
-par(mfrow = c(7, 3))
+    height = 22, width = 30)
+par(mfrow = c(8, 3))
 par(mar = c(2.1, 4.1, 2.1, 4.1))
 par(mgp = c(3, 1, 0))
 
 for(x in 1:length(filt_chrProfiles1)) {
-  chrPlot(xplot = filt_chrProfiles1[[x]]$midWin,
-          title = chrs[x],
-          cenStart = centromereStart[x],
-          cenEnd = centromereEnd[x],
-          dat1 = filt_chrProfiles1[[x]]$filt_CPM,
-          col1 = colour1,
-          Ylab1 = paste0(nameY1, " sRNAs"),
-          min1 = minCPM1, max1 = maxCPM1)
+  chrPlotCov(xplot = filt_chrProfiles1[[x]]$window,
+             title = chrs[x],
+             cenStart = centromereStart[x],
+             cenEnd = centromereEnd[x],
+             dat1 = filt_chrProfiles1[[x]]$filt_CPM,
+             col1 = colour1,
+             Ylab1 = paste0(nameY1, " sRNAs"),
+             min1 = minCPM1, max1 = maxCPM1)
 }
 dev.off()

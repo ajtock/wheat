@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_ChIPseq_IWGSC_Science_featureFreq.R CENH3 CENH3_ChIP_SRR1686799 both 1Mb 1000000 15 deeppink 281118 48 ./TEs/subfamilies/TE_frequency_per_1Mb_superfamily_Gyspy_LTR_RLG_subfamily_RLG_famc8.3.txt Cereba_RLG_famc8.3
+# ./chrProfilesPlot_ChIPseq_IWGSC_Science_featureFreq.R CENH3 CENH3_ChIP_SRR1686799 both 1Mb 1000000 15 deeppink 281118 48 ./TEs/subfamilies/TE_frequency_per_1Mb_superfamily_Gypsy_LTR_RLG_subfamily_RLG_famc8.3.txt Cereba_RLG_famc8.3
 
 markChIP <- "CENH3"
 libNameChIP <- "CENH3_ChIP_SRR1686799"
@@ -14,7 +14,7 @@ N <- 15
 colour <- "deeppink"
 date <- 281118
 cores <- 48
-feature <- "./TEs/subfamilies/TE_frequency_per_1Mb_superfamily_Gyspy_LTR_RLG_subfamily_RLG_famc8.3.txt"
+feature <- "./TEs/subfamilies/TE_frequency_per_1Mb_superfamily_Gypsy_LTR_RLG_subfamily_RLG_famc8.3.txt"
 featureName <- "Cereba_RLG_famc8.3"
 
 args <- commandArgs(trailingOnly = T)
@@ -184,7 +184,7 @@ for(x in 1:length(filt_chrProfiles)) {
                         Ylab1 = markChIP,
                         min1 = minCPM, max1 = maxCPM,
                         dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
-                        col2 = "blue",
+                        col2 = "red",
                         Ylab2 = featureName,
                         min2 = minFeature, max2 = maxFeature)
 }
