@@ -1,0 +1,17 @@
+THREADS: 32
+SAMPLE: "H3K4me3_Rep1_ChIP"
+FEATURES:
+      name: "miRNAs"
+MAPPING:
+      mode: "both"
+      reference: "data/index/wheat_v1.0"
+COVERAGE:
+      bodyLength: 120
+      startLabel: "Start"
+      endLabel: "End"
+      upstream: 500
+      downstream: 500
+      flankName: "500bp"
+      binSize: 5
+      binName: "5bp"
+      sortRegions: "keep"
