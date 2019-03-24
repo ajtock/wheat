@@ -1,14 +1,16 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./cMMb_chrProfiles.R 1Mb 1000000
+# ./cMMb_iwgsc_refseqv1.0_mapping_data_removeProblemMarkers.R 1Mb 1000000 200
 
-winName <- "1Mb"
-winSize <- 1000000
+#winName <- "1Mb"
+#winSize <- 1000000
+#minMarkerDist <- 200
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
 winSize <- as.numeric(args[2])
+minMarkerDist <- as.numeric(args[3])
 
 library(parallel)
 library(doParallel)
@@ -23,41 +25,65 @@ chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Marti
 chrs <- chrs[-length(chrs)]
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
 chrLens <- chrLens[-length(chrLens)]
-centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11.txt")[,2])
-centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11.txt")[,3])
+centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,2])
+centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,3])
 
 # Read in genetic map data
 map <- read.table(paste0(inDir, "iwgsc_refseqv1.0_mapping_data.txt"),
                   header = T)
+print("Number of markers:")
+print(dim(map)[1])
 
 # Create numeric vectors of physical and genetic distances between markers
+mapMMD <- NULL
 physicalDelta <- NULL
 geneticDelta <- NULL
 for(i in 1:length(chrs)) {
   mapChr <- map[map$chromosome == chrs[i],]
   
-  physicalDeltaChr <- as.numeric(sapply(seq(from = 0,
-                                            to = dim(mapChr)[1]-1),
+  # Keep second marker in a pair of markers with an inter-marker distance >= minMarkerDist bp
+  # and with a genetic distance >= 0 cM
+  mapChrMMD <-  mapChr[1,]
+  for(x in 2:dim(mapChr)[1]) {
+    mapChrRow <- mapChr[x,][mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1] >= minMarkerDist
+                          & mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0,]
+    mapChrMMD <- rbind(mapChrMMD, mapChrRow)
+  }
+  mapMMD <- rbind(mapMMD, mapChrMMD)
+
+  physicalDeltaChr <- as.numeric(sapply(seq(from = 1,
+                                            to = dim(mapChrMMD)[1]),
     function(x) {
-      mapChr$physicalPosition[x+1]-mapChr$physicalPosition[x]
-    }))
+      mapChrMMD$physicalPosition[x]-mapChrMMD$physicalPosition[x-1]
+    }
+  ))
   physicalDelta <- c(physicalDelta, physicalDeltaChr)
 
-  geneticDeltaChr <- as.numeric(sapply(seq(from = 0,
-                                           to = dim(mapChr)[1]-1),
+  geneticDeltaChr <- as.numeric(sapply(seq(from = 1,
+                                           to = dim(mapChrMMD)[1]),
     function(x) {
-      mapChr$geneticPosition[x+1]-mapChr$geneticPosition[x]
-    }))
+      mapChrMMD$geneticPosition[x]-mapChrMMD$geneticPosition[x-1]
+    }
+  ))
   geneticDelta <- c(geneticDelta, geneticDeltaChr)
 }
 
-map_cMMb <- data.frame(map,
-                       physicalDelta = as.numeric(physicalDelta),
-                       geneticDelta = as.numeric(geneticDelta),
-                       cMMb = as.numeric(geneticDelta/(physicalDelta/1000000)))
-## Remove row at beginning of each chromosome with NA delta values (21 rows)
-#map_cMMb <- map_cMMb[!is.na(map_cMMb$physicalDelta),]
-# Note: there are three marker pairs with negative genetic distances
+map_cMMb <- data.frame(mapMMD,
+                       physicalDelta    = as.numeric(physicalDelta),
+                       geneticDelta     = as.numeric(geneticDelta),
+                       cMMb             = as.numeric(geneticDelta/(physicalDelta/1000000)))
+
+print(paste0("Number of markers with inter-marker genetic distances >= 0
+              and physical distances >= ", minMarkerDist, " bp"))
+print(dim(map_cMMb)[1])
+
+## Remove second marker for three marker pairs with negative genetic distances
+#map_cMMb <- map_cMMb[is.na(map_cMMb$geneticDelta) | map_cMMb$geneticDelta >= 0,]
+#print("Number of markers with positive inter-marker genetic distances")
+#print(dim(map_cMMb)[1])
+##[1] 47151
+## Remove second marker for pairs of markers with physical distances < minMarkerDist bp
+#map_cMMb <- map_cMMb[is.na(map_cMMb$physicalDelta) | map_cMMb$physicalDelta >= minMarkerDist,]
 
 windowsGR <- GRanges()
 for(i in 1:length(chrs)) {
@@ -117,4 +143,5 @@ for(i in 1:length(chrProfiles)) {
 }
 write.table(profile,
             file = paste0(outDir,
-                          "cMMb_iwgsc_refseqv1.0_mapping_data_", winName, ".txt"))
+                          "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
+                          as.character(minMarkerDist), "bp_", winName, ".txt"))
