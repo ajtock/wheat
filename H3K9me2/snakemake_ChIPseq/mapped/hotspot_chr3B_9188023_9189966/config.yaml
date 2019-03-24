@@ -1,0 +1,18 @@
+THREADS: 1
+SAMPLE: "H3K9me2_Rep1_ChIP"
+FEATURES:
+      name: "hotspot_chr3B_9188023_9189966"
+      file: "/home/ajt200/analysis/wheat/annotation/hotspot_chr3B_9188023_9189966.bed"
+MAPPING:
+      mode: "both"
+      reference: "data/index/wheat_v1.0"
+COVERAGE:
+      bodyLength: 1940
+      startLabel: "Start"
+      endLabel: "End"
+      upstream: 10000
+      downstream: 10000
+      flankName: "10kb"
+      binSize: 20
+      binName: "20bp"
+      sortRegions: "keep"
