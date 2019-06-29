@@ -1,7 +1,7 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./coverage_per_scaled_win_TelCen_plotAllProfiles.R both 1Mb 100 100ths 3 
+# ./coverage_per_scaled_win_TelCen_plotAllProfiles_Zscore.R both 1Mb 100 100ths 3 
 
 #align <- "both"
 #winName <- "1Mb"
@@ -19,22 +19,24 @@ N <- as.numeric(args[5])
 library(parallel)
 
 profileNames <- c(
-                  #"log2_CENH3_ChIP_SRR1686799_MNase_Rep1",
+                  #"log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669",
+                  "log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669",
                   "log2_H3K4me3_Rep1_ChIP_MNase_Rep1",
                   "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669",
                   "log2_H2AZ_Rep1_ChIP_MNase_Rep1",
                   #"log2_H3K4me3_ChIP_SRR6350668_H3_input_SRR6350669",
                   "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669",
-                  "log2_MNase_Rep1_H3_input_SRR6350669",
+                  #"log2_MNase_Rep1_H3_input_SRR6350669",
                   "log2_H3K27me1_Rep1_ChIP_MNase_Rep1",
                   "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669",
                   "log2_H3K9me2_Rep1_ChIP_MNase_Rep1"
                  )
 profileNamesPlot <- c( 
                       #"CENH3",
+                      "ASY1 (CS)",
                       "H3K4me3",
                       "H3K9ac",
-                      "H2A.Z",
+                      "H2A.Z (Cadenza)",
                       #"H3K4me3 (IWGSC)", 
                       "H3K36me3",
                       "MNase",
@@ -44,12 +46,13 @@ profileNamesPlot <- c(
                      )
 profileColours <- c(
                     #"deeppink",
+                    "purple4",
                     "forestgreen",
                     "green2",
                     "dodgerblue",
                     #"grey60",
                     "darkorange2",
-                    "darkcyan",
+                    #"darkcyan",
                     "firebrick1",
                     "navy",
                     "magenta3"
@@ -121,9 +124,9 @@ TelCenPlot <- function(xplot,
   box(lwd = 1.5)
   legend(legendLoc,
          legend = legendLabs,
-         col = c(profileColours),
+         col = c("white"),
          text.col = c(profileColours),
-         text.font = c(rep(1, times = 6)),
+         text.font = c(rep(1, times = 9)),
          ncol = 2, cex = 0.7, lwd = 1.5, bty = "n")
 }
 
@@ -152,7 +155,7 @@ filt_TelCenProfiles <- mclapply(seq_along(TelCenProfiles), function(x) {
 pdf(paste0("./Wheat_Zscore_log2_ChIPinput_",
            align, "_", winName, "_",
            propName, "_smooth", N,
-           "_TelCenProfile.pdf"),
+           "_TelCenProfile_v070619.pdf"),
     height = 7, width = 7)
 par(mfrow = c(2, 1))
 par(mar = c(3.1, 4.1, 3.1, 4.1))
@@ -162,7 +165,7 @@ TelCenPlot(xplot = 1:length(TelCenProfiles[[1]]),
            proportions = prop,
            proportionsName = propName,
            profileColours = profileColoursTransparent,
-           Ylabel = bquote("Log"[2]*"(ChIP/control)"),
+           Ylabel = bquote("Z-score log"[2]*"(ChIP/control)"),
            Ylim = c(min(c(TelCenProfiles[[1]], TelCenProfiles[[2]], TelCenProfiles[[3]], TelCenProfiles[[4]],
                           TelCenProfiles[[5]], TelCenProfiles[[6]], TelCenProfiles[[7]], TelCenProfiles[[8]])),
                     max(c(TelCenProfiles[[1]], TelCenProfiles[[2]], TelCenProfiles[[3]], TelCenProfiles[[4]],
@@ -174,7 +177,7 @@ TelCenPlot(xplot = 1:length(filt_TelCenProfiles[[1]]),
            proportions = prop,
            proportionsName = propName,
            profileColours = profileColoursTransparent,
-           Ylabel = bquote("Log"[2]*"(ChIP/control)"),
+           Ylabel = bquote("Z-score log"[2]*"(ChIP/control)"),
            Ylim = c(min(c(filt_TelCenProfiles[[1]], filt_TelCenProfiles[[2]], filt_TelCenProfiles[[3]], filt_TelCenProfiles[[4]],
                           filt_TelCenProfiles[[5]], filt_TelCenProfiles[[6]], filt_TelCenProfiles[[7]], filt_TelCenProfiles[[8]])),
                     max(c(filt_TelCenProfiles[[1]], filt_TelCenProfiles[[2]], filt_TelCenProfiles[[3]], filt_TelCenProfiles[[4]],

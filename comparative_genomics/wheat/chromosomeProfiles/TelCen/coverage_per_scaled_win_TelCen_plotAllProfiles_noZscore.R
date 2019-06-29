@@ -1,7 +1,7 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./coverage_per_scaled_win_TelCen_plotAllProfiles.R both 1Mb 100 100ths 3 
+# ./coverage_per_scaled_win_TelCen_plotAllProfiles_noZscore.R both 1Mb 100 100ths 3 
 
 #align <- "both"
 #winName <- "1Mb"
@@ -19,37 +19,40 @@ N <- as.numeric(args[5])
 library(parallel)
 
 profileNames <- c(
-                  #"log2_CENH3_ChIP_SRR1686799_MNase_Rep1",
+                  #"log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669",
+                  "log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669",
                   "log2_H3K4me3_Rep1_ChIP_MNase_Rep1",
                   "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669",
                   "log2_H2AZ_Rep1_ChIP_MNase_Rep1",
                   #"log2_H3K4me3_ChIP_SRR6350668_H3_input_SRR6350669",
                   "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669",
-                  "log2_MNase_Rep1_H3_input_SRR6350669",
+                  #"log2_MNase_Rep1_H3_input_SRR6350669",
                   "log2_H3K27me1_Rep1_ChIP_MNase_Rep1",
                   "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669",
                   "log2_H3K9me2_Rep1_ChIP_MNase_Rep1"
                  )
 profileNamesPlot <- c( 
                       #"CENH3",
+                      "ASY1 (CS)",
                       "H3K4me3",
                       "H3K9ac",
-                      "H2A.Z",
+                      "H2A.Z (Cadenza)",
                       #"H3K4me3 (IWGSC)", 
                       "H3K36me3",
-                      "MNase",
+                      #"MNase",
                       "H3K27me1",
                       "H3K27me3",
                       "H3K9me2"
                      )
 profileColours <- c(
                     #"deeppink",
+                    "purple4",
                     "forestgreen",
                     "green2",
                     "dodgerblue",
                     #"grey60",
                     "darkorange2",
-                    "darkcyan",
+                    #"darkcyan",
                     "firebrick1",
                     "navy",
                     "magenta3"
@@ -71,7 +74,7 @@ profileColoursTransparent <- sapply(seq_along(profileColours), function(x) {
 TelCenDFs <- mclapply(seq_along(profileNames), function(x) {
   read.table(paste0("./", profileNames[x], "_",
              align, "_", winName, "_",
-             propName, "_TelCenMatrix.txt"))
+             propName, "_TelCenMatrix_noZscore.txt"))
 }, mc.cores = length(profileNames))
 
 TelCenProfiles <- mclapply(seq_along(TelCenDFs), function(x) {
@@ -121,9 +124,9 @@ TelCenPlot <- function(xplot,
   box(lwd = 1.5)
   legend(legendLoc,
          legend = legendLabs,
-         col = c(profileColours),
+         col = c("white"),
          text.col = c(profileColours),
-         text.font = c(rep(1, times = 6)),
+         text.font = c(rep(1, times = 9)),
          ncol = 2, cex = 0.7, lwd = 1.5, bty = "n")
 }
 
@@ -149,10 +152,10 @@ filt_TelCenProfiles <- mclapply(seq_along(TelCenProfiles), function(x) {
   filt_TelCenProfile
 }, mc.cores = length(TelCenProfiles))
 
-pdf(paste0("./Wheat_Zscore_log2_ChIPinput_",
+pdf(paste0("./Wheat_log2_ChIPinput_",
            align, "_", winName, "_",
            propName, "_smooth", N,
-           "_TelCenProfile.pdf"),
+           "_TelCenProfile_v220619.pdf"),
     height = 7, width = 7)
 par(mfrow = c(2, 1))
 par(mar = c(3.1, 4.1, 3.1, 4.1))
