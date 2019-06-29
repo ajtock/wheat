@@ -1,0 +1,473 @@
+# Snakemake workflow for mapping ChIP-seq libraries to a reference genome
+# Adapted from https://github.com/seb-mueller/snakemake_sRNAseq
+
+# Chromosome sizes file below ("data/index/genome.fa.sizes") must exist
+# before running snakefile
+# e.g., in "data/index/" run:
+# samtools faidx genome.fa; cut -f1,2 genome.fa.fai > genome.fa.sizes
+
+# Usage (snakemake --cores should reflect available cores):
+# conda env create --file environment.yaml --name ChIPseq_mapping
+# source activate srna_mapping
+# snakemake -p --cores 48
+# source deactivate
+
+import pandas as pd
+import os
+
+# To make the per_base_coverage rule work with a shell script invoked using the "shell" directive,
+# we need to determine the base path of Snakefile since we expect the scripts directory to be there as well
+SRCDIR = srcdir("")
+
+# Specify config file parameters
+configfile: "config.yaml"
+reference     = config["MAPPING"]["reference"]
+refbase       = os.path.basename(reference)
+genomeBinName = config["COVERAGE"]["genomeBinName"]
+
+# Determine bam index format (bai or csi) based on chromosome sizes
+# Genomes with chromosomes longer than ~500 Mb (e.g., in wheat) require a csi index
+# E.g., in axolotl: https://sourceforge.net/p/samtools/mailman/message/36249039/
+chrSizes = pd.read_table("data/index/" + refbase + ".fa.sizes",
+                         header = None)
+smallChrs = 0
+for x in chrSizes[1]:
+    if x < 5e+08:
+        smallChrs = smallChrs + 1
+
+if smallChrs < len(chrSizes[1]):
+    bamidx = "csi"
+else:
+    bamidx = "bai"
+
+# Get sample names from samples.csv
+samples = pd.read_table("samples.csv",
+                        header = 0,
+                        sep = ",",
+                        index_col = 0)
+
+# Specify the desired end target file(s)
+rule all:
+    input:
+        expand("logs/fastqc/raw/{sample}_R1_fastqc.html",
+               sample = samples.index),
+        expand("logs/fastqc/raw/{sample}_R2_fastqc.html",
+               sample = samples.index),
+        expand("data/dedup/{sample}_R1_dedup.fastq.gz",
+               sample = samples.index),
+        expand("data/dedup/{sample}_R1_dedup_repair.fastq.gz",
+               sample = samples.index),
+        expand("data/dedup/{sample}_R2_dedup_repair.fastq.gz",
+               sample = samples.index),
+        expand("data/dedup/trimmed/{sample}_R1_dedup_repair_trimmed.fastq.gz",
+               sample = samples.index),
+        expand("data/dedup/trimmed/{sample}_R2_dedup_repair_trimmed.fastq.gz",
+               sample = samples.index),
+        expand("logs/fastqc/trimmed/{sample}_R1_dedup_repair_trimmed_fastqc.html",
+               sample = samples.index),
+        expand("logs/fastqc/trimmed/{sample}_R2_dedup_repair_trimmed_fastqc.html",
+               sample = samples.index),
+        expand("mapped/{sample}_MappedOn_{refbase}.bam",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.{bamidx}",
+               sample = samples.index,
+               refbase = refbase,
+               bamidx = bamidx),
+        expand("mapped/unique/bw/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bw",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bedgraph",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm_binSize{genomeBinName}.bedgraph",
+               sample = samples.index,
+               refbase = refbase,
+               genomeBinName = genomeBinName),
+        expand("mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.{bamidx}",
+               sample = samples.index,
+               refbase = refbase,
+               bamidx = bamidx),
+        expand("mapped/both/bw/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bw",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bedgraph",
+               sample = samples.index,
+               refbase = refbase),
+        expand("mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm_binSize{genomeBinName}.bedgraph",
+               sample = samples.index,
+               refbase = refbase,
+               genomeBinName = genomeBinName)
+
+# Run fastqc on R1 raw data
+rule fastqc_R1_raw:
+    """Create fastqc report"""
+    input:
+        "data/{sample}_R1.fastq.gz"
+    output:
+        html = "logs/fastqc/raw/{sample}_R1_fastqc.html",
+        zip  = "logs/fastqc/raw/{sample}_R1_fastqc.zip"
+    params: "--extract"
+    log:
+        "logs/fastqc/raw/{sample}_R1.log"
+    wrapper:
+        "0.27.1/bio/fastqc"
+# Run fastqc on R2 raw data
+rule fastqc_R2_raw:
+    """Create fastqc report"""
+    input:
+        "data/{sample}_R2.fastq.gz"
+    output:
+        html = "logs/fastqc/raw/{sample}_R2_fastqc.html",
+        zip  = "logs/fastqc/raw/{sample}_R2_fastqc.zip"
+    params: "--extract"
+    log:
+        "logs/fastqc/raw/{sample}_R2.log"
+    wrapper:
+        "0.27.1/bio/fastqc"
+
+# Deduplicate R1 reads
+rule dedupe_R1:
+    """Remove duplicate R1 reads"""
+    input:
+        "data/{sample}_R1.fastq.gz"
+    output:
+        "data/dedup/{sample}_R1_dedup.fastq.gz"
+    threads: config["THREADS"]
+    params:
+        memory = config["MEMORY"]
+    log:
+        "logs/dedup/{sample}_R1_dedup.log"
+    shell:
+        "(dedupe.sh -Xmx{params.memory} in={input} out={output}"
+        " threads={threads} ac=f) 2> {log}"
+
+# Re-pair separately deduplicated reads
+rule repair:
+    """Re-pair separately deduplicated reads"""
+    input:
+        fastq1 = "data/dedup/{sample}_R1_dedup.fastq.gz",
+        fastq2 = "data/{sample}_R2.fastq.gz"
+    output:
+        fastq1 = "data/dedup/{sample}_R1_dedup_repair.fastq.gz",
+        fastq2 = "data/dedup/{sample}_R2_dedup_repair.fastq.gz",
+        fastq3 = "data/dedup/{sample}_dedup_singletons.fastq.gz"
+    params:
+        memory = config["MEMORY"]
+    log:
+        "logs/repair/{sample}_R1_R2_dedup_repair.log"
+    shell:
+        "(repair.sh -Xmx{params.memory} repair=t"
+        " in1={input.fastq1} in2={input.fastq2}"
+        " out1={output.fastq1} out2={output.fastq2}"
+        " outs={output.fastq3}) 2> {log}"
+
+# Trim off adapters
+rule cutadapt:
+    """Remove adapters"""
+    input:
+        "data/dedup/{sample}_R1_dedup_repair.fastq.gz",
+        "data/dedup/{sample}_R2_dedup_repair.fastq.gz"
+    output:
+        fastq1 = "data/dedup/trimmed/{sample}_R1_dedup_repair_trimmed.fastq.gz",
+        fastq2 = "data/dedup/trimmed/{sample}_R2_dedup_repair_trimmed.fastq.gz",
+        qc     = "data/dedup/trimmed/{sample}_dedup_repair_trimmed.qc.txt"
+    params:
+        " -u " + str(config["FILTER"]["cutadapt"]["R1_5prime_cut"]) +
+        " -u " + str(config["FILTER"]["cutadapt"]["R1_3prime_cut"]) +
+        " -U " + str(config["FILTER"]["cutadapt"]["R2_5prime_cut"]) +
+        " -U " + str(config["FILTER"]["cutadapt"]["R2_3prime_cut"]) +
+        " -a " +     config["FILTER"]["cutadapt"]["adapter_R1"] +
+        " -A " +     config["FILTER"]["cutadapt"]["adapter_R2"] +
+        " -O " + str(config["FILTER"]["cutadapt"]["minimum-overlap"]) +
+        " -q " + str(config["FILTER"]["cutadapt"]["quality-filter"]) +
+        " -m " + str(config["FILTER"]["cutadapt"]["minimum-length"]) +
+        " -M " + str(config["FILTER"]["cutadapt"]["maximum-length"]) +
+        " --cores=0"
+    log:
+        "logs/cutadapt/{sample}_dedup_repair_trimmed.log"
+    wrapper:
+        "0.27.1/bio/cutadapt/pe"
+
+# Run fastqc on R1 trimmed data
+rule fastqc_R1_trimmed:
+    """Create fastqc report"""
+    input:
+        "data/dedup/trimmed/{sample}_R1_dedup_repair_trimmed.fastq.gz"
+    output:
+        html = "logs/fastqc/trimmed/{sample}_R1_dedup_repair_trimmed_fastqc.html",
+        zip  = "logs/fastqc/trimmed/{sample}_R1_dedup_repair_trimmed_fastqc.zip"
+    params: "--extract"
+    log:
+        "logs/fastqc/trimmed/{sample}_R1_dedup_repair_trimmed.log"
+    wrapper:
+        "0.27.1/bio/fastqc"
+# Run fastqc on R2 trimmed data
+rule fastqc_R2_trimmed:
+    """Create fastqc report"""
+    input:
+        "data/dedup/trimmed/{sample}_R2_dedup_repair_trimmed.fastq.gz"
+    output:
+        html = "logs/fastqc/trimmed/{sample}_R2_dedup_repair_trimmed_fastqc.html",
+        zip  = "logs/fastqc/trimmed/{sample}_R2_dedup_repair_trimmed_fastqc.zip"
+    params: "--extract"
+    log:
+        "logs/fastqc/trimmed/{sample}_R2_dedup_repair_trimmed.log"
+    wrapper:
+        "0.27.1/bio/fastqc"
+
+# Align to reference genome
+rule bowtie2:
+    """Map reads using bowtie2 and sort them using samtools"""
+    input:
+        fastq1 = "data/dedup/trimmed/{sample}_R1_dedup_repair_trimmed.fastq.gz",
+        fastq2 = "data/dedup/trimmed/{sample}_R2_dedup_repair_trimmed.fastq.gz"
+    output:
+        protected("mapped/{sample}_MappedOn_{refbase}.bam")
+    params:
+        alignments = config["MAPPING"]["alignments"],
+        MAPQmaxi = config["MAPPING"]["MAPQmaxi"]
+    threads: config["THREADS"]
+    log:
+        "logs/bowtie2/{sample}_MappedOn_{refbase}_sort.log"
+    shell:
+        # -f 3 includes only concordantly aligned read pairs, and not unpaired reads
+        # -F 2316 excludes unmapped reads (their mates too),
+        # as well as secondary and supplementary alignments
+        # Exclude alignments with MAPQ < config["MAPPING"]["MAPQmaxi"]
+        "(bowtie2 --very-sensitive --no-mixed --no-discordant"
+        " --threads {threads} -k {params.alignments}"
+        " -x {reference} -1 {input.fastq1} -2 {input.fastq2} "
+        "| samtools view -bh -@ {threads} -f 3 -F 2316 -q {params.MAPQmaxi} -o {output} - ) 2> {log}"
+
+# Filter alignments for mismatches and extract alignments consisting
+# of at least 1 uniquely aligned read in a pair
+rule samtools:
+    input:
+        "mapped/{sample}_MappedOn_{refbase}.bam"
+    output:
+        both   = protected("mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam"),
+        unique = protected("mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam")
+    params:
+        sortMemory = config["MAPPING"]["sortMemory"],
+        MAPQunique = config["MAPPING"]["MAPQunique"]
+    threads: config["THREADS"]
+    log:
+        both   = "logs/samtools/{sample}_MappedOn_{refbase}_lowXM_both_sort.log",
+        unique = "logs/samtools/{sample}_MappedOn_{refbase}_lowXM_unique_sort.log"
+    shell:
+        # Allow a maximum of 9 mismatches
+        # ([^0-9] matches characters not in the range of 0 to 9)
+        # http://seqanswers.com/forums/showthread.php?t=19729
+        "(samtools view -h {input} " 
+        "| grep -e '^@' -e 'XM:i:[0-9][^0-9]' "
+        # Retain alignments for which the names of both reads in a pair are the same
+        "| scripts/keepPaired.py "
+        "| samtools view -u - "
+        "| samtools sort -@ {threads} -m {params.sortMemory} -o {output.both}) 2> {log.both}; "
+        # Extract unique alignments, excluding alignments with MAPQ scores < config["MAPPING"]["MAPQunique"]
+        # http://biofinysics.blogspot.com/2014/05/how-does-bowtie2-assign-mapq-scores.html
+        # https://sequencing.qcfail.com/articles/mapq-values-are-really-useful-but-their-implementation-is-a-mess/
+        "(samtools view -h -q {params.MAPQunique} {input} " 
+        "| grep -e '^@' -e 'XM:i:[0-9][^0-9]' "
+        # Retain alignments for which the names of both reads in a pair are the same
+        "| scripts/keepPaired.py "
+        "| samtools view -u - "
+        "| samtools sort -@ {threads} -m {params.sortMemory} -o {output.unique}) 2> {log.unique}"
+
+# Postmapping steps:
+# Index BAM files (index format [bai or csi] depends on chromosome sizes)
+# Generate samtools flagstat and idxstats
+# Calculate library-size-normalized coverage
+if bamidx == "bai":
+    rule postmapping:
+        """bam.bai samtools flagstat idxstats"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam"
+        output:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.{bamidx}",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.{bamidx}"
+        log:
+            uniqueflagstat = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_unique_sort_flagstat.log",
+            bothflagstat   = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_both_sort_flagstat.log",
+            uniqueidxstats = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_unique_sort_idxstats.log",
+            bothidxstats   = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_both_sort_idxstats.log"
+        shell:
+            """
+            samtools index    {input.uniqueBAM}
+            samtools flagstat {input.uniqueBAM} > {log.uniqueflagstat}
+            samtools idxstats {input.uniqueBAM} > {log.uniqueidxstats}
+            samtools index    {input.bothBAM}
+            samtools flagstat {input.bothBAM} > {log.bothflagstat}
+            samtools idxstats {input.bothBAM} > {log.bothidxstats}
+            """
+    rule calc_coverage:
+        """Calculate library-size-normalized coverage"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam",
+            uniqueBAMidx = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.bai",
+            bothBAMidx   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.bai"
+        output:
+            uniqueBW = "mapped/unique/bw/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bw",
+            bothBW   = "mapped/both/bw/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bw",
+            uniqueBG = "mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bedgraph",
+            bothBG   = "mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bedgraph"
+        params:
+            normalizeUsing         = config["COVERAGE"]["normalizeUsing"],
+            ignoreForNormalization = config["COVERAGE"]["ignoreForNormalization"],
+            binSize                = config["COVERAGE"]["binSize"]
+        log:
+            unique = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.log",
+            both   = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.log"
+        threads: config["THREADS"]  
+        shell:
+            "(bamCoverage -b {input.uniqueBAM} -o {output.uniqueBW}"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}; "
+            "bamCoverage -b {input.uniqueBAM} -o {output.uniqueBG} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}) 2> {log.unique}; "
+            "(bamCoverage -b {input.bothBAM} -o {output.bothBW}"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}; "
+            "bamCoverage -b {input.bothBAM} -o {output.bothBG} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}) 2> {log.both}"
+    rule calc_coverage_genome:
+        """Calculate library-size-normalized coverage in adjacent windows"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam",
+            uniqueBAMidx = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.bai",
+            bothBAMidx   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.bai"
+        output:
+            uniqueBGgenome = "mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm_binSize{genomeBinName}.bedgraph",
+            bothBGgenome   = "mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm_binSize{genomeBinName}.bedgraph"
+        params:
+            normalizeUsing         = config["COVERAGE"]["normalizeUsing"],
+            ignoreForNormalization = config["COVERAGE"]["ignoreForNormalization"],
+            genomeBinSize          = config["COVERAGE"]["genomeBinSize"]
+        log:
+            unique = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm_binSize{genomeBinName}.log",
+            both   = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm_binSize{genomeBinName}.log"
+        threads: config["THREADS"]  
+        shell:
+            "(bamCoverage -b {input.uniqueBAM} -o {output.uniqueBGgenome} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.genomeBinSize} -p {threads}) 2> {log.unique}; "
+            "(bamCoverage -b {input.bothBAM} -o {output.bothBGgenome} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.genomeBinSize} -p {threads}) 2> {log.both}"
+else:
+    rule postmapping:
+        """bam.csi samtools flagstat idxstats"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam"
+        output:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.{bamidx}",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.{bamidx}"
+        log:
+            uniqueflagstat = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_unique_sort_flagstat.log",
+            bothflagstat   = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_both_sort_flagstat.log",
+            uniqueidxstats = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_unique_sort_idxstats.log",
+            bothidxstats   = "logs/samtools/stats/{sample}_MappedOn_{refbase}_lowXM_both_sort_idxstats.log"
+        shell:
+            """
+            samtools index -c -m 14 {input.uniqueBAM}
+            samtools flagstat       {input.uniqueBAM} > {log.uniqueflagstat}
+            samtools idxstats       {input.uniqueBAM} > {log.uniqueidxstats}
+            samtools index -c -m 14 {input.bothBAM}
+            samtools flagstat       {input.bothBAM} > {log.bothflagstat}
+            samtools idxstats       {input.bothBAM} > {log.bothidxstats}
+            """
+    rule calc_coverage:
+        """Calculate library-size-normalized coverage"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam",
+            uniqueBAMidx = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.csi",
+            bothBAMidx   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.csi"
+        output:
+            uniqueBW = "mapped/unique/bw/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bw",
+            bothBW   = "mapped/both/bw/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bw",
+            uniqueBG = "mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.bedgraph",
+            bothBG   = "mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.bedgraph"
+        params:
+            normalizeUsing         = config["COVERAGE"]["normalizeUsing"],
+            ignoreForNormalization = config["COVERAGE"]["ignoreForNormalization"],
+            binSize                = config["COVERAGE"]["binSize"]
+        log:
+            unique = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm.log",
+            both   = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm.log"
+        threads: config["THREADS"]  
+        shell:
+            "(bamCoverage -b {input.uniqueBAM} -o {output.uniqueBW}"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}; "
+            "bamCoverage -b {input.uniqueBAM} -o {output.uniqueBG} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}) 2> {log.unique}; "
+            "(bamCoverage -b {input.bothBAM} -o {output.bothBW}"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}; "
+            "bamCoverage -b {input.bothBAM} -o {output.bothBG} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.binSize} -p {threads}) 2> {log.both}"
+    rule calc_coverage_genome:
+        """Calculate library-size-normalized coverage in adjacent windows"""
+        input:
+            uniqueBAM = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam",
+            bothBAM   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam",
+            uniqueBAMidx = "mapped/unique/{sample}_MappedOn_{refbase}_lowXM_unique_sort.bam.csi",
+            bothBAMidx   = "mapped/both/{sample}_MappedOn_{refbase}_lowXM_both_sort.bam.csi"
+        output:
+            uniqueBGgenome = "mapped/unique/bg/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm_binSize{genomeBinName}.bedgraph",
+            bothBGgenome   = "mapped/both/bg/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm_binSize{genomeBinName}.bedgraph"
+        params:
+            normalizeUsing         = config["COVERAGE"]["normalizeUsing"],
+            ignoreForNormalization = config["COVERAGE"]["ignoreForNormalization"],
+            genomeBinSize          = config["COVERAGE"]["genomeBinSize"]
+        log:
+            unique = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_unique_sort_norm_binSize{genomeBinName}.log",
+            both   = "logs/bamCoverage/{sample}_MappedOn_{refbase}_lowXM_both_sort_norm_binSize{genomeBinName}.log"
+        threads: config["THREADS"]  
+        shell:
+            "(bamCoverage -b {input.uniqueBAM} -o {output.uniqueBGgenome} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.genomeBinSize} -p {threads}) 2> {log.unique}; "
+            "(bamCoverage -b {input.bothBAM} -o {output.bothBGgenome} -of bedgraph"
+            " --normalizeUsing {params.normalizeUsing}"
+            " --ignoreForNormalization {params.ignoreForNormalization}"
+            " --extendReads"
+            " --binSize {params.genomeBinSize} -p {threads}) 2> {log.both}"
