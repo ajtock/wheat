@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_log2_histoneMod_MNaseSeq_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen 291118 48
+# ./chrProfilesPlot_log2_histoneMod_MNaseSeq_cMMb.R ASY1 ASY1_Rep1_ChIP ASY1 ASY1_Rep1_input both 1Mb 1000000 15 darkgreen 300419 48
 
 markChIP <- "H3K4me3"
 libNameChIP <- "H3K4me3_Rep1_ChIP"
