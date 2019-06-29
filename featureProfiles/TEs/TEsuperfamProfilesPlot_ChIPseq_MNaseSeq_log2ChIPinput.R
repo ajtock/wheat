@@ -4,15 +4,15 @@
 # around equivalent random loci
 
 # Usage:
-# ./TEsuperfamProfilesPlot_ChIPseq_MNaseSeq_log2ChIPinput.R both TEs 20bp 20 2kb 2000 141218
+# ./TEsuperfamProfilesPlot_ChIPseq_MNaseSeq_log2ChIPinput.R both TEs 20bp 20 2kb 2000 100619
 
-align <- "both"
-featureName <- "TEs"
-binName <- "20bp"
-binSize <- 20
-flankName <- "2kb"
-flankSize <- 2000
-date <- 141218
+#align <- "both"
+#featureName <- "TEs"
+#binName <- "20bp"
+#binSize <- 20
+#flankName <- "2kb"
+#flankSize <- 2000
+#date <- 080519
 
 args <- commandArgs(trailingOnly = T)
 align <- args[1]
@@ -41,9 +41,8 @@ superfamName <- c(
                   "Unclassified_with_TIRs_DTX"
                  )
 
-workDir <- "/home/ajt200/analysis/wheat/featureProfiles/TEs/"
 plotDir <- sapply(seq_along(superfamName), function(x) {
-  paste0(workDir, "superfamily_", superfamName[x], "/")
+  paste0("superfamily_", superfamName[x], "/")
 })
 sapply(seq_along(plotDir), function(x) {
   system(paste0("[ -d ", plotDir[x], " ] || mkdir ", plotDir[x]))
@@ -60,61 +59,59 @@ print(getDoParVersion())
 print(getDoParWorkers())
 
 # Sample names and directories
-name1  <- "MNase_Rep1"
-name2  <- "H3K9me2_Rep1_ChIP"
-name3  <- "H3K4me3_Rep1_ChIP"
-name4  <- "H3K4me3_ChIP_SRR6350668"
-name5  <- "H3K27me3_ChIP_SRR6350666"
-name6  <- "H3K36me3_ChIP_SRR6350670"
-name7  <- "H3K9ac_ChIP_SRR6350667"
-name8  <- "CENH3_ChIP_SRR1686799"
-name9  <- "H3_input_SRR6350669"
+namesCombined <- c(
+  "ASY1_CS_Run2_Rep1_ChIP",
+  "ASY1_CS_Run2_Rep1_input",
+  "ASY1_Rep1_ChIP",
+  "ASY1_Rep1_input",
+  "H2AZ_Rep1_ChIP",
+  "H3K4me3_Rep1_ChIP",
+  "H3K4me3_ChIP_SRR6350668",
+  "H3K9me2_Rep1_ChIP",
+  "H3K27me1_Rep1_ChIP",
+  "H3K27me3_ChIP_SRR6350666",
+  "H3K36me3_ChIP_SRR6350670",
+  "H3K9ac_ChIP_SRR6350667",
+  "CENH3_ChIP_SRR1686799",
+  "H3_input_SRR6350669"
+)
 
-inDir1 <- paste0("/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir2 <- paste0("/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir3 <- paste0("/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir4 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K4me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir5 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir6 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K36me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir7 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K9ac/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir8 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/CENH3/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-inDir9 <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
-
-namesCombined <-  c(
-                    name1,
-                    name2,
-                    name3,
-                    name4,
-                    name5,
-                    name6,
-                    name7,
-                    name8,
-                    name9
-                   )
 inDirsCombined <- c(
-                    inDir1,
-                    inDir2,
-                    inDir3,
-                    inDir4,
-                    inDir5,
-                    inDir6,
-                    inDir7,
-                    inDir8,
-                    inDir9
-                   )
+  paste0("/home/ajt200/analysis/wheat/ASY1_CS_Run2/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/ASY1_CS_Run2/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/ASY1/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/ASY1/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/H2AZ/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K4me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/H3K27me1/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K36me3/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K9ac/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/CENH3/snakemake_ChIPseq/mapped/TEProfiles/matrices/"),
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/TEProfiles/matrices/")
+)
 
-clrs <- c("grey40",
-          "magenta3",
-          "forestgreen",
-          "green3",
-          "deepskyblue3",
-          "darkorange",
-          "dodgerblue3",
-          "deeppink",
-          "grey50")
+clrs <- c(
+  "purple4",
+  "purple2",
+  "purple4",
+  "purple2",
+  "dodgerblue", 
+  "forestgreen",
+  "green3",
+  "magenta3",
+  "firebrick1",
+  "navy",
+  "darkorange2",
+  "green2",
+  "deeppink",
+  "grey60"
+)
 
 foreach(h = seq_along(superfamName)) %dopar% {
-  
+#for(h in seq_along(superfamName)) {  
   # Load coverage matrices and mean of each column
   featureColMeansList <- mclapply(seq_along(namesCombined), function(x) {
     as.vector( colMeans(
@@ -195,7 +192,7 @@ foreach(h = seq_along(superfamName)) %dopar% {
              ranLocStartLab = "Start",
              ranLocEndLab = "End")
   mtext(text = paste0(superfamName[h], " TEs"),
-        outer = T, cex = 1, line = -1.5, at = 0.05)
+        outer = T, cex = 1, line = -1.5, at = 0.1)
   dev.off()
   
 }
