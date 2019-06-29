@@ -1,0 +1,18 @@
+THREADS: 48
+SAMPLE: ["ASY1_CS_Rep1_ChIP"]
+FEATURES:
+      name: "genes_ranLoc"
+      file: "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_randomLoci.bed"
+MAPPING:
+      mode: "both"
+      reference: "data/index/wheat_v1.0"
+COVERAGE:
+      bodyLength: 3500
+      startLabel: "TSS"
+      endLabel: "TTS"
+      upstream: 2000
+      downstream: 2000
+      flankName: "2kb"
+      binSize: 20
+      binName: "20bp"
+      sortRegions: "keep"
