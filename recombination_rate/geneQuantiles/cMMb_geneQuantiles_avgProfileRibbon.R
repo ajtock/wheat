@@ -43,6 +43,13 @@ region <- args[15]
 
 library(GenomicRanges)
 library(parallel)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+library(extrafont)
 
 regionDir <- paste0(region, "/")
 plotDir <- paste0(regionDir, "plots/")
@@ -313,10 +320,92 @@ log2covMat_genomeList_quantiles <- lapply(seq_along(log2covMat_genomeList_quanti
     })
 })
 
+## Check if ordering of geneIDs is consistent after
+## ordering by decreasing cM/Mb
 #sapply(seq_along(genesDF_genomeList_quantiles),
 #  function(z) {
 #    lapply(seq_along(1:quantiles), function(j) {
 #      print(identical(as.character(genesDF_genomeList_quantiles[[z]][[j]]$geneID), as.character(log2covMat_genomeList_quantiles[[z]][[j]]$geneID)))
 #    })
 #})
+
+
+
+## feature
+# Transpose matrix and convert to dataframe
+# in which first column is window name
+wideDFfeature_list <- mclapply(seq_along(log2covMat_genomeList_quantiles), function(z) {
+  lapply(seq_along(1:quantiles), function(j) {    
+    data.frame(window = colnames(as.matrix(log2covMat_genomeList_quantiles[[z]][[j]][,-1])),
+               t(as.matrix(log2covMat_genomeList_quantiles[[z]][[j]][,-1])))
+    })
+}, mc.cores = length(log2covMat_genomeList_quantiles))
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list  <- mclapply(seq_along(wideDFfeature_list), function(z) {
+  lapply(seq_along(1:quantiles), function(j) {
+    gather(data  = wideDFfeature_list[[z]][[j]],
+           key   = feature,
+           value = coverage,
+           -window)
+  })
+}, mc.cores = length(wideDFfeature_list))
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(z in seq_along(tidyDFfeature_list)) {
+  for(j in seq_along(1:quantiles)) {
+    tidyDFfeature_list[[z]][[j]]$window <- factor(tidyDFfeature_list[[z]][[j]]$window,
+                                                  levels = as.character(wideDFfeature_list[[z]][[j]]$window))
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list <- mclapply(seq_along(tidyDFfeature_list), function(z) {
+  lapply(seq_along(1:quantiles), function(j) {
+    data.frame(window = as.character(wideDFfeature_list[[z]][[j]]$window),
+               n      = tapply(X     = tidyDFfeature_list[[z]][[j]]$coverage,
+                               INDEX = tidyDFfeature_list[[z]][[j]]$window,
+                               FUN   = length),
+               mean   = tapply(X     = tidyDFfeature_list[[z]][[j]]$coverage,
+                               INDEX = tidyDFfeature_list[[z]][[j]]$window,
+                               FUN   = mean),
+               sd     = tapply(X     = tidyDFfeature_list[[z]][[j]]$coverage,
+                               INDEX = tidyDFfeature_list[[z]][[j]]$window,
+                               FUN   = sd))
+  })
+}, mc.cores = length(tidyDFfeature_list))
+
+for(z in seq_along(summaryDFfeature_list)) {
+  for(j in seq_along(1:quantiles)) {
+    summaryDFfeature_list[[z]][[j]]$window <- factor(summaryDFfeature_list[[z]][[j]]$window,
+                                                     levels = as.character(wideDFfeature_list[[z]][[j]]$window))
+    summaryDFfeature_list[[z]][[j]]$winNo <- factor(1:dim(summaryDFfeature_list[[z]][[j]])[1])
+    summaryDFfeature_list[[z]][[j]]$sem <- summaryDFfeature_list[[z]][[j]]$sd/sqrt(summaryDFfeature_list[[z]][[j]]$n-1)
+    summaryDFfeature_list[[z]][[j]]$CI_lower <- summaryDFfeature_list[[z]][[j]]$mean -
+      qt(0.975, df = summaryDFfeature_list[[z]][[j]]$n-1)*summaryDFfeature_list[[z]][[j]]$sem
+    summaryDFfeature_list[[z]][[j]]$CI_upper <- summaryDFfeature_list[[z]][[j]]$mean +
+      qt(0.975, df = summaryDFfeature_list[[z]][[j]]$n-1)*summaryDFfeature_list[[z]][[j]]$sem
+  }
+}
+
+for(z in seq_along(summaryDFfeature_list)) {
+  names(summaryDFfeature_list[[z]]) <- paste0(rep("Quantile ", quantiles), 1:quantiles) 
+}
+
+# For each genome, convert list of lists summaryDFfeature_list[[z]]
+# into a single data.frame of quantiles for plotting
+summaryDFfeature_genome <- lapply(seq_along(summaryDFfeature_list), function(z) {
+  bind_rows(summaryDFfeature_list[[z]], .id = "quantile")
+})
+for(z in seq_along(summaryDFfeature_genome)) {
+  summaryDFfeature_genome[[z]]$quantile <- factor(summaryDFfeature_genome[[z]]$quantile,
+                                                  levels = names(summaryDFfeature_list[[z]]))
+}
 
