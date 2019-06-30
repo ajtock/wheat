@@ -528,7 +528,8 @@ for(z in seq_along(summaryDFfeature_genome)) {
           plot.title = element_text(hjust = 0.5, size = 20)) +
     ggtitle(bquote(.(genomeNamesPlot[z]) * "-genome" ~ .(region) ~ 
                    .(featureName) ~ "(" * italic("n") ~ "=" ~
-                   .(prettyNum(summaryDFfeature_genome[[z]]$n[1],
+                   # INEXACT - NEED TO CHANGE
+                   .(prettyNum(summaryDFfeature_genome[[z]]$n[1]*quantiles,
                                big.mark = ",", trim = T)) *
                    ")"))
   #ggObjGA <- grid.arrange(ggObj1, ggObj2, nrow = 1, ncol = 2)
