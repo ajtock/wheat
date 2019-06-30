@@ -227,19 +227,24 @@ sapply(seq_along(genesGR_genomeList), function(z) {
               quote = FALSE, sep = "\t", row.names = FALSE)
 })
 
-# Load quantiles
+# Load quantiles and order by geneID
 genesDF_genomeList_quantiles <- lapply(seq_along(genesGR_genomeList),
   function(z) {
     lapply(seq_along(1:quantiles), function(j) {
-      read.table(paste0(regionDir,
-                        "genes_in_", genomeNames[z], "genome_", region,
-                        "_quantile", j, "_of_", quantiles, "quantiles_", 
-                        "ordered_by_", winName, "Scaled_cMMb_",
-                        "minInterMarkerDist", as.character(minMarkerDist), "bp.txt"),
-                 header = TRUE)
+      tmp <- read.table(paste0(regionDir,
+                               "genes_in_", genomeNames[z], "genome_", region,
+                               "_quantile", j, "_of_", quantiles, "quantiles_", 
+                               "ordered_by_", winName, "Scaled_cMMb_",
+                               "minInterMarkerDist", as.character(minMarkerDist), "bp.txt"),
+                        header = T)
+      #tmp[order(tmp$cMMb,
+      #          decreasing = T,
+      #          na.last = NA),]
+      tmp[order(tmp$geneID,
+                decreasing = F,
+                na.last = NA),]
     })
 })
-
 
 # Load feature coverage matrices
 ## ChIP
@@ -282,7 +287,7 @@ covMatControl <- read.table(paste0(covDirControl,
                                    "_flank", flankName, ".tab"),
                             skip = 3)
 
-## log3(ChIP/control) matrices
+## log2(ChIP/control) matrices
 log2covMat <- log2((covMatChIP+1)/(covMatControl+1))
 
 # Add geneIDs
@@ -292,12 +297,26 @@ log2covMat <- data.frame(geneID = genes$geneID,
 log2covMat_genomeList_quantiles <- lapply(seq_along(genesDF_genomeList_quantiles),
   function(z) {
     lapply(seq_along(1:quantiles), function(j) {
-      log2covMat[log2covMat$geneID %in% genesDF_genomeList_quantiles[[z]][[j]]$geneID,]
+      tmp1 <- log2covMat[log2covMat$geneID %in% genesDF_genomeList_quantiles[[z]][[j]]$geneID,]
+      tmp1[order(tmp1$geneID,
+                 decreasing = F,
+                 na.last = NA),]
+    })
+})
+# Order by decreasing cM/Mb [THIS DOESN'T WORK - WORK OUT WHY]
+log2covMat_genomeList_quantiles <- lapply(seq_along(log2covMat_genomeList_quantiles),
+  function(z) {
+    lapply(seq_along(1:quantiles), function(j) {
+      log2covMat_genomeList_quantiles[[z]][[j]][order(genesDF_genomeList_quantiles[[z]][[j]]$cMMb,
+                                                      decreasing = T,
+                                                      na.last = NA),]
     })
 })
 
-
-ptOrder_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
-                                                 decreasing = T,
-                                                 index.return = T)$ix]
+#sapply(seq_along(genesDF_genomeList_quantiles),
+#  function(z) {
+#    lapply(seq_along(1:quantiles), function(j) {
+#      print(identical(as.character(genesDF_genomeList_quantiles[[z]][[j]]$geneID), as.character(log2covMat_genomeList_quantiles[[z]][[j]]$geneID)))
+#    })
+#})
 
