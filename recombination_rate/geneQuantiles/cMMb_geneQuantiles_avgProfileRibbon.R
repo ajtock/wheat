@@ -227,6 +227,7 @@ sapply(seq_along(genesGR_genomeList), function(z) {
               quote = FALSE, sep = "\t", row.names = FALSE)
 })
 
+# Load quantiles
 genesDF_genomeList_quantiles <- lapply(seq_along(genesGR_genomeList),
   function(z) {
     lapply(seq_along(1:quantiles), function(j) {
@@ -241,7 +242,7 @@ genesDF_genomeList_quantiles <- lapply(seq_along(genesGR_genomeList),
 
 
 # Load feature coverage matrices
-# ChIP
+## ChIP
 if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
                       "H3K27me3_ChIP_SRR6350666",
                       "H3K36me3_ChIP_SRR6350670",
@@ -260,289 +261,43 @@ covMatChIP <- read.table(paste0(covDirChIP,
                                 featureName, "_matrix_bin", binName,
                                 "_flank", flankName, ".tab"),
                          skip = 3)
+
+## Control
+if(libNameControl == "H3_input_SRR6350669") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+                          "input/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+} else if(libNameControl == "MNase_Rep1") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/",
+                          "MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+} else {
+  if(!(libNameControl %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
+    stop("libNameControl is neither H3_input_SRR6350669 nor MNase_Rep1")
+  }
+}
+covMatControl <- read.table(paste0(covDirControl,
+                                   libNameControl,
+                                   "_MappedOn_wheat_v1.0_lowXM_",
+                                   align, "_sort_norm_",
+                                   featureName, "_matrix_bin", binName,
+                                   "_flank", flankName, ".tab"),
+                            skip = 3)
+
+## log3(ChIP/control) matrices
+log2covMat <- log2((covMatChIP+1)/(covMatControl+1))
+
 # Add geneIDs
-covMatChIP <- data.frame(geneID = genes$geneID,
-                         covMatChIP)
+log2covMat <- data.frame(geneID = genes$geneID,
+                         log2covMat)
 # Subdivide coverage matrix into above-defined quantiles
-covMatChIP_genomeList_quantiles <- lapply(seq_along(genesDF_genomeList_quantiles),
+log2covMat_genomeList_quantiles <- lapply(seq_along(genesDF_genomeList_quantiles),
   function(z) {
     lapply(seq_along(1:quantiles), function(j) {
-      covMatChIP[covMatChIP$geneID %in% genesDF_genomeList_quantiles[[z]][[j]]$geneID,]
+      log2covMat[log2covMat$geneID %in% genesDF_genomeList_quantiles[[z]][[j]]$geneID,]
     })
 })
 
-# Control
-if(libNameControl == "MNase_Rep1") {
-  covDirControl <- paste0("/home/ajt200/analysis/wheat/",
-                          "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControl <- read.table(paste0(covDirControl, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
-                                      align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else if(libNameControl == "H3_input_SRR6350669") {
-  covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                          "input/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControl <- read.table(paste0(covDirControl, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
-                                      align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else {
-  if(!(libNameControl %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
-    stop("libNameControl is neither MNase_Rep1 nor H3_input_SRR6350669")
-  }
-}
 
-# Load table of TEs for given superfamily
-# Note that these are in bed format and so the start coordinates are 0-based
-TEs <- read.table(paste0(
-                  "/home/ajt200/analysis/wheat/featureProfiles/TEs/superfamilies/",
-                  "iwgsc_refseqv1.0_TransposableElements_2017Mar13_superfamily_",
-                  superfamName, "_", superfamCode, ".bed"),
-                  colClasses = c(rep(NA, 3), rep("NULL", 2), NA))
-colnames(TEs) <- c("chr", "start", "end", "strand")
-TEs <- TEs[TEs$chr != "chrUn",]
-TEsGR <- GRanges(seqnames = TEs$chr,
-                 ranges = IRanges(start = TEs$start+1,
-                                  end = TEs$end),
-                 strand = TEs$strand)
+ptOrder_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
+                                                 decreasing = T,
+                                                 index.return = T)$ix]
 
-# Obtain gene promoters and terminators that do or don't overlap TEs
-# promoters
-promoter_TE_overlapsGR <- subsetByOverlaps(x = promotersGR,
-                                           ranges = TEsGR,
-                                           type = "any",
-                                           invert = FALSE,
-                                           ignore.strand = TRUE)
-promoter_TE_nonoverlapsGR <- subsetByOverlaps(x = promotersGR,
-                                              ranges = TEsGR,
-                                              type = "any",
-                                              invert = TRUE,
-                                              ignore.strand = TRUE)
-promoter_TE_overlapsGR_extend <- GRanges(seqnames = seqnames(promoter_TE_overlapsGR),
-                                         ranges = IRanges(start = start(promoter_TE_overlapsGR)-maxDistance,
-                                                          end = end(promoter_TE_overlapsGR)+maxDistance),
-                                         strand = strand(promoter_TE_overlapsGR),
-                                         cMMb = promoter_TE_overlapsGR$cMMb)
-promoter_TE_nonoverlapsGR_nearby <- subsetByOverlaps(x = promoter_TE_nonoverlapsGR,
-                                                     ranges = promoter_TE_overlapsGR_extend,
-                                                     type = "any",
-                                                     invert = FALSE,
-                                                     ignore.strand = TRUE)
-# terminators
-terminator_TE_overlapsGR <- subsetByOverlaps(x = terminatorsGR,
-                                             ranges = TEsGR,
-                                             type = "any",
-                                             invert = FALSE,
-                                             ignore.strand = TRUE)
-terminator_TE_nonoverlapsGR <- subsetByOverlaps(x = terminatorsGR,
-                                                ranges = TEsGR,
-                                                type = "any",
-                                                invert = TRUE,
-                                                ignore.strand = TRUE)
-terminator_TE_overlapsGR_extend <- GRanges(seqnames = seqnames(terminator_TE_overlapsGR),
-                                           ranges = IRanges(start = start(terminator_TE_overlapsGR)-maxDistance,
-                                                            end = end(terminator_TE_overlapsGR)+maxDistance),
-                                           strand = strand(terminator_TE_overlapsGR),
-                                           cMMb = terminator_TE_overlapsGR$cMMb)
-terminator_TE_nonoverlapsGR_nearby <- subsetByOverlaps(x = terminator_TE_nonoverlapsGR,
-                                                       ranges = terminator_TE_overlapsGR_extend,
-                                                       type = "any",
-                                                       invert = FALSE,
-                                                       ignore.strand = TRUE)
-
-# Define function to randomly select n rows from
-# a GRanges object (features)
-selectRandomFeatures <- function(features, n) {
-  return(features[sample(x = length(features),
-                         size = n,
-                         replace = FALSE)])
-}
-
-# Define seed so that random selections are reproducible
-set.seed(93750174)
-
-# Set class for permutation test results object
-setClass("permTest_cMMb",
-         representation(alternative = "character",
-                        alpha0.05 = "numeric",
-                        pval = "numeric",
-                        observed = "numeric",
-                        permuted = "numeric",
-                        expected = "numeric"))
-
-# Permutation test function to evaluate if mean cM/Mb at TE-containing loci is
-# significantly higher or lower than at random sets of TE-less loci
-loci_cMMb_permTest <- function(targets,
-                               nontargets,
-                               targetsName,
-                               targetsNamePlot,
-                               resultsDir,
-                               plotDir) {
-  #targets = promoter_TE_overlapsGR
-  #nontargets = promoter_TE_nonoverlapsGR_nearby
-  #targetsName = paste0("gene_promoters_overlapping_", superfamName, "_", superfamCode, "_TEs")
-  #targetsNamePlot = paste0("Gene promoters overlapping ", superfamName, " (", superfamCode, ") TEs")
-  #resultsDir = promoterResDir
-  #plotDir = promoterPlotDir
-  
-  # Apply selectRandomFeatures() function on a per-chromosome basis
-  # and append the selected ranges to a growing GRanges object (ranLocGR)
-  # Repeat randomSets times to create a GRangesList object (ranLocGRL)
-  ranLocGRL <- mclapply(1:randomSets, function(x) {
-    ranLocGR <- GRanges()
-    for(i in 1:length(chrs)) {
-      ranLocChrGR <- selectRandomFeatures(features = nontargets[seqnames(nontargets)
-                                                                == chrs[i]],
-                                          n = length(targets[seqnames(targets)
-                                                             == chrs[i]]))
-      ranLocGR <- append(ranLocGR, ranLocChrGR)
-    }
-    ranLocGR
-  }, mc.cores = detectCores())
-  
-  # Calculate mean cM/Mb for TE-containing loci (targets) and for
-  # each set of TE-less random loci (selected from nontargets)
-  targets_cMMbMean <- mean(targets$cMMb, na.rm = T)
-  ranLoc_cMMbMean <- unlist(mclapply(seq_along(ranLocGRL), function(x) {
-    mean(ranLocGRL[[x]]$cMMb, na.rm = T)
-  }, mc.cores = detectCores()))
-  
-  # Determine whether mean cM/Mb values at TE-less random loci are lower than or
-  # higher than at TE-containing loci
-  ranLoc_cMMb_lessThan_targets_cMMb_Bool <- sapply(seq_along(ranLoc_cMMbMean),
-    function(x) {
-      ranLoc_cMMbMean[x] < targets_cMMbMean
-  })
-  ranLoc_cMMb_moreThan_targets_cMMb_Bool <- sapply(seq_along(ranLoc_cMMbMean),
-    function(x) {
-      ranLoc_cMMbMean[x] > targets_cMMbMean
-  })
-  
-  # Calculate P-values and significance levels
-  if(mean(ranLoc_cMMbMean) < targets_cMMbMean) {
-  #if(sum(ranLoc_cMMb_lessThan_targets_cMMb_Bool)
-  #   > (length(ranLoc_cMMb_lessThan_targets_cMMb_Bool)/2)) {
-    pval <- 1-(sum(ranLoc_cMMb_lessThan_targets_cMMb_Bool)/randomSets)
-    if(pval == 0) {
-      pval <- minPval
-    }
-    MoreOrLessThanRandom <- "MoreThanRandom"
-    alpha0.05 <- quantile(ranLoc_cMMbMean, 0.95)[[1]]
-  } else {
-    pval <- 1-(sum(ranLoc_cMMb_moreThan_targets_cMMb_Bool)/randomSets)
-    if(pval == 0) {
-      pval <- minPval
-    }
-    MoreOrLessThanRandom <- "LessThanRandom"
-    alpha0.05 <- quantile(ranLoc_cMMbMean, 0.05)[[1]]
-  }
-   
-  # Create permtation test results object
-  permTestResults <- new("permTest_cMMb",
-                         alternative = MoreOrLessThanRandom,
-                         alpha0.05 = alpha0.05,
-                         pval = pval,
-                         observed = targets_cMMbMean,
-                         permuted = ranLoc_cMMbMean,
-                         expected = mean(ranLoc_cMMbMean))
-  save(permTestResults,
-       file = paste0(resultsDir,
-                     targetsName, "_vs_",
-                     as.character(randomSets), "randomSets_",
-                     "minInterMarkerDist", as.character(minMarkerDist), "bp_",
-                     winName, "Scaled_cMMb_permTestResults.RData"))
-  
-  # Generate histogram
-  pdf(paste0(plotDir,
-             "hist_",
-             targetsName, "_vs_",
-             as.character(randomSets), "randomSets_",
-             "minInterMarkerDist", as.character(minMarkerDist), "bp_",
-             winName, "Scaled_cMMb_permTestResults.pdf"),
-             height = 4.5, width = 5)
-  par(mar = c(3.1, 3.1, 4.1, 1.1),
-      mgp = c(1.85, 0.75, 0))
-  ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
-  #options(scipen = 100)
-  # Calculate max density
-  maxDensityPlus <- max(density(permTestResults@permuted)$y)*1.2
-  if(permTestResults@alternative == "MoreThanRandom") {
-    xlim <- c(pmax(0, min(permTestResults@permuted)/1.2),
-              pmax(permTestResults@observed*1.2, permTestResults@alpha0.05*1.2))
-    textX1 <- pmax(0.05, min(permTestResults@permuted)/1.15)
-  } else {
-    xlim <- c(pmax(0, permTestResults@observed/1.2),
-              max(permTestResults@permuted)*1.2)
-    textX1 <- max(permTestResults@permuted)*1.15
-  }
-  hist(permTestResults@permuted,
-       freq = FALSE,
-       col = "dodgerblue",
-       border = NA,
-       lwd = 2,
-       xlim = c(pretty(xlim)[1],
-                pretty(xlim)[length(pretty(xlim))]),
-       ylim = c(0,
-                maxDensityPlus),
-       xaxt = "n", yaxt = "n",
-       xlab = "", ylab = "", main = "",
-       axes = FALSE)
-  axis(side = 2,
-       at = pretty(density(permTestResults@permuted)$y),
-       lwd = 2)
-  mtext(side = 2,
-        text = "Density",
-        line = 1.85)
-  axis(side = 1,
-       at = pretty(xlim),
-       lwd = 2)
-  mtext(side = 1,
-        text = "Mean cM/Mb",
-        line = 1.85)
-  titleText <- list(bquote(.(as.character(targetsNamePlot))),
-                    bquote(italic("P")*" = "*
-                           .(as.character(round(permTestResults@pval,
-                                                digits = 6)))),
-                    bquote("Permutations = "*.(prettyNum(randomSets,
-                                                         big.mark = ",",
-                                                         trim = T))))
-  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = 1)
-  lines(density(permTestResults@permuted),
-        col = "dodgerblue3",
-        lwd = 1.5)
-  ablineclip(v = permTestResults@expected,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2)
-  ablineclip(v = permTestResults@observed,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, col = "forestgreen")
-  ablineclip(v = permTestResults@alpha0.05,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, lty = 5, col = "red")
-  text(x = c(textX1,
-             permTestResults@expected,
-             permTestResults@observed,
-             permTestResults@alpha0.05),
-       y = c(maxDensityPlus*.95,
-             maxDensityPlus,
-             maxDensityPlus,
-             maxDensityPlus*.95),
-       labels = c("Permuted",
-                  "Expected",
-                  "Observed",
-                  expression(alpha~" = 0.05")),
-       col = c("dodgerblue",
-               "black",
-               "forestgreen",
-               "red"),
-       cex = 0.8)
-  dev.off()
-
-}
-
-# Apply to promoters and terminators
-loci_cMMb_permTest(targets = promoter_TE_overlapsGR,
-                   nontargets = promoter_TE_nonoverlapsGR_nearby,
-                   targetsName = paste0("gene_promoters_overlapping_", superfamName, "_", superfamCode, "_TEs"),
-                   targetsNamePlot = paste0("Gene promoters overlapping ", superfamName, " (", superfamCode, ") TEs"),
-                   resultsDir = promoterResDir,
-                   plotDir = promoterPlotDir)
-loci_cMMb_permTest(targets = terminator_TE_overlapsGR,
-                   nontargets = terminator_TE_nonoverlapsGR_nearby,
-                   targetsName = paste0("gene_terminators_overlapping_", superfamName, "_", superfamCode, "_TEs"),
-                   targetsNamePlot = paste0("Gene terminators overlapping ", superfamName, " (", superfamCode, ") TEs"),
-                   resultsDir = terminatorResDir,
-                   plotDir = terminatorPlotDir)
