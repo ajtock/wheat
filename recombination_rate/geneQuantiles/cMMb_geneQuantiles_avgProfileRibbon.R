@@ -106,12 +106,12 @@ genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgs
                                    rep(NA, 2),
                                    "NULL", NA, "NULL", NA))
 colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
-genes <- genes[genes$chr != "chrUn",]
 genesGR <- GRanges(seqnames = genes$chr,
                    ranges = IRanges(start = genes$start,
                                     end = genes$end),
                    strand = genes$strand,
                    geneID = genes$geneID)
+genesGR <- genesGR[seqnames(genesGR) != "chrUn"]
 # Subset to include only those not overlapping masked region
 mask_genes_overlap <- findOverlaps(query = maskGR,
                                    subject = genesGR,
@@ -160,6 +160,7 @@ gene_cMMb <- sapply(gene_cMMb_overlapsList,
 genesGR <- GRanges(genesGR,
                    geneID = genesGR$geneID,
                    cMMb = gene_cMMb)
+genesGR <- genesGR[genesGR$cMMb != "NaN"]
 
 # Separate genes into genomes
 genomeNames <- c("A", "B", "D", "")
@@ -239,7 +240,6 @@ genesDF_genomeList_quantiles <- lapply(seq_along(genesGR_genomeList),
 })
 
 
-
 # Load feature coverage matrices
 # ChIP
 if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
@@ -260,8 +260,10 @@ covMatChIP <- read.table(paste0(covDirChIP,
                                 featureName, "_matrix_bin", binName,
                                 "_flank", flankName, ".tab"),
                          skip = 3)
+# Add geneIDs
 covMatChIP <- data.frame(geneID = genes$geneID,
                          covMatChIP)
+# Subdivide coverage matrix into above-defined quantiles
 covMatChIP_genomeList_quantiles <- lapply(seq_along(genesDF_genomeList_quantiles),
   function(z) {
     lapply(seq_along(1:quantiles), function(j) {
