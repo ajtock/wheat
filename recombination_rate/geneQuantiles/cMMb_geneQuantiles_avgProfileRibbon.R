@@ -6,7 +6,7 @@
 # around these genes separated into cM/Mb quantiles.
 
 # Usage:
-#./cMMb_geneQuantiles_avgProfileRibbon.R 100kb 1 4 ASY1_CS ASY_CS_Rep1_ChIP input H3_input_SRR6350669 both purple4 genes 20bp 20 2kb 2000 'euchromatin'
+#./cMMb_geneQuantiles_avgProfileRibbon.R 100kb 1 4 ASY1_CS ASY_CS_Rep1_ChIP input H3_input_SRR6350669 both purple4 genes Genes 20bp 20 2kb '2 kb' 2000 'euchromatin' '0.38,0.96'
 
 winName <- "100kb"
 minMarkerDist <- 1
@@ -18,11 +18,24 @@ libNameControl <- "H3_input_SRR6350669"
 align <- "both"
 colour <- "purple4"
 featureName <- "genes"
+featureNamePlot <- "Genes"
 binName <- "20bp"
 binSize <- 20
 flankName <- "2kb"
-flankSize <- 2000
+flankNamePlot <- "2 kb"
+upstream <- 2000
+downstream <- 2000
 region <- "euchromatin"
+# top left
+#legendPos <- as.numeric(unlist(strsplit("0.02,0.96",
+#                                        split = ",")))
+# bottom left
+#legendPos <- as.numeric(unlist(strsplit("0.02,0.30",
+#                                        split = ",")))
+# top centre
+legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
+                                        split = ",")))
+
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
@@ -35,11 +48,17 @@ libNameControl <- args[7]
 align <- args[8]
 colour <- args[9]
 featureName <- args[10]
-binName <- args[11]
-binSize <- as.numeric(args[12])
-flankName <- args[13]
-flankSize <- as.numeric(args[14])
-region <- args[15]
+featureNamePlot <- args[11]
+binName <- args[12]
+binSize <- as.numeric(args[13])
+flankName <- args[14]
+flankNamePlot <- args[15]
+upstream <- as.numeric(args[16])
+downstream <- as.numeric(args[16])
+region <- args[17]
+legendPos <- as.numeric(unlist(strsplit(args[18],
+                                        split = ",")))
+
 
 library(GenomicRanges)
 library(parallel)
@@ -218,7 +237,7 @@ sapply(seq_along(genesGR_genomeList), function(z) {
     quantilesStats <- rbind(quantilesStats, stats)
     write.table(quantilejFeatures,
                 file = paste0(regionDir,
-                              "genes_in_", genomeNames[z], "genome_", region,
+                              featureName, "_in_", genomeNames[z], "genome_", region,
                               "_quantile", j, "_of_", quantiles, "quantiles_", 
                               "ordered_by_", winName, "Scaled_cMMb_",
                               "minInterMarkerDist", as.character(minMarkerDist), "bp.txt"),
@@ -227,7 +246,7 @@ sapply(seq_along(genesGR_genomeList), function(z) {
   }
   write.table(quantilesStats,
               file = paste0(regionDir,
-                            "summary_genes_in_", genomeNames[z], "genome_", region, "_",
+                            "summary_", featureName, "_in_", genomeNames[z], "genome_", region, "_",
                             quantiles, "quantiles_", 
                             "ordered_by_", winName, "Scaled_cMMb_",
                             "minInterMarkerDist", as.character(minMarkerDist), "bp.txt"),
@@ -395,8 +414,9 @@ for(z in seq_along(summaryDFfeature_list)) {
   }
 }
 
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
 for(z in seq_along(summaryDFfeature_list)) {
-  names(summaryDFfeature_list[[z]]) <- paste0(rep("Quantile ", quantiles), 1:quantiles) 
+  names(summaryDFfeature_list[[z]]) <- quantileNames
 }
 
 # For each genome, convert list of lists summaryDFfeature_list[[z]]
@@ -409,3 +429,116 @@ for(z in seq_along(summaryDFfeature_genome)) {
                                                   levels = names(summaryDFfeature_list[[z]]))
 }
 
+
+
+if(featureName == "genes" | featureName == "NLRs") {
+  featureStartLab <- "TSS"
+  featureEndLab <- "TTS"
+} else {
+  featureStartLab <- "Start"
+  featureEndLab <- "End"
+}
+
+# Define y-axis limits
+#ymin <- min(c(summaryDFfeature$mean-summaryDFfeature$sem,
+#              summaryDFranLoc$mean-summaryDFranLoc$sem))
+#ymax <- max(c(summaryDFfeature$mean+summaryDFfeature$sem,
+#              summaryDFranLoc$mean+summaryDFranLoc$sem))
+ymin <- min(sapply(seq_along(summaryDFfeature_genome), function(z) {
+  min(c(summaryDFfeature_genome[[z]]$CI_lower))
+}))
+ymax <- max(sapply(seq_along(summaryDFfeature_genome), function(z) {
+  max(c(summaryDFfeature_genome[[z]]$CI_upper))
+}))
+
+# Function for formatting y-axis labels
+# with a given number of decimals
+fmt_decimals <- function(decimals) {
+  function(x) format(x, nsmall = decimals, scientific = FALSE)
+}
+
+colours <- colorRampPalette(c("red", "blue"))(4)
+
+# Define legend labels
+legendLabs <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = colours[x], fontsize = 18)))
+})
+
+# Plot average coverage profiles with 95% CI ribbon
+## feature
+for(z in seq_along(summaryDFfeature_genome)) {
+  ggObjGA <- NULL
+  ggObj1 <- NULL
+  ggObj1 <- ggplot(data = summaryDFfeature_genome[[z]],
+                   mapping = aes(x = winNo,
+                                 y = mean,
+                                 group = quantile),
+                  ) +
+    geom_line(data = summaryDFfeature_genome[[z]],
+              mapping = aes(colour = quantile),
+              size = 1) +
+    scale_colour_manual(values = colours) +
+    geom_ribbon(data = summaryDFfeature_genome[[z]],
+                #mapping = aes(ymin = mean-sem,
+                #              ymax = mean+sem,
+                mapping = aes(ymin = CI_lower,
+                              ymax = CI_upper,
+                              fill = quantile),
+                alpha = 0.4) +
+    scale_fill_manual(values = colours) +
+    scale_y_continuous(limits = c(ymin, ymax)) +
+                       #labels = function(x) sprintf("%6.3f", x)) +
+    scale_x_discrete(breaks = c(1,
+                                (upstream/binSize)+1,
+                                (dim(summaryDFfeature_list[[z]][[1]])[1])-(downstream/binSize),
+                                dim(summaryDFfeature_list[[z]][[1]])[1]),
+                     labels = c(paste0("-", flankNamePlot),
+                                featureStartLab,
+                                featureEndLab,
+                                paste0("+", flankNamePlot))) +
+    geom_vline(xintercept = c((upstream/binSize)+1,
+                              (dim(summaryDFfeature_list[[z]][[1]])[1])-(downstream/binSize)),
+               linetype = "dashed",
+               size = 1) +
+    labs(x = "",
+         y = bquote("Log"[2] * "(" * .(markChIP) * "/control)")) +
+    annotation_custom(legendLabs[[1]]) +
+    annotation_custom(legendLabs[[2]]) +
+    annotation_custom(legendLabs[[3]]) +
+    annotation_custom(legendLabs[[4]]) +
+    theme_bw() +
+    theme(
+          axis.ticks = element_line(size = 1.0, colour = "black"),
+          axis.ticks.length = unit(0.25, "cm"),
+          axis.text.x = element_text(size = 22, colour = "black"),
+          axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+          axis.title = element_text(size = 30, colour = "black"),
+          legend.position = "none",
+          #legend.text = element_text(size = 10),
+          #legend.background = element_rect(fill = "transparent"),
+          #legend.key = element_rect(colour = "transparent",
+          #                          fill = "transparent"),
+          #legend.title = element_blank(),
+          panel.grid = element_blank(),
+          panel.border = element_rect(size = 3.5, colour = "black"),
+          panel.background = element_blank(),
+          plot.margin = unit(c(0.3,0.9,0.0,0.3), "cm"),
+          plot.title = element_text(hjust = 0.5, size = 20)) +
+    ggtitle(bquote(.(genomeNamesPlot[z]) * "-genome" ~ .(region) ~ 
+                   .(featureName) ~ "(" * italic("n") ~ "=" ~
+                   .(prettyNum(summaryDFfeature_genome[[z]]$n[1],
+                               big.mark = ",", trim = T)) *
+                   ")"))
+  #ggObjGA <- grid.arrange(ggObj1, ggObj2, nrow = 1, ncol = 2)
+  ggObjGA <- ggObj1
+  ggsave(paste0(plotDir,
+                "log2_", libNameChIP, "_", libNameControl,
+                "_around_", genomeNames[z], "genome_", region, "_",
+                featureName, "_", quantiles, "quantiles_ordered_by_",
+                "ordered_by_", winName, "Scaled_cMMb_",
+                "minInterMarkerDist", as.character(minMarkerDist), "bp.pdf"),
+         plot = ggObjGA,
+         height = 6.5, width = 7)
+}
