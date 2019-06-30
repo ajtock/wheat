@@ -8,33 +8,33 @@
 # Usage:
 #./cMMb_geneQuantiles_avgProfileRibbon.R 100kb 1 4 ASY1_CS ASY_CS_Rep1_ChIP input H3_input_SRR6350669 both purple4 genes Genes 20bp 20 2kb '2 kb' 2000 'euchromatin' '0.38,0.96'
 
-winName <- "100kb"
-minMarkerDist <- 1
-quantiles <- 4
-markChIP <- "ASY1_CS"
-libNameChIP <- "ASY1_CS_Rep1_ChIP"
-markControl <- "input"
-libNameControl <- "H3_input_SRR6350669"
-align <- "both"
-colour <- "purple4"
-featureName <- "genes"
-featureNamePlot <- "Genes"
-binName <- "20bp"
-binSize <- 20
-flankName <- "2kb"
-flankNamePlot <- "2 kb"
-upstream <- 2000
-downstream <- 2000
-region <- "euchromatin"
-# top left
-#legendPos <- as.numeric(unlist(strsplit("0.02,0.96",
+#winName <- "100kb"
+#minMarkerDist <- 1
+#quantiles <- 4
+#markChIP <- "ASY1_CS"
+#libNameChIP <- "ASY1_CS_Rep1_ChIP"
+#markControl <- "input"
+#libNameControl <- "H3_input_SRR6350669"
+#align <- "both"
+#colour <- "purple4"
+#featureName <- "genes"
+#featureNamePlot <- "Genes"
+#binName <- "20bp"
+#binSize <- 20
+#flankName <- "2kb"
+#flankNamePlot <- "2 kb"
+#upstream <- 2000
+#downstream <- 2000
+#region <- "euchromatin"
+## top left
+##legendPos <- as.numeric(unlist(strsplit("0.02,0.96",
+##                                        split = ",")))
+## bottom left
+##legendPos <- as.numeric(unlist(strsplit("0.02,0.30",
+##                                        split = ",")))
+## top centre
+#legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
 #                                        split = ",")))
-# bottom left
-#legendPos <- as.numeric(unlist(strsplit("0.02,0.30",
-#                                        split = ",")))
-# top centre
-legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
-                                        split = ",")))
 
 
 args <- commandArgs(trailingOnly = T)
