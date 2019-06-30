@@ -80,6 +80,25 @@ if(region == "euchromatin") {
   stop("region is not euchromatin, heterochromatin or genomewide")
 }
 
+# Define region to be masked out of analysis
+if(region == "euchromatin") {
+  maskGR <- GRanges(seqnames = chrPartitions$chrom,
+                    ranges = IRanges(start = chrPartitions$R1_R2a+1,
+                                     end = chrPartitions$R2b_R3-1),
+                    strand = "*")
+} else if(region == "heterochromatin") {
+  maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 2),
+                    ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
+                                               chrPartitions$R2b_R3),
+                                     end = c(chrPartitions$R1_R2a,
+                                             chrLens)),
+                    strand = "*")
+} else if(region == "genomewide") {
+  maskGR <- GRanges()
+} else {
+  stop("region is not euchromatin, heterochromatin or genomewide")
+}
+
 # Load table of representative genes and convert into GRanges
 genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
                     colClasses = c(NA,
@@ -87,19 +106,19 @@ genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgs
                                    rep(NA, 2),
                                    "NULL", NA, "NULL", NA))
 colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
-# Extend gene boundaries to include promoters and terminators for calculation of
-# winName-scaled recombination rate
+genes <- genes[genes$chr != "chrUn",]
 genesGR <- GRanges(seqnames = genes$chr,
                    ranges = IRanges(start = genes$start,
                                     end = genes$end),
                    strand = genes$strand,
                    geneID = genes$geneID)
-# Subset to include only those overlapping specified region (e.g., euchromatin)
-genesGR <- subsetByOverlaps(x = genesGR,
-                            ranges = regionGR,
-                            type = "any",
-                            invert = FALSE,
-                            ignore.strand = TRUE)
+# Subset to include only those not overlapping masked region
+mask_genes_overlap <- findOverlaps(query = maskGR,
+                                   subject = genesGR,
+                                   type = "any",
+                                   select = "all",
+                                   ignore.strand = TRUE)
+genesGR <- genesGR[-subjectHits(mask_genes_overlap)]
 # Extend gene boundaries to include promoters and terminators for calculation of
 # winName-scaled recombination rate
 genesGR <- GRanges(seqnames = seqnames(genesGR),
