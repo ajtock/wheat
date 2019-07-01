@@ -772,5 +772,5 @@ for(z in seq_along(summaryDFfeature_genome)) {
                 "ordered_by_", winName, "Scaled_cMMb_",
                 "minInterMarkerDist", as.character(minMarkerDist), "bp.pdf"),
          plot = ggObjGA,
-         height = 8, width = 16)
+         height = 7, width = 16)
 }
