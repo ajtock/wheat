@@ -40,7 +40,7 @@ colourB <- args[14]
 date <- args[15]
 minMarkerDist <- as.numeric(args[16])
 
-makeTransparent <- function(thisColour, alpha = 200)
+makeTransparent <- function(thisColour, alpha = 210)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -59,6 +59,8 @@ library(plyr)
 library(data.table)
 library(varhandle)
 
+plotDir <- "plots/"
+
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
 chrs <- chrs[-length(chrs)]
@@ -66,8 +68,24 @@ chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Ma
 chrLens <- chrLens[-length(chrLens)]
 centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,2])
 centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,3])
-
-plotDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/plots/"
+chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
+                            header = TRUE)
+markers <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_recombination_rate_analysis/iwgsc_refseqv1.0_mapping_data.txt",
+                      header = TRUE)
+genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
+                    colClasses = c(NA,
+                                   rep("NULL", 2),
+                                   rep(NA, 2),
+                                   "NULL", NA, "NULL", NA))
+colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
+genes <- genes[genes$chr != "chrUn",]
+NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_manually_curated_gene_families/IWGSC_v1.1_nlr_representative_mRNA.gff3",
+                   colClasses = c(NA,
+                                  rep("NULL", 2),
+                                  rep(NA, 2),
+                                  "NULL", NA, "NULL", NA))
+colnames(NLRs) <- c("chr", "start", "end", "strand", "geneID")
+NLRs <- NLRs[NLRs$chr != "chrUn",]
 
 ## ChIPA profile
 if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
@@ -457,6 +475,14 @@ for(x in 1:length(filt_chrProfilesChIPA)) {
                    title = chrs[x],
                    cenStart = centromereStart[x],
                    cenEnd = centromereEnd[x],
+                   R1End = chrPartitions$R1_R2a[x],
+                   R3Start = chrPartitions$R2b_R3[x],
+                   rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+                   #rug1 = genes[genes$chr == chrs[x],]$start,
+                   rug2 = NLRs[NLRs$chr == chrs[x],]$start,
+                   regionCol = "red",
+                   rug1Col = "grey40",
+                   rug2Col = "red3",
                    dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
                    col1A = colourA,
                    dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
