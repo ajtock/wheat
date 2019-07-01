@@ -6,7 +6,7 @@
 # around these genes separated into cM/Mb quantiles.
 
 # Usage:
-#./cMMb_geneQuantiles_avgProfileRibbon.R 100kb 1 4 ASY1_CS ASY_CS_Rep1_ChIP input H3_input_SRR6350669 both purple4 genes Genes 20bp 20 2kb '2 kb' 2000 'euchromatin' '0.38,0.96'
+#./cMMb_geneQuantiles_avgProfileRibbon.R 100kb 1 4 ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both purple4 genes Genes 20bp 20 2kb '2 kb' 2000 'euchromatin' '0.38,0.96'
 
 #winName <- "100kb"
 #minMarkerDist <- 1
