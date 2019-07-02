@@ -17,8 +17,8 @@
 #libNameControl <- "H3_input_SRR6350669"
 #align <- "both"
 #colour <- "purple4"
-#featureName <- "genes"
-#featureNamePlot <- "Genes"
+#featureName <- "NLRs"
+#featureNamePlot <- "NLRs"
 #binName <- "20bp"
 #binSize <- 20
 #flankName <- "2kb"
@@ -281,10 +281,10 @@ if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
                       "H3K9ac_ChIP_SRR6350667",
                       "CENH3_ChIP_SRR1686799")) {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                       markChIP, "/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+                       markChIP, "/snakemake_ChIPseq/mapped/NLRProfiles/matrices/")
 } else {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/",
-                       markChIP, "/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+                       markChIP, "/snakemake_ChIPseq/mapped/NLRProfiles/matrices/")
 }
 covMatChIP <- read.table(paste0(covDirChIP,
                                 libNameChIP,
@@ -297,10 +297,10 @@ covMatChIP <- read.table(paste0(covDirChIP,
 ## Control
 if(libNameControl == "H3_input_SRR6350669") {
   covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                          "input/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+                          "input/snakemake_ChIPseq/mapped/NLRProfiles/matrices/")
 } else if(libNameControl == "MNase_Rep1") {
   covDirControl <- paste0("/home/ajt200/analysis/wheat/",
-                          "MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/")
+                          "MNase/snakemake_ChIPseq/mapped/NLRProfiles/matrices/")
 } else {
   if(!(libNameControl %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
     stop("libNameControl is neither H3_input_SRR6350669 nor MNase_Rep1")
