@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 100619 200
+# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_varietalSNPfreq.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 100619 200
 
 #markChIPA <- "H3K4me3"
 #libNameChIPA <- "H3K4me3_Rep1_ChIP"
@@ -20,7 +20,6 @@
 #colourA <- "forestgreen"
 #colourB <- "magenta3"
 #date <- 100619
-#minMarkerDist <- 200
 
 args <- commandArgs(trailingOnly = T)
 markChIPA <- args[1]
@@ -38,7 +37,6 @@ N <- as.numeric(args[12])
 colourA <- args[13]
 colourB <- args[14]
 date <- args[15]
-minMarkerDist <- as.numeric(args[16])
 
 makeTransparent <- function(thisColour, alpha = 210)
 {
@@ -430,15 +428,15 @@ maxCPM <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
 
 
 # Feature frequency chromosome profiles
-cMMbProfile <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                                 as.character(minMarkerDist), "bp_", winName, ".txt"),
+SNPsProfile <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/SNPs/iwgsc_refseqv1.0_varietal_SNP_vcf_v290618/",
+                                 "varietal_SNP_frequency_per_", winName, ".txt"),
                           header = T)
 chrProfilesFeature <- mclapply(seq_along(chrs), function(x) {
-  cMMbProfile[cMMbProfile$chr == chrs[x],]
+  SNPsProfile[SNPsProfile$chr == chrs[x],]
 }, mc.cores = length(chrs))
 
 filt_chrProfilesFeature <- mclapply(seq_along(chrProfilesFeature), function(x) {
-  filt_chrProfileFeature <- stats::filter(x = chrProfilesFeature[[x]]$cMMb,
+  filt_chrProfileFeature <- stats::filter(x = chrProfilesFeature[[x]]$winSNPs,
                                           filter = f,
                                           sides = 2)
   filt_chrProfileFeature[1:flank] <- filt_chrProfileFeature[flank+1]
@@ -461,8 +459,7 @@ maxFeature <- max(unlist(mclapply(seq_along(filt_chrProfilesFeature),
 
 # Plot
 pdf(paste0(plotDir, "Wheat_log2_", libNameChIPA, "_", libNameChIPB, "_input_",
-           align, "_cMMb_chrPlot_winSize", winName, "_smooth", N,
-           "_minInterMarkerDist", as.character(minMarkerDist),
+           align, "_SNPs_chrPlot_winSize", winName, "_smooth", N,
            "bp_v", date, ".pdf"),
     height = 21, width = 30)
 par(mfrow = c(7, 3))
@@ -470,31 +467,31 @@ par(mar = c(2.1, 4.5, 2.1, 4.5))
 par(mgp = c(3, 1, 0))
 
 for(x in 1:length(filt_chrProfilesChIPA)) {
-  chrPlotCov2_cMMb(xplot1 = filt_chrProfilesChIPA[[x]]$window,
-                   xplot2 = filt_chrProfilesFeature[[x]]$window,
-                   title = chrs[x],
-                   cenStart = centromereStart[x],
-                   cenEnd = centromereEnd[x],
-                   R1End = chrPartitions$R1_R2a[x],
-                   R3Start = chrPartitions$R2b_R3[x],
-                   rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
-                   #rug1 = genes[genes$chr == chrs[x],]$start,
-                   rug2 = NLRs[NLRs$chr == chrs[x],]$start,
-                   regionCol = "red",
-                   rug1Col = "grey40",
-                   rug2Col = "red3",
-                   dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
-                   col1A = colourA,
-                   dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
-                   col1B = colourB,
-                   Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
-                   min1 = -max((minCPM*-1), maxCPM),
-                   max1 = max((minCPM*-1), maxCPM),
-                   legendLoc = "top",
-                   legendLabs = c(markChIPA, markChIPB),
-                   dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
-                   col2 = "darkorange",
-                   Ylab2 = "cM/Mb",
-                   min2 = minFeature-maxFeature, max2 = maxFeature)
+  chrPlotCov2_feature(xplot1 = filt_chrProfilesChIPA[[x]]$window,
+                      xplot2 = filt_chrProfilesFeature[[x]]$window,
+                      title = chrs[x],
+                      cenStart = centromereStart[x],
+                      cenEnd = centromereEnd[x],
+                      R1End = chrPartitions$R1_R2a[x],
+                      R3Start = chrPartitions$R2b_R3[x],
+                      rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+                      #rug1 = genes[genes$chr == chrs[x],]$start,
+                      rug2 = NLRs[NLRs$chr == chrs[x],]$start,
+                      regionCol = "red",
+                      rug1Col = "grey40",
+                      rug2Col = "red3",
+                      dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
+                      col1A = colourA,
+                      dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
+                      col1B = colourB,
+                      Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                      min1 = -max((minCPM*-1), maxCPM),
+                      max1 = max((minCPM*-1), maxCPM),
+                      legendLoc = "top",
+                      legendLabs = c(markChIPA, markChIPB),
+                      dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
+                      col2 = "cyan",
+                      Ylab2 = "SNPs (60 varieties vs CS)",
+                      min2 = minFeature-maxFeature, max2 = maxFeature)
 }
 dev.off()
