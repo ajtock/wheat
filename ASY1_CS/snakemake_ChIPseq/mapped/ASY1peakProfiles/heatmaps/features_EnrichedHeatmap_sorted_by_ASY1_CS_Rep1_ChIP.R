@@ -44,31 +44,8 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 system(paste0("[ -d ", regionPlotDir, " ] || mkdir ", regionPlotDir))
 plotDir <- regionPlotDir
  
-# Load matrix and extract region for sorting of features
-mat1 <- as.matrix(read.table(paste0("../matrices/",
-                                    libName,
-                                    "_MappedOn_wheat_v1.0_lowXM_both_sort_norm_",
-                                    featureName, "_matrix_bin", binName,
-                                    "_flank", flankName, ".tab"),
-                             header = F, skip = 3))
-bodyLength <- (dim(mat1)[2]-((upstream+downstream)/binSize))*binSize
-if( region == "promoters" ) {
-  mat1Region <- mat1[,(((upstream-1000)/binSize)+1):(upstream/binSize)]
-} else if ( region == "terminators" ) {
-  mat1Region <- mat1[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
-} else if ( region == "bodies" ) {
-  mat1Region <- mat1[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
-} else {
-  print("The region name provided does not match 'promoters',  'terminators', or 'bodies'")
-}
-mat1RegionRowMeans <- rowMeans(mat1Region, na.rm = T)
-mat1RegionRowMeansSorted <- sort.int(mat1RegionRowMeans,
-                                     decreasing = T,
-                                     index.return = T,
-                                     na.last = T)
-
 # Load feature covergae matrices for each chromatin dataset,
-# log2-transform, and sort by decreasing mat1RegionRowMeans
+# log2-transform, and sort by decreasing log2mat1RegionRowMeans
 libNameChIP <- c(
                  "H2AZ_Rep1_ChIP",
                  "H3K4me3_Rep1_ChIP",
@@ -161,6 +138,46 @@ covMatControl <- mclapply(seq_along(libNameControl), function(x) {
                        header = F, skip = 3))
 }, mc.cores = length(libNameControl))
 
+## Load matrix, log2-transform, and extract region for sorting of features
+mat1 <- as.matrix(read.table(paste0("../matrices/",
+                                    libName,
+                                    "_MappedOn_wheat_v1.0_lowXM_both_sort_norm_",
+                                    featureName, "_matrix_bin", binName,
+                                    "_flank", flankName, ".tab"),
+                             header = F, skip = 3))
+
+# Calculate log2(ChIP/control) for mat1, to be used for sorting features
+# by decreasing levels
+if(libName %in% c("ASY1_CS_Rep1_ChIP",
+                  "MNase_Rep1",
+                  "H3K4me3_ChIP_SRR6350668",
+                  "H3K27me3_ChIP_SRR6350666",
+                  "H3K36me3_ChIP_SRR6350670",
+                  "H3K9ac_ChIP_SRR6350667",
+                  "CENH3_ChIP_SRR1686799")) {
+  # log2(ChIP/input)
+  log2mat1 <- log2((mat1+1)/(covMatControl[[2]]+1))
+} else {
+  # log2(ChIP/MNase)
+  log2mat1 <- log2((mat1+1)/(covMatControl[[1]]+1))
+}
+
+bodyLength <- (dim(log2mat1)[2]-((upstream+downstream)/binSize))*binSize
+if( region == "promoters" ) {
+  log2mat1Region <- log2mat1[,(((upstream-1000)/binSize)+1):(upstream/binSize)]
+} else if ( region == "terminators" ) {
+  log2mat1Region <- log2mat1[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
+} else if ( region == "bodies" ) {
+  log2mat1Region <- log2mat1[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
+} else {
+  print("The region name provided does not match 'promoters',  'terminators', or 'bodies'")
+}
+log2mat1RegionRowMeans <- rowMeans(log2mat1Region, na.rm = T)
+log2mat1RegionRowMeansSorted <- sort.int(log2mat1RegionRowMeans,
+                                         decreasing = T,
+                                         index.return = T,
+                                         na.last = T)
+
 ## log2(ChIP/control) matrices
 log2covMat <- mclapply(seq_along(libNameChIP), function(x) {
   if(libNameChIP[x] %in% c("ASY1_CS_Rep1_ChIP",
@@ -179,7 +196,7 @@ log2covMat <- mclapply(seq_along(libNameChIP), function(x) {
 }, mc.cores = length(libNameChIP))
 
 log2covMatSorted <- mclapply(seq_along(log2covMat), function(x) {
-  log2covMat[[x]][sort.int(mat1RegionRowMeans,
+  log2covMat[[x]][sort.int(log2mat1RegionRowMeans,
                            decreasing = T,
                            index.return = T,
                            na.last = T)$ix,]
