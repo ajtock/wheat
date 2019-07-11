@@ -168,7 +168,7 @@ if(length(mask_ranLoc_overlap) > 1) {
   ranLocGR <- ranLocGR[-subjectHits(mask_ranLoc_overlap)]
 }
 
-# Load SNPS
+# Load SNPs
 SNPs <- read.table("all_filtered_snps_allaccessions_allploidy_snpeff.vcf",
                    header = F, skip = 6,
                    colClasses = c(rep(NA, 2),

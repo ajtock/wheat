@@ -5,9 +5,9 @@
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript features_avgProfileRibbon_SNPsubsets4.R ASY1_CS_Rep1_ChIP_peaks 'ASY1 peaks' 2000 2kb '2 kb' 20 20bp 'A' 'euchromatin' 'HIGH,MODERATE,MODIFIER,LOW' 'High,Moderate,Modifier,Low' 'red,orange,green,darkgreen' '0.02,0.96'
 
-#'upstream_gene_variant,downstream_gene_variant'
-#'HIGH,MODERATE,MODIFIER,LOW'
-#'missense_variant,synonymous_variant,transversion,transition'
+#'upstream_gene_variant,downstream_gene_variant,intron_variant,intergenic' 'Upstream of gene,Downstream of gene,Intronic,Intergenic' 'blue,green,magenta,orange' '0.02,0.96' 
+#'HIGH,MODERATE,MODIFIER,LOW' 'High,Moderate,Modifier,Low' 'red,orange,green,darkgreen' '0.02,0.96'
+#'missense_variant,synonymous_variant,transversion,transition' 'Nonsynonymous coding,Synonymous coding,Transversion,Transition' 'red,dodgerblue2,red4,navy' '0.02,0.96'
 #all
 #upstream_gene_variant
 #downstream_gene_variant
