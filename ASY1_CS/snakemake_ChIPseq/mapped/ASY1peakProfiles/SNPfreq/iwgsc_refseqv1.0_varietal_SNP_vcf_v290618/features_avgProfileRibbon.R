@@ -3,7 +3,7 @@
 # Plot feature average SNP frequency profiles with 95% CIs
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript features_avgProfileRibbon.R ASY1_CS_peaks 'ASY1 peaks' 2000 2kb '2 kb' 20 20bp 'A' 'euchromatin' '60 varieties v. CS' 'deepskyblue4'
+# /applications/R/R-3.5.0/bin/Rscript features_avgProfileRibbon.R ASY1_CS_peaks 'ASY1 peaks' 2000 2kb '2 kb' 20 20bp 'A' 'euchromatin' '60varieties' '60 varieties v. CS' 'deepskyblue4'
 
 #featureName <- "ASY1_CS_peaks"
 #featureNamePlot <- "ASY1 peaks"
@@ -15,8 +15,12 @@
 #binName <- "20bp"
 #genomeName <- "A"
 #region <- "euchromatin"
-#profileNamesPlot <- "60 varieties v. CS"
-#colours <- "deepskyblue4"
+#profileNames <- unlist(strsplit("60varieties",
+#                                split = ","))
+#profileNamesPlot <- unlist(strsplit("60 varieties v. CS",
+#                                    split = ","))
+#colours <- unlist(strsplit("deepskyblue4",
+#                           split = ","))
 
 args <- commandArgs(trailingOnly = T)
 featureName <- args[1]
@@ -29,8 +33,12 @@ binSize <- as.numeric(args[6])
 binName <- args[7]
 genomeName <- args[8]
 region <- args[9]
-profileNamesPlot <- args[10]
-colours <- args[11]
+profileNames <- unlist(strsplit(args[10],
+                                split = ","))
+profileNamesPlot <- unlist(strsplit(args[11],
+                                    split = ","))
+colours <- unlist(strsplit(args[12],
+                           split = ","))
 
 library(parallel)
 library(tidyr)
@@ -41,7 +49,7 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-matDir <- "matrices/w0/"
+matDir <- "matrices/"
 plotDir <- "plots/"
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
@@ -49,7 +57,7 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 featureMat <- as.matrix(read.table(paste0(matDir,
                                           featureName, "_in_",
                                           genomeName, "genome_", region,                             
-                                          "_SNP_frequency_feature_smoothed_target_and_",
+                                          "_all_SNP_frequency_feature_smoothed_target_and_",
                                           flankName, "_flank_dataframe.txt"),
                                    header = T))
 
@@ -57,7 +65,7 @@ featureMat <- as.matrix(read.table(paste0(matDir,
 ranLocMat <- as.matrix(read.table(paste0(matDir,
                                          featureName, "_in_",
                                          genomeName, "genome_", region,                             
-                                         "_SNP_frequency_ranLoc_smoothed_target_and_",
+                                         "_all_SNP_frequency_ranLoc_smoothed_target_and_",
                                          flankName, "_flank_dataframe.txt"),
                                   header = T))
 
@@ -107,9 +115,7 @@ summaryDFfeature$CI_lower <- summaryDFfeature$mean -
 summaryDFfeature$CI_upper <- summaryDFfeature$mean +
   qt(0.975, df = summaryDFfeature$n-1)*summaryDFfeature$sem
 
-names(summaryDFfeature) <- profileNamesPlot
-
-summaryDFfeature$profileName <- names(summaryDFfeature)
+summaryDFfeature$profileName <- profileNamesPlot
 
 ## ranLoc
 # Transpose matrix and convert to dataframe
@@ -157,10 +163,7 @@ summaryDFranLoc$CI_lower <- summaryDFranLoc$mean -
 summaryDFranLoc$CI_upper <- summaryDFranLoc$mean +
   qt(0.975, df = summaryDFranLoc$n-1)*summaryDFranLoc$sem
 
-names(summaryDFranLoc) <- profileNamesPlot
-
-summaryDFranLoc$profileName <- names(summaryDFranLoc)
-
+summaryDFranLoc$profileName <- profileNamesPlot
 
 if(featureName == "Genes") {
   featureStartLab <- "TSS"
@@ -193,8 +196,7 @@ ggObj1 <- NULL
 ggObj1 <- ggplot(data = summaryDFfeature,
                  mapping = aes(x = winNo,
                                y = mean,
-                               group = profileName),
-                ) +
+                               group = profileName)) +
   geom_line(data = summaryDFfeature,
             mapping = aes(colour = profileName),
             size = 1) +
@@ -208,7 +210,7 @@ ggObj1 <- ggplot(data = summaryDFfeature,
               alpha = 0.4) +
   scale_fill_manual(values = colours) +
   scale_y_continuous(limits = c(ymin, ymax),
-                     labels = function(x) sprintf("%5.2f", x)) +
+                     labels = function(x) sprintf("%7.5f", x)) +
   scale_x_discrete(breaks = c(1,
                               (upstream/binSize)+1,
                               (dim(summaryDFfeature)[1])-(downstream/binSize),
@@ -240,8 +242,9 @@ ggObj1 <- ggplot(data = summaryDFfeature,
         panel.border = element_rect(size = 3.5, colour = "black"),
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,0.9,0.0,0.3), "cm"), 
-        plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "in" ~ .(genomeName)*"-genome" ~ .(region) ~
+                 "(" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFfeature$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
@@ -250,8 +253,7 @@ ggObj2 <- NULL
 ggObj2 <- ggplot(data = summaryDFranLoc,
                  mapping = aes(x = winNo,
                                y = mean,
-                               group = profileName),
-                ) +
+                               group = profileName)) +
   geom_line(data = summaryDFranLoc,
             mapping = aes(colour = profileName),
             size = 1) +
@@ -265,7 +267,7 @@ ggObj2 <- ggplot(data = summaryDFranLoc,
               alpha = 0.4) +
   scale_fill_manual(values = colours) +
   scale_y_continuous(limits = c(ymin, ymax),
-                     labels = function(x) sprintf("%5.2f", x)) +
+                     labels = function(x) sprintf("%7.5f", x)) +
   scale_x_discrete(breaks = c(1,
                               (upstream/binSize)+1,
                               (dim(summaryDFranLoc)[1])-(downstream/binSize),
@@ -297,15 +299,16 @@ ggObj2 <- ggplot(data = summaryDFranLoc,
         panel.border = element_rect(size = 3.5, colour = "black"),
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,0.9,0.0,0.3), "cm"), 
-        plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote("Random loci (" * italic("n") ~ "=" ~
+        plot.title = element_text(hjust = 0.5, size = 18)) +
+  ggtitle(bquote("Random loci in" ~ .(genomeName)*"-genome" ~ .(region) ~
+                 "(" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFranLoc$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
 ggObjGA <- grid.arrange(ggObj1, ggObj2, nrow = 1, ncol = 2)
-ggsave(paste0(plotDir,
-              paste(libNames, collapse = "_"),
-              "_around_", featureName, ".pdf"),
+ggsave(paste0(plotDir, "SNPfreq_",
+              paste(profileNames, collapse = "_"),
+              "_around_", featureName, "_in_",
+              genomeName, "genome_", region, ".pdf"),
        plot = ggObjGA,
-       height = 6.5, width = 14)
-
+       height = 7, width = 16)
