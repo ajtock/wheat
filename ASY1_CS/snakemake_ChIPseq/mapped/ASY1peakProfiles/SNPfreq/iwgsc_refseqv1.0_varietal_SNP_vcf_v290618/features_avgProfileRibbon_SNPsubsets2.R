@@ -3,7 +3,7 @@
 # Plot feature average SNP frequency profiles with 95% CIs
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript features_avgProfileRibbon_SNPsubsets4.R ASY1_CS_Rep1_ChIP_peaks 'ASY1 peaks' 2000 2kb '2 kb' 20 20bp 'A' 'euchromatin' 'HIGH,MODERATE,MODIFIER,LOW' 'High,Moderate,Modifier,Low' 'red,orange,green,darkgreen' '0.02,0.96'
+# /applications/R/R-3.5.0/bin/Rscript features_avgProfileRibbon_SNPsubsets2.R ASY1_CS_Rep1_ChIP_peaks 'ASY1 peaks' 2000 2kb '2 kb' 20 20bp 'A' 'euchromatin' 'upstream_gene_variant,downstream_gene_variant' 'Upstream,Downstream' 'blue,green' '0.02,0.96'
 
 #'upstream_gene_variant,downstream_gene_variant'
 #'HIGH,MODERATE,MODIFIER,LOW'
@@ -307,8 +307,6 @@ ggObj1 <- ggplot(data = summaryDFfeature,
        y = expression("Windowed SNP frequency")) +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
-  annotation_custom(legendLabs[[3]]) +
-  annotation_custom(legendLabs[[4]]) +
   theme_bw() +
   theme(
         axis.ticks = element_line(size = 1.0, colour = "black"),
@@ -369,8 +367,6 @@ ggObj2 <- ggplot(data = summaryDFranLoc,
        y = "") +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
-  annotation_custom(legendLabs[[3]]) +
-  annotation_custom(legendLabs[[4]]) +
   theme_bw() +
   theme(
         axis.ticks = element_line(size = 1.0, colour = "black"),

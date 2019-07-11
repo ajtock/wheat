@@ -3,15 +3,15 @@
 # Profile mean coverage around peaks and random loci
 
 # Usage via Condor submission system on node7:
-# csmit -m 20G -c 1 "./peak_varietalSNPfreq_profiles_commandArgs.R MNase MNase_Rep1 p0.001_q0.01 2000 2kb 20 'A' 'euchromatin'"
+# csmit -m 20G -c 1 "/applications/R/R-3.4.0/bin/Rscript ./peak_varietalSNPfreq_profiles_commandArgs.R ASY1_CS ASY1_CS_Rep1_ChIP p0.001_q0.01 2000 2kb 20 'A' 'euchromatin'"
 
 # Source functions to be used in this script
 source("/projects/ajt200/Rfunctions/covMatrix_DNAmethMatrix_target_ranLoc_R3.4.0.R")
 
 library(EnrichedHeatmap)
 
-#markChIP <- "MNase"
-#libNameChIP <- "MNase_Rep1"
+#markChIP <- "ASY1_CS"
+#libNameChIP <- "ASY1_CS_Rep1_ChIP"
 #sigLevel <- "p0.001_q0.01"
 #flankSize <- 2000
 #flankName <- "2kb"
@@ -178,323 +178,323 @@ SNPs <- read.table("all_filtered_snps_allaccessions_allploidy_snpeff.vcf",
                                   NA,
                                   rep("NULL", 61)))
 colnames(SNPs) <- c("chr", "pos", "ref", "alt", "info")
-## all SNPs
-SNPsGR <- GRanges(seqnames = SNPs$chr,
-                  ranges = IRanges(start = SNPs$pos,
-                                   end = SNPs$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_all_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_all_SNP_frequency_ranLoc_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_all_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_all_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks SNP frequency profile calculation complete"))
-
-
-## upstream_gene_variant
-SNPs_upstream_gene_variant <- SNPs[grep("upstream_gene_variant", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_upstream_gene_variant$chr,
-                  ranges = IRanges(start = SNPs_upstream_gene_variant$pos,
-                                   end = SNPs_upstream_gene_variant$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs_upstream_gene_variant)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_upstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_upstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_upstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_upstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks upstream_gene_variant SNP frequency profile calculation complete"))
-
-
-## downstream_gene_variant
-SNPs_downstream_gene_variant <- SNPs[grep("downstream_gene_variant", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_downstream_gene_variant$chr,
-                  ranges = IRanges(start = SNPs_downstream_gene_variant$pos,
-                                   end = SNPs_downstream_gene_variant$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs_downstream_gene_variant)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_downstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_downstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_downstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_downstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks downstream_gene_variant SNP frequency profile calculation complete"))
-
-
-## missense_variant
-SNPs_missense_variant <- SNPs[grep("missense_variant", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_missense_variant$chr,
-                  ranges = IRanges(start = SNPs_missense_variant$pos,
-                                   end = SNPs_missense_variant$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs_missense_variant)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_missense_variant_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_missense_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_missense_variant_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_missense_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks missense_variant SNP frequency profile calculation complete"))
-
-
-## synonymous_variant
-SNPs_synonymous_variant <- SNPs[grep("synonymous_variant", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_synonymous_variant$chr,
-                  ranges = IRanges(start = SNPs_synonymous_variant$pos,
-                                   end = SNPs_synonymous_variant$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs_synonymous_variant)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_synonymous_variant_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_synonymous_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_synonymous_variant_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_synonymous_variant_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks synonymous_variant SNP frequency profile calculation complete"))
-
-
-## HIGH
-SNPs_HIGH <- SNPs[grep("HIGH", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_HIGH$chr,
-                  ranges = IRanges(start = SNPs_HIGH$pos,
-                                   end = SNPs_HIGH$pos),
-                  strand = "*",
-                  coverage = rep(1, dim(SNPs_HIGH)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_HIGH_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_HIGH_SNP_frequency_ranLoc_smoothed_target_and_",
-                      flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_HIGH_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_HIGH_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-          feature = peaksGR,
-          ranLoc = ranLocGR,
-          featureSize = mean(width(peaksGR)),
-          flankSize = flankSize,
-          winSize = winSize,
-          outDF = outDF,
-          outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks HIGH SNP frequency profile calculation complete"))
-
-
-## MODERATE
-SNPs_MODERATE <- SNPs[grep("MODERATE", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_MODERATE$chr,
-		  ranges = IRanges(start = SNPs_MODERATE$pos,
-				   end = SNPs_MODERATE$pos),
-		  strand = "*",
-		  coverage = rep(1, dim(SNPs_MODERATE)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_MODERATE_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_MODERATE_SNP_frequency_ranLoc_smoothed_target_and_",
-                      flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_MODERATE_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_MODERATE_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-	  feature = peaksGR,
-	  ranLoc = ranLocGR,
-	  featureSize = mean(width(peaksGR)),
-	  flankSize = flankSize,
-	  winSize = winSize,
-	  outDF = outDF,
-	  outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks MODERATE SNP frequency profile calculation complete"))
-
-
-## LOW
-SNPs_LOW <- SNPs[grep("LOW", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_LOW$chr,
-		  ranges = IRanges(start = SNPs_LOW$pos,
-				   end = SNPs_LOW$pos),
-		  strand = "*",
-		  coverage = rep(1, dim(SNPs_LOW)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_LOW_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_LOW_SNP_frequency_ranLoc_smoothed_target_and_",
-                      flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_LOW_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_LOW_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-	  feature = peaksGR,
-	  ranLoc = ranLocGR,
-	  featureSize = mean(width(peaksGR)),
-	  flankSize = flankSize,
-	  winSize = winSize,
-	  outDF = outDF,
-	  outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks LOW SNP frequency profile calculation complete"))
-
-
-## MODIFIER
-SNPs_MODIFIER <- SNPs[grep("MODIFIER", SNPs$info),]
-SNPsGR <- GRanges(seqnames = SNPs_MODIFIER$chr,
-		  ranges = IRanges(start = SNPs_MODIFIER$pos,
-				   end = SNPs_MODIFIER$pos),
-		  strand = "*",
-		  coverage = rep(1, dim(SNPs_MODIFIER)[1]))
-
-# Define matrix and column mean coverage outfile (mean profiles)
-outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_MODIFIER_SNP_frequency_feature_smoothed_target_and_",
-                     flankName, "_flank_dataframe.txt"),
-	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                     "_MODIFIER_SNP_frequency_ranLoc_smoothed_target_and_",
-                      flankName, "_flank_dataframe.txt"))
-outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_MODIFIER_SNP_frequency_feature_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"),
-		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
-                             "_MODIFIER_SNP_frequency_ranLoc_smoothed_target_and_",
-                             flankName, "_flank_dataframe_colMeans.txt"))
-
-# Run covMatrix() function on each coverage GRanges object to obtain matrices
-# containing normalised coverage values around target and random loci
-covMatrix(signal = SNPsGR,
-	  feature = peaksGR,
-	  ranLoc = ranLocGR,
-	  featureSize = mean(width(peaksGR)),
-	  flankSize = flankSize,
-	  winSize = winSize,
-	  outDF = outDF,
-	  outDFcolMeans = outDFcolMeans)
-print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks MODIFIER SNP frequency profile calculation complete"))
+### all SNPs
+#SNPsGR <- GRanges(seqnames = SNPs$chr,
+#                  ranges = IRanges(start = SNPs$pos,
+#                                   end = SNPs$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_all_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_all_SNP_frequency_ranLoc_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_all_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_all_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks SNP frequency profile calculation complete"))
+#
+#
+### upstream_gene_variant
+#SNPs_upstream_gene_variant <- SNPs[grep("upstream_gene_variant", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_upstream_gene_variant$chr,
+#                  ranges = IRanges(start = SNPs_upstream_gene_variant$pos,
+#                                   end = SNPs_upstream_gene_variant$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs_upstream_gene_variant)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_upstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_upstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_upstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_upstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks upstream_gene_variant SNP frequency profile calculation complete"))
+#
+#
+### downstream_gene_variant
+#SNPs_downstream_gene_variant <- SNPs[grep("downstream_gene_variant", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_downstream_gene_variant$chr,
+#                  ranges = IRanges(start = SNPs_downstream_gene_variant$pos,
+#                                   end = SNPs_downstream_gene_variant$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs_downstream_gene_variant)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_downstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_downstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_downstream_gene_variant_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_downstream_gene_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks downstream_gene_variant SNP frequency profile calculation complete"))
+#
+#
+### missense_variant
+#SNPs_missense_variant <- SNPs[grep("missense_variant", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_missense_variant$chr,
+#                  ranges = IRanges(start = SNPs_missense_variant$pos,
+#                                   end = SNPs_missense_variant$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs_missense_variant)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_missense_variant_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_missense_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_missense_variant_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_missense_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks missense_variant SNP frequency profile calculation complete"))
+#
+#
+### synonymous_variant
+#SNPs_synonymous_variant <- SNPs[grep("synonymous_variant", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_synonymous_variant$chr,
+#                  ranges = IRanges(start = SNPs_synonymous_variant$pos,
+#                                   end = SNPs_synonymous_variant$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs_synonymous_variant)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_synonymous_variant_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_synonymous_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_synonymous_variant_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_synonymous_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks synonymous_variant SNP frequency profile calculation complete"))
+#
+#
+### HIGH
+#SNPs_HIGH <- SNPs[grep("HIGH", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_HIGH$chr,
+#                  ranges = IRanges(start = SNPs_HIGH$pos,
+#                                   end = SNPs_HIGH$pos),
+#                  strand = "*",
+#                  coverage = rep(1, dim(SNPs_HIGH)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_HIGH_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_HIGH_SNP_frequency_ranLoc_smoothed_target_and_",
+#                      flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_HIGH_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_HIGH_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#          feature = peaksGR,
+#          ranLoc = ranLocGR,
+#          featureSize = mean(width(peaksGR)),
+#          flankSize = flankSize,
+#          winSize = winSize,
+#          outDF = outDF,
+#          outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks HIGH SNP frequency profile calculation complete"))
+#
+#
+### MODERATE
+#SNPs_MODERATE <- SNPs[grep("MODERATE", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_MODERATE$chr,
+#		  ranges = IRanges(start = SNPs_MODERATE$pos,
+#				   end = SNPs_MODERATE$pos),
+#		  strand = "*",
+#		  coverage = rep(1, dim(SNPs_MODERATE)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_MODERATE_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_MODERATE_SNP_frequency_ranLoc_smoothed_target_and_",
+#                      flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_MODERATE_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_MODERATE_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#	  feature = peaksGR,
+#	  ranLoc = ranLocGR,
+#	  featureSize = mean(width(peaksGR)),
+#	  flankSize = flankSize,
+#	  winSize = winSize,
+#	  outDF = outDF,
+#	  outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks MODERATE SNP frequency profile calculation complete"))
+#
+#
+### LOW
+#SNPs_LOW <- SNPs[grep("LOW", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_LOW$chr,
+#		  ranges = IRanges(start = SNPs_LOW$pos,
+#				   end = SNPs_LOW$pos),
+#		  strand = "*",
+#		  coverage = rep(1, dim(SNPs_LOW)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_LOW_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_LOW_SNP_frequency_ranLoc_smoothed_target_and_",
+#                      flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_LOW_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_LOW_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#	  feature = peaksGR,
+#	  ranLoc = ranLocGR,
+#	  featureSize = mean(width(peaksGR)),
+#	  flankSize = flankSize,
+#	  winSize = winSize,
+#	  outDF = outDF,
+#	  outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks LOW SNP frequency profile calculation complete"))
+#
+#
+### MODIFIER
+#SNPs_MODIFIER <- SNPs[grep("MODIFIER", SNPs$info),]
+#SNPsGR <- GRanges(seqnames = SNPs_MODIFIER$chr,
+#		  ranges = IRanges(start = SNPs_MODIFIER$pos,
+#				   end = SNPs_MODIFIER$pos),
+#		  strand = "*",
+#		  coverage = rep(1, dim(SNPs_MODIFIER)[1]))
+#
+## Define matrix and column mean coverage outfile (mean profiles)
+#outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_MODIFIER_SNP_frequency_feature_smoothed_target_and_",
+#                     flankName, "_flank_dataframe.txt"),
+#	      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                     "_MODIFIER_SNP_frequency_ranLoc_smoothed_target_and_",
+#                      flankName, "_flank_dataframe.txt"))
+#outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_MODIFIER_SNP_frequency_feature_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"),
+#		      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+#                             "_MODIFIER_SNP_frequency_ranLoc_smoothed_target_and_",
+#                             flankName, "_flank_dataframe_colMeans.txt"))
+#
+## Run covMatrix() function on each coverage GRanges object to obtain matrices
+## containing normalised coverage values around target and random loci
+#covMatrix(signal = SNPsGR,
+#	  feature = peaksGR,
+#	  ranLoc = ranLocGR,
+#	  featureSize = mean(width(peaksGR)),
+#	  flankSize = flankSize,
+#	  winSize = winSize,
+#	  outDF = outDF,
+#	  outDFcolMeans = outDFcolMeans)
+#print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks MODIFIER SNP frequency profile calculation complete"))
 
 
 ## transition
-SNPs_transition <- SNPs[SNPs$ref == c("A", "G") & SNPs$alt == c("G", "A") |
-                        SNPs$ref == c("C", "T") & SNPs$alt == c("T", "C"),]
+SNPs_transition <- SNPs[(SNPs$ref == "A" | SNPs$ref == "G") & (SNPs$alt == "G" | SNPs$alt == "A") |
+                        (SNPs$ref == "C" | SNPs$ref == "T") & (SNPs$alt == "T" | SNPs$alt == "C"),]
 SNPsGR <- GRanges(seqnames = SNPs_transition$chr,
 		  ranges = IRanges(start = SNPs_transition$pos,
 				   end = SNPs_transition$pos),
@@ -529,10 +529,11 @@ print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks transitio
 
 
 ## transversion
-SNPs_transversion <- SNPs[SNPs$ref == c("A", "G") & SNPs$alt == c("C", "T") |
-                          SNPs$ref == c("A", "T") & SNPs$alt == c("T", "A") |
-                          SNPs$ref == c("G", "C") & SNPs$alt == c("C", "G") |
-                          SNPs$ref == c("C", "T") & SNPs$alt == c("A", "G"),]
+SNPs_transversion <- SNPs[(SNPs$ref == "A" | SNPs$ref == "G") & (SNPs$alt == "C" | SNPs$alt == "T") |
+                          (SNPs$ref == "C" | SNPs$ref == "T") & (SNPs$alt == "A" | SNPs$alt == "G"),]
+stopifnot((dim(SNPs_transition)[1] +
+          dim(SNPs_transversion)[1]) ==
+          dim(SNPs)[1])
 SNPsGR <- GRanges(seqnames = SNPs_transversion$chr,
                   ranges = IRanges(start = SNPs_transversion$pos,
                                    end = SNPs_transversion$pos),
@@ -564,3 +565,73 @@ covMatrix(signal = SNPsGR,
           outDF = outDF,
           outDFcolMeans = outDFcolMeans)
 print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks transversion SNP frequency profile calculation complete"))
+
+
+## intron_variant
+SNPs_intron_variant <- SNPs[grep("intron_variant", SNPs$info),]
+SNPsGR <- GRanges(seqnames = SNPs_intron_variant$chr,
+                  ranges = IRanges(start = SNPs_intron_variant$pos,
+                                   end = SNPs_intron_variant$pos),
+                  strand = "*",
+                  coverage = rep(1, dim(SNPs_intron_variant)[1]))
+
+# Define matrix and column mean coverage outfile (mean profiles)
+outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                     "_intron_variant_SNP_frequency_feature_smoothed_target_and_",
+                     flankName, "_flank_dataframe.txt"),
+              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                     "_intron_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+                     flankName, "_flank_dataframe.txt"))
+outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                             "_intron_variant_SNP_frequency_feature_smoothed_target_and_",
+                             flankName, "_flank_dataframe_colMeans.txt"),
+                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                             "_intron_variant_SNP_frequency_ranLoc_smoothed_target_and_",
+                             flankName, "_flank_dataframe_colMeans.txt"))
+
+# Run covMatrix() function on each coverage GRanges object to obtain matrices
+# containing normalised coverage values around target and random loci
+covMatrix(signal = SNPsGR,
+          feature = peaksGR,
+          ranLoc = ranLocGR,
+          featureSize = mean(width(peaksGR)),
+          flankSize = flankSize,
+          winSize = winSize,
+          outDF = outDF,
+          outDFcolMeans = outDFcolMeans)
+print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks intron_variant SNP frequency profile calculation complete"))
+
+
+## intergenic
+SNPs_intergenic <- SNPs[grep("intergenic", SNPs$info),]
+SNPsGR <- GRanges(seqnames = SNPs_intergenic$chr,
+                  ranges = IRanges(start = SNPs_intergenic$pos,
+                                   end = SNPs_intergenic$pos),
+                  strand = "*",
+                  coverage = rep(1, dim(SNPs_intergenic)[1]))
+
+# Define matrix and column mean coverage outfile (mean profiles)
+outDF <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                     "_intergenic_SNP_frequency_feature_smoothed_target_and_",
+                     flankName, "_flank_dataframe.txt"),
+              paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                     "_intergenic_SNP_frequency_ranLoc_smoothed_target_and_",
+                     flankName, "_flank_dataframe.txt"))
+outDFcolMeans <- list(paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                             "_intergenic_SNP_frequency_feature_smoothed_target_and_",
+                             flankName, "_flank_dataframe_colMeans.txt"),
+                      paste0(matDir, libNameChIP, "_peaks_in_", genomeName, "genome_", region,
+                             "_intergenic_SNP_frequency_ranLoc_smoothed_target_and_",
+                             flankName, "_flank_dataframe_colMeans.txt"))
+
+# Run covMatrix() function on each coverage GRanges object to obtain matrices
+# containing normalised coverage values around target and random loci
+covMatrix(signal = SNPsGR,
+          feature = peaksGR,
+          ranLoc = ranLocGR,
+          featureSize = mean(width(peaksGR)),
+          flankSize = flankSize,
+          winSize = winSize,
+          outDF = outDF,
+          outDFcolMeans = outDFcolMeans)
+print(paste0(genomeName, "-genome ", region, " ", libNameChIP, " peaks intergenic SNP frequency profile calculation complete"))
