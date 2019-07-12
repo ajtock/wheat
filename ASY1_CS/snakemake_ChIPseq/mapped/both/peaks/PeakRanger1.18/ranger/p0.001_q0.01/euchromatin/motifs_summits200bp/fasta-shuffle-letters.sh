@@ -1,0 +1,5 @@
+#!/bin/bash
+
+fasta-shuffle-letters armrangerPeaks_summits200bpseq.fa armrangerPeaks_summits200bpseq_shuffled.fa
+fasta-shuffle-letters perirangerPeaks_summits200bpseq.fa perirangerPeaks_summits200bpseq_shuffled.fa
+
