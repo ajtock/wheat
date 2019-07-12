@@ -234,10 +234,15 @@ peaksGR_summits200bp <- locMidpointFlank(x = peaksGR_summits,
                                          rightFlank = 100)
 peaks_summits200bp_bed <- data.frame(chr = seqnames(peaksGR_summits200bp),
                                      start = start(peaksGR_summits200bp)-1,
-                                     end = end(peaksGR_summits200bp))
+                                     end = end(peaksGR_summits200bp),
+                                     name = paste0(as.character(seqnames(peaksGR)),
+                                                   ":",
+                                                   as.character(start(peaksGR)),
+                                                   "-",
+                                                   as.character(end(peaksGR))))
 write.table(peaks_summits200bp_bed,
             file = paste0(region, "/motifs_summits200bp/", libName,
-                          "_rangerPeaksGR_minuslog10Qsorted_p0.001_q0.01_noMinWidth_in_",
+                          "_peaks_minuslog10Qsorted_in_",
                           genomeName, "genome_", region, "_summits200bp.bed"),
             row.names = F, col.names = F, quote = F, sep = "\t")
 
@@ -281,10 +286,15 @@ ranLocGR_summits200bp <- locMidpointFlank(x = ranLocGR_summits,
                                           rightFlank = 100)
 ranLoc_summits200bp_bed <- data.frame(chr = seqnames(ranLocGR_summits200bp),
                                       start = start(ranLocGR_summits200bp)-1,
-                                      end = end(ranLocGR_summits200bp))
+                                      end = end(ranLocGR_summits200bp),
+                                      name = paste0(as.character(seqnames(ranLocGR)),
+                                                    ":",
+                                                    as.character(start(ranLocGR)),
+                                                    "-",
+                                                    as.character(end(ranLocGR))))
 write.table(ranLoc_summits200bp_bed,
             file = paste0(region, "/motifs_summits200bp/", libName,
-                          "_rangerPeaksGR_minuslog10Qsorted_p0.001_q0.01_noMinWidth_in_",
+                          "_peaks_minuslog10Qsorted_in_",
                           genomeName, "genome_", region, "_summits200bp_randomLoci.bed"),
             row.names = F, col.names = F, quote = F, sep = "\t")
 
