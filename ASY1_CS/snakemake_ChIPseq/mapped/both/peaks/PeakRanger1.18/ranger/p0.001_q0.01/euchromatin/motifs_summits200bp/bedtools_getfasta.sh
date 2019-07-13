@@ -18,5 +18,5 @@ prefix=$2
 
 /home/ajt200/anaconda3/bin/bedtools getfasta -fi ${genome} \
                                              -bed ${prefix}.bed \
-                                             -fo ${prefix}.fasta \
+                                             -fo ${prefix}.fa \
                                              -name
