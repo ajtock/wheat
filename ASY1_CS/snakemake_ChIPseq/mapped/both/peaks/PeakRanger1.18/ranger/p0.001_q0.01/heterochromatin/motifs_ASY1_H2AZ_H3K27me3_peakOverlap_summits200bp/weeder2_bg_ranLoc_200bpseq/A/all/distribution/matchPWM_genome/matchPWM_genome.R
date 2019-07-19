@@ -5,7 +5,7 @@
 # Profile base composition (proportion) in regions flanking these loci
 
 # Usage:
-# ./matchPWM_genome.R 'A' 'heterochromatin' 100 100bp
+# ./matchPWM_genome.R 'A' 'heterochromatin' 100 '100 bp'
 
 genomeName <- "A"
 region <- "heterochromatin"
@@ -296,42 +296,53 @@ foreach(x = 1:pwmNum) %dopar% {
                                   hitsGR_peaksGRprm[2,])
   rownames(hitsGR_peaksGRprm_AGTC) <- c("A", "G", "T", "C")
   pdf(paste0(plotDir,
-             "ASY1_CS_Rep1_ChIP_peak_motif_", pwmName[x], "_",
-             paste0(strsplit(consensusString(hitsGRseq),
-                             split = "")[[1]][flankSize+1:(flankSize+1+mean(width(hitsGR))-1)],
-                    collapse = ""),
+             "ASY1_CS_Rep1_ChIP_peak_motif_", pwmName[x],
+             #paste0(strsplit(consensusString(hitsGRseq),
+             #                split = "")[[1]][(flankSize+1):(flankSize+1+mean(width(hitsGR))-1)],
+             #       collapse = ""),
              "_base_proportions_in_", genomeName, "genome_", region, ".pdf"),
-      height = 5, width = 10)
+      height = 5, width = 20)
   par(mfrow = c(1, 2),
-      mgp = c(2, 1, 0))
-  barplot(hitsGRprm_AGTC,
-          col = c("green", "yellow", "red", "blue"),
-          xlab = paste0("ASY1 peak motif ", pwmName[x], "_",
-                        paste0(strsplit(consensusString(hitsGRseq),
-                                        split = "")[[1]][flankSize+1:(flankSize+1+mean(width(hitsGR))-1)],
-                               collapse = ""),
-                               " matches and ", flankName, " flanks"),
+      mgp = c(1.5, 0.5, 0),
+      mar = c(3.5, 3.1, 3.5, 2.1))
+  barplot(hitsGR_peaksGRprm_AGTC,
+          col = c("darkgreen", "orange", "red", "dodgerblue"),
+          xlab = paste0("ASY1 peak motif ", pwmName[x],
+                        #paste0(strsplit(consensusString(hitsGR_peaksGRseq),
+                        #                split = "")[[1]][(flankSize+1):(flankSize+1+mean(width(hitsGR_peaksGR))-1)],
+                        #       collapse = ""),
+                        " matches and ", flankName, " flanks"),
           ylab = "Proportion",
-          main = paste(c("All matches in ", genomeName, "genome ", region), sep = ""),
+          main = bquote("Matches overlapping ASY1 peaks in" ~
+                        .(genomeName) * "-genome" ~ .(region) ~
+                        "(" * italic("n") ~ "=" ~
+                        .(prettyNum(length(hitsGR_peaksGR),
+                                    big.mark = ",", trim = T)) *
+                        ")"),
           legend.text = TRUE,
           args.legend = list(
-            x = ncol(hitsGRprm_AGTC) + 16,
+            x = ncol(hitsGR_peaksGRprm_AGTC) + 60,
             y = 0.2,
             bty = "n"
           )
          )
-  barplot(hitsGRprm_peaksGRprm_AGTC,
-          col = c("green", "yellow", "red", "blue"),
-          xlab = paste0("ASY1 peak motif ", pwmName[x], "_",
-                        paste0(strsplit(consensusString(hitsGR_peaksGRseq),
-                                        split = "")[[1]][flankSize+1:(flankSize+1+mean(width(hitsGR_peaksGR))-1)],
-                               collapse = ""),
-                               " matches and ", flankName, " flanks"),
+  barplot(hitsGRprm_AGTC,
+          col = c("darkgreen", "orange", "red", "dodgerblue"),
+          xlab = paste0("ASY1 peak motif ", pwmName[x],
+                        #paste0(strsplit(consensusString(hitsGR_peaksGRseq),
+                        #                split = "")[[1]][(flankSize+1):(flankSize+1+mean(width(hitsGR_peaksGR))-1)],
+                        #       collapse = ""),
+                        " matches and ", flankName, " flanks"),
           ylab = "Proportion",
-          main = paste(c("Matches overlapping ASY1 peaks in ", genomeName, "genome ", region), sep = ""),
+          main = bquote("All matches in" ~
+                        .(genomeName) * "-genome" ~ .(region) ~
+                        "(" * italic("n") ~ "=" ~
+                        .(prettyNum(length(hitsGR),
+                                    big.mark = ",", trim = T)) *
+                        ")"),
           legend.text = TRUE,
           args.legend = list(
-            x = ncol(hitsGRprm_peaksGRprm_AGTC) + 16,
+            x = ncol(hitsGRprm_AGTC) + 60,
             y = 0.2,
             bty = "n"
           )
