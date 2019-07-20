@@ -5,10 +5,13 @@
 # Profile base composition (proportion) in regions flanking these loci
 
 # Usage:
-# ./matchPWM_genome.R 'A' 'heterochromatin' 100 '100 bp'
+# ./matchPWM_genome.R 'A' 'heterochromatin' 100 '100-bp'
 
-genomeName <- "A"
-region <- "heterochromatin"
+#genomeName <- "A"
+#region <- "heterochromatin"
+#flankSize <- 100
+#flankName <- "100-bp"
+
 args <- commandArgs(trailingOnly = T)
 genomeName <- args[1]
 region <- args[2]
@@ -19,11 +22,6 @@ library(Biostrings)
 library(BSgenome.Taestivum.Cambridge.iwgscRefseqv1)
 genome <- Taestivum
 library(parallel)
-
-library(segmentSeq)
-library(regioneR)
-#library(zoo)
-library(TTR)
 
 plotDir <- "plots/"
 propDir <- paste0(plotDir, "proportion/")
