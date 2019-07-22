@@ -304,6 +304,19 @@ hits_peaks_overlap <- findOverlaps(query = hitsGR,
                                    ignore.strand = TRUE)
 peaksGR_hitsGR <- peaksGR[unique(subjectHits(hits_peaks_overlap))]
 peaksGR_no_hitsGR <- peaksGR[-subjectHits(hits_peaks_overlap)]
+peaksGR_hitsGR_extend <- GRanges(seqnames = seqnames(peaksGR_hitsGR),
+                                 ranges = IRanges(start = start(peaksGR_hitsGR)-maxDistance,
+                                                  end = end(peaksGR_hitsGR)+maxDistance),
+                                 strand = strand(peaksGR_hitsGR),
+                                 cMMb = peaksGR_hitsGR$cMMb)
+peaksGR_no_hitsGR_nearby <- findOverlaps(query = peaksGR_hitsGR_extend,
+                                         subject = peaksGR_no_hitsGR,
+                                         type = "any",
+                                         select = "all",
+                                         ignore.strand = TRUE)
+
+peaksGR_no_hitsGR <- peaksGR_no_hitsGR[unique(subjectHits(peaksGR_no_hitsGR_nearby))]
+
 print(peaksGR_hitsGR)
 print(peaksGR_no_hitsGR)
 stopifnot(length(peaksGR_hitsGR) +
@@ -327,12 +340,97 @@ for(h in seq_along(chrs)) {
   for(i in seq_along(peaksGR_no_hitsGR[seqnames(peaksGR_no_hitsGR) == chrs[h]])) {
     peaksGR_no_hitsGRseq_chr <- c(peaksGR_no_hitsGRseq_chr,
                                   DNAStringSet(chrList[[h]][(start(peaksGR_no_hitsGR[seqnames(peaksGR_no_hitsGR)
-                                                                                  == chrs[h]][i])):
+                                                                                     == chrs[h]][i])):
                                                             (end(peaksGR_no_hitsGR[seqnames(peaksGR_no_hitsGR)
-                                                                                == chrs[h]][i]))]))
+                                                                                   == chrs[h]][i]))]))
   }
   peaksGR_no_hitsGRseq <- c(peaksGR_no_hitsGRseq, peaksGR_no_hitsGRseq_chr)
 }
+
+# Obtain base frequencies over central 100-bp sequences
+# peaks overlapping motif-matching loci
+peaksGR_hitsGRseq_AtoN <- NULL
+for(i in 1:length(peaksGR_hitsGRseq)) {
+  peaksGR_hitsGRseq_AtoN <- rbind(peaksGR_hitsGRseq_AtoN, 
+                                  alphabetFrequency(peaksGR_hitsGRseq[[i]][
+                                                      ((size/2)-49):((size/2)+51)
+                                                    ])[c(1:4,15)])
+}
+peaksGR_hitsGRseq_AtoN <- as.data.frame(peaksGR_hitsGRseq_AtoN)
+peaksGR_hitsGRseq_AtoN_ranges <- data.frame(min = c(min(peaksGR_hitsGRseq_AtoN$A),
+                                                    min(peaksGR_hitsGRseq_AtoN$C),
+                                                    min(peaksGR_hitsGRseq_AtoN$G),
+                                                    min(peaksGR_hitsGRseq_AtoN$T),
+                                                    min(peaksGR_hitsGRseq_AtoN$N)),
+                                            max = c(max(peaksGR_hitsGRseq_AtoN$A),
+                                                    max(peaksGR_hitsGRseq_AtoN$C),
+                                                    max(peaksGR_hitsGRseq_AtoN$G),
+                                                    max(peaksGR_hitsGRseq_AtoN$T),
+                                                    max(peaksGR_hitsGRseq_AtoN$N))) 
+rownames(peaksGR_hitsGRseq_AtoN_ranges) <- c("A", "C", "G", "T", "N")
+# peaks not overlapping motif-matching loci
+peaksGR_no_hitsGRseq_AtoN <- NULL
+for(i in 1:length(peaksGR_no_hitsGRseq)) {
+  peaksGR_no_hitsGRseq_AtoN <- rbind(peaksGR_no_hitsGRseq_AtoN,
+                                     alphabetFrequency(peaksGR_no_hitsGRseq[[i]][
+                                                         ((size/2)-49):((size/2)+51)
+                                                       ])[c(1:4,15)])
+}
+peaksGR_no_hitsGRseq_AtoN <- as.data.frame(peaksGR_no_hitsGRseq_AtoN)
+# select those peaks that do not overlap motif-matching loci
+# with base frequencies within the ranges of those that do
+peaksGR_no_hitsGRseq
+test <- peaksGR_no_hitsGRseq_AtoN[# A
+                                  peaksGR_no_hitsGRseq_AtoN$A >=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "A",]$min &
+                                  peaksGR_no_hitsGRseq_AtoN$A <=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "A",]$max &
+                                  # C
+                                  peaksGR_no_hitsGRseq_AtoN$C >=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "C",]$min &
+                                  peaksGR_no_hitsGRseq_AtoN$C <=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "C",]$max &
+                                  # G
+                                  peaksGR_no_hitsGRseq_AtoN$G >=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "G",]$min &
+                                  peaksGR_no_hitsGRseq_AtoN$G <=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "G",]$max &
+                                  # T
+                                  peaksGR_no_hitsGRseq_AtoN$T >=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "T",]$min &
+                                  peaksGR_no_hitsGRseq_AtoN$T <=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "T",]$max &
+                                  # N
+                                  peaksGR_no_hitsGRseq_AtoN$N >=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "N",]$min &
+                                  peaksGR_no_hitsGRseq_AtoN$N <=
+                                  peaksGR_hitsGRseq_AtoN_ranges[
+                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "N",]$max,
+]
+
+peaksGR_no_hitsGRseq_AtoN_ranges <- data.frame(min = c(min(peaksGR_no_hitsGRseq_AtoN$A),
+                                                       min(peaksGR_no_hitsGRseq_AtoN$C),
+                                                       min(peaksGR_no_hitsGRseq_AtoN$G),
+                                                       min(peaksGR_no_hitsGRseq_AtoN$T),
+                                                       min(peaksGR_no_hitsGRseq_AtoN$N)),
+                                               max = c(max(peaksGR_no_hitsGRseq_AtoN$A),
+                                                       max(peaksGR_no_hitsGRseq_AtoN$C),
+                                                       max(peaksGR_no_hitsGRseq_AtoN$G),
+                                                       max(peaksGR_no_hitsGRseq_AtoN$T),
+                                                       max(peaksGR_no_hitsGRseq_AtoN$N)))
+rownames(peaksGR_no_hitsGRseq_AtoN_ranges) <- c("A", "C", "G", "T", "N")
+
+
+
 
 # Load table of representative genes and convert into GRanges
 genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
