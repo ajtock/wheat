@@ -8,13 +8,13 @@
 # Divide ASY1 peaks into those that do and do not overlap at least
 # one motif-matching genomic locus.
 
+## Optional:
+## To control for regional differences in recombination rate, subset the peaks
+## that do not overlap any motif-matching loci to include only those that are 
+## within maxDistance of at least one of those that do overlap a motif-matching locus.
+
 # Define the subset of those peaks that do not overlap any motif-matching loci
 # that have comparable base compositions to those that do.
-
-# To control for regional differences in recombination rate, subset the peaks
-# that do not overlap any motif-matching loci (and which have comparable base
-# compositions to those that do) to include only those that are within 500 kb
-# of at least one of those that do overlap a motif-matching locus.
 
 # Compare mean 100-kb-scaled recombination rates (cM/Mb) for ASY1 peaks that
 # do and do not overlap a motif-matching locus, using 10,000 random (permuted)
@@ -481,13 +481,8 @@ loci_cMMb_permTest <- function(targets,
                                nontargets,
                                targetsName,
                                targetsNamePlot,
-                               genomeName,
-                               genomeNamePlot,
                                resultsDir,
                                plotDir) {
-  # Select genome-specific chromosomes (e.g., in the "A" genome)
-  chrs <- chrs[grep(genomeName, chrs)]
-   
   # Apply selectRandomFeatures() function on a per-chromosome basis
   # and append the selected ranges to a growing GRanges object (ranLocGR)
   # Repeat randomSets times to create a GRangesList object (ranLocGRL)
@@ -501,14 +496,14 @@ loci_cMMb_permTest <- function(targets,
       ranLocGR <- append(ranLocGR, ranLocChrGR)
     }
     ranLocGR
-  }, mc.cores = 6)
+  }, mc.cores = detectCores())
   
   # Calculate mean cM/Mb for peak-containing loci (targets) and for
   # each set of peak-less random loci (selected from nontargets)
   targets_cMMbMean <- mean(targets$cMMb, na.rm = T)
   ranLoc_cMMbMean <- unlist(mclapply(seq_along(ranLocGRL), function(x) {
     mean(ranLocGRL[[x]]$cMMb, na.rm = T)
-  }, mc.cores = 6))
+  }, mc.cores = detectCores()))
   
   # Determine whether mean cM/Mb values at peak-less random loci are lower than or
   # higher than at peak-containing loci
@@ -640,68 +635,14 @@ loci_cMMb_permTest <- function(targets,
 
 }
 
-# Apply to promoters and terminators in each genome
-genomeNames <- c("A", "B", "D", "")
-genomeNamesPlot <- c("A", "B", "D", "all")
-sapply(seq_along(genomeNames), function(z) {
-  loci_cMMb_permTest(targets = gene_peak_overlapsGR[grep(genomeNames[z],
-                                                         seqnames(gene_peak_overlapsGR))],
-                     nontargets = gene_peak_nonoverlapsGR_nearby[grep(genomeNames[z],
-                                                                      seqnames(gene_peak_nonoverlapsGR_nearby))],
-                     targetsName = paste0("genes_in_", genomeNames[z], "genome_", region,
-                                          "_overlapping_", libNameChIP, "_peaks"),
-                     targetsNamePlot = paste0("Genes in ", genomeNamesPlot[z], "-genome ", region,
-                                              " overlapping ", libNameChIP, " peaks"),
-                     genomeName = genomeNames[z],
-                     genomeNamePlot = genomeNamesPlot[z],
-                     resultsDir = geneResDir,
-                     plotDir = genePlotDir)
-  loci_cMMb_permTest(targets = promoter_peak_overlapsGR[grep(genomeNames[z],
-                                                             seqnames(promoter_peak_overlapsGR))],
-                     nontargets = promoter_peak_nonoverlapsGR_nearby[grep(genomeNames[z],
-                                                                          seqnames(promoter_peak_nonoverlapsGR_nearby))],
-                     targetsName = paste0("gene_promoters_in_", genomeNames[z], "genome_", region,
-                                          "_overlapping_", libNameChIP, "_peaks"),
-                     targetsNamePlot = paste0("Gene promoters in ", genomeNamesPlot[z], "-genome ", region,
-                                              " overlapping ", libNameChIP, " peaks"),
-                     genomeName = genomeNames[z],
-                     genomeNamePlot = genomeNamesPlot[z],
-                     resultsDir = promoterResDir,
-                     plotDir = promoterPlotDir)
-  loci_cMMb_permTest(targets = TSS_peak_overlapsGR[grep(genomeNames[z],
-                                                        seqnames(TSS_peak_overlapsGR))],
-                     nontargets = TSS_peak_nonoverlapsGR_nearby[grep(genomeNames[z],
-                                                                     seqnames(TSS_peak_nonoverlapsGR_nearby))],
-                     targetsName = paste0("gene_TSSs_in_", genomeNames[z], "genome_", region,
-                                          "_overlapping_", libNameChIP, "_peaks"),
-                     targetsNamePlot = paste0("Gene TSSs+500 bp in ", genomeNamesPlot[z], "-genome ", region,
-                                              " overlapping ", libNameChIP, " peaks"),
-                     genomeName = genomeNames[z],
-                     genomeNamePlot = genomeNamesPlot[z],
-                     resultsDir = TSSResDir,
-                     plotDir = TSSPlotDir)
-  loci_cMMb_permTest(targets = TTS_peak_overlapsGR[grep(genomeNames[z],
-                                                        seqnames(TTS_peak_overlapsGR))],
-                     nontargets = TTS_peak_nonoverlapsGR_nearby[grep(genomeNames[z],
-                                                                     seqnames(TTS_peak_nonoverlapsGR_nearby))],
-                     targetsName = paste0("gene_TTSs_in_", genomeNames[z], "genome_", region,
-                                          "_overlapping_", libNameChIP, "_peaks"),
-                     targetsNamePlot = paste0("Gene TTSs-500 bp in ", genomeNamesPlot[z], "-genome ", region,
-                                              " overlapping ", libNameChIP, " peaks"),
-                     genomeName = genomeNames[z],
-                     genomeNamePlot = genomeNamesPlot[z],
-                     resultsDir = TTSResDir,
-                     plotDir = TTSPlotDir)
-  loci_cMMb_permTest(targets = terminator_peak_overlapsGR[grep(genomeNames[z],
-                                                               seqnames(terminator_peak_overlapsGR))],
-                     nontargets = terminator_peak_nonoverlapsGR_nearby[grep(genomeNames[z],
-                                                                            seqnames(terminator_peak_nonoverlapsGR_nearby))],
-                     targetsName = paste0("gene_terminators_in_", genomeNames[z], "genome_", region,
-                                          "_overlapping_", libNameChIP, "_peaks"),
-                     targetsNamePlot = paste0("Gene terminators in ", genomeNamesPlot[z], "-genome ", region,
-                                              " overlapping ", libNameChIP, " peaks"),
-                     genomeName = genomeNames[z],
-                     genomeNamePlot = genomeNamesPlot[z],
-                     resultsDir = terminatorResDir,
-                     plotDir = terminatorPlotDir)
-})
+# Apply permutation test function
+loci_cMMb_permTest(targets = peaksGR_hitsGR,
+                   nontargets = peaksGR_no_hitsGR_pass,
+                   targetsName = paste0("H2AZ_H3K27me3_enriched_ASY1_peaks_in_",
+                                        genomeName, "genome_", region,
+                                        "_overlapping_", pwmName, "_motif_", motif, "_matchPWM_loci"),
+                   targetsNamePlot = paste0("H2A.Z- and H3K27me3-enriched ASY1 peaks in ",
+                                            genomeName, "-genome ", region,
+                                            " overlapping ", motif, "-matching loci"),
+                   resultsDir = resDir,
+                   plotDir = plotDir)
