@@ -22,7 +22,7 @@
 # empirical P-value.
 
 # Usage:
-#./motif_overlap_cMMb_permTest_region.R 100kb 1 ASY1_CS ASY1_CS_Rep1_ChIP 'p0.001_q0.01' 500000 10000 0.0001 'A' 'euchromatin' MAT1_TTCTTCTTCT 50
+#./motif_overlap_cMMb_permTest_region.R 100kb 1 ASY1_CS ASY1_CS_Rep1_ChIP 'p0.001_q0.01' 500000 10000 0.0001 'A' 'euchromatin' MAT1_TTCTTCTTCT 200
 
 #winName <- "100kb"
 #minMarkerDist <- "1"
@@ -35,7 +35,7 @@
 #genomeName <- "A"
 #region <- "euchromatin"
 #pwmName <- "MAT1_TTCTTCTTCT"
-#size <- 50
+#size <- 200
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
@@ -164,7 +164,7 @@ if(region == "euchromatin") {
 # Load position-weight matrix and obtain matches in the given subgenome partition
 pwm <- as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/heterochromatin/motifs_ASY1_H2AZ_H3K27me3_peakOverlap_summits200bp/weeder2_bg_ranLoc_200bpseq/B/all/",
                                    pwmName, ".pwm"),
-		    skip = 1, row.names = 1))
+		            skip = 1, row.names = 1))
 motif <- NULL
 for(x in 1:dim(pwm)[2]) {
   mer <- names(pwm[,x][pwm[,x] == max(pwm[,x])])
@@ -304,23 +304,22 @@ hits_peaks_overlap <- findOverlaps(query = hitsGR,
                                    ignore.strand = TRUE)
 peaksGR_hitsGR <- peaksGR[unique(subjectHits(hits_peaks_overlap))]
 peaksGR_no_hitsGR <- peaksGR[-subjectHits(hits_peaks_overlap)]
-peaksGR_hitsGR_extend <- GRanges(seqnames = seqnames(peaksGR_hitsGR),
-                                 ranges = IRanges(start = start(peaksGR_hitsGR)-maxDistance,
-                                                  end = end(peaksGR_hitsGR)+maxDistance),
-                                 strand = strand(peaksGR_hitsGR),
-                                 cMMb = peaksGR_hitsGR$cMMb)
-peaksGR_no_hitsGR_nearby <- findOverlaps(query = peaksGR_hitsGR_extend,
-                                         subject = peaksGR_no_hitsGR,
-                                         type = "any",
-                                         select = "all",
-                                         ignore.strand = TRUE)
-
-peaksGR_no_hitsGR <- peaksGR_no_hitsGR[unique(subjectHits(peaksGR_no_hitsGR_nearby))]
-
 print(peaksGR_hitsGR)
 print(peaksGR_no_hitsGR)
 stopifnot(length(peaksGR_hitsGR) +
           length(peaksGR_no_hitsGR) == dim(peaks)[1])
+#peaksGR_hitsGR_extend <- GRanges(seqnames = seqnames(peaksGR_hitsGR),
+#                                 ranges = IRanges(start = start(peaksGR_hitsGR)-maxDistance,
+#                                                  end = end(peaksGR_hitsGR)+maxDistance),
+#                                 strand = strand(peaksGR_hitsGR),
+#                                 cMMb = peaksGR_hitsGR$cMMb)
+#peaksGR_no_hitsGR_nearby <- findOverlaps(query = peaksGR_hitsGR_extend,
+#                                         subject = peaksGR_no_hitsGR,
+#                                         type = "any",
+#                                         select = "all",
+#                                         ignore.strand = TRUE)
+#peaksGR_no_hitsGR <- peaksGR_no_hitsGR[unique(subjectHits(peaksGR_no_hitsGR_nearby))]
+
 # Obtain sequences
 peaksGR_hitsGRseq <- DNAStringSet()
 peaksGR_no_hitsGRseq <- DNAStringSet()
@@ -357,17 +356,47 @@ for(i in 1:length(peaksGR_hitsGRseq)) {
                                                     ])[c(1:4,15)])
 }
 peaksGR_hitsGRseq_AtoN <- as.data.frame(peaksGR_hitsGRseq_AtoN)
-peaksGR_hitsGRseq_AtoN_ranges <- data.frame(min = c(min(peaksGR_hitsGRseq_AtoN$A),
-                                                    min(peaksGR_hitsGRseq_AtoN$C),
-                                                    min(peaksGR_hitsGRseq_AtoN$G),
-                                                    min(peaksGR_hitsGRseq_AtoN$T),
-                                                    min(peaksGR_hitsGRseq_AtoN$N)),
-                                            max = c(max(peaksGR_hitsGRseq_AtoN$A),
-                                                    max(peaksGR_hitsGRseq_AtoN$C),
-                                                    max(peaksGR_hitsGRseq_AtoN$G),
-                                                    max(peaksGR_hitsGRseq_AtoN$T),
-                                                    max(peaksGR_hitsGRseq_AtoN$N))) 
-rownames(peaksGR_hitsGRseq_AtoN_ranges) <- c("A", "C", "G", "T", "N")
+peaksGR_hitsGRseq_AtoN_stats <- data.frame(min = c(min(peaksGR_hitsGRseq_AtoN$A),
+                                                   min(peaksGR_hitsGRseq_AtoN$C),
+                                                   min(peaksGR_hitsGRseq_AtoN$G),
+                                                   min(peaksGR_hitsGRseq_AtoN$T),
+                                                   min(peaksGR_hitsGRseq_AtoN$N)),
+                                           max = c(max(peaksGR_hitsGRseq_AtoN$A),
+                                                   max(peaksGR_hitsGRseq_AtoN$C),
+                                                   max(peaksGR_hitsGRseq_AtoN$G),
+                                                   max(peaksGR_hitsGRseq_AtoN$T),
+                                                   max(peaksGR_hitsGRseq_AtoN$N)),
+                                           mean = c(mean(peaksGR_hitsGRseq_AtoN$A),
+                                                    mean(peaksGR_hitsGRseq_AtoN$C),
+                                                    mean(peaksGR_hitsGRseq_AtoN$G),
+                                                    mean(peaksGR_hitsGRseq_AtoN$T),
+                                                    mean(peaksGR_hitsGRseq_AtoN$N)),
+                                           SD = c(sd(peaksGR_hitsGRseq_AtoN$A),
+                                                  sd(peaksGR_hitsGRseq_AtoN$C),
+                                                  sd(peaksGR_hitsGRseq_AtoN$G),
+                                                  sd(peaksGR_hitsGRseq_AtoN$T),
+                                                  sd(peaksGR_hitsGRseq_AtoN$N)),
+                                           meanMinusSD = c(mean(peaksGR_hitsGRseq_AtoN$A)-
+                                                             sd(peaksGR_hitsGRseq_AtoN$A),
+                                                           mean(peaksGR_hitsGRseq_AtoN$C)-
+                                                             sd(peaksGR_hitsGRseq_AtoN$C),
+                                                           mean(peaksGR_hitsGRseq_AtoN$G)-
+                                                             sd(peaksGR_hitsGRseq_AtoN$G),
+                                                           mean(peaksGR_hitsGRseq_AtoN$T)-
+                                                             sd(peaksGR_hitsGRseq_AtoN$T),
+                                                           mean(peaksGR_hitsGRseq_AtoN$N)-
+                                                             sd(peaksGR_hitsGRseq_AtoN$N)),
+                                           meanPlusSD = c(mean(peaksGR_hitsGRseq_AtoN$A)+
+                                                            sd(peaksGR_hitsGRseq_AtoN$A),
+                                                          mean(peaksGR_hitsGRseq_AtoN$C)+
+                                                            sd(peaksGR_hitsGRseq_AtoN$C),
+                                                          mean(peaksGR_hitsGRseq_AtoN$G)+
+                                                            sd(peaksGR_hitsGRseq_AtoN$G),
+                                                          mean(peaksGR_hitsGRseq_AtoN$T)+
+                                                            sd(peaksGR_hitsGRseq_AtoN$T),
+                                                          mean(peaksGR_hitsGRseq_AtoN$N)+
+                                                            sd(peaksGR_hitsGRseq_AtoN$N)))
+rownames(peaksGR_hitsGRseq_AtoN_stats) <- c("A", "C", "G", "T", "N")
 # peaks not overlapping motif-matching loci
 peaksGR_no_hitsGRseq_AtoN <- NULL
 for(i in 1:length(peaksGR_no_hitsGRseq)) {
@@ -378,327 +407,50 @@ for(i in 1:length(peaksGR_no_hitsGRseq)) {
 }
 peaksGR_no_hitsGRseq_AtoN <- as.data.frame(peaksGR_no_hitsGRseq_AtoN)
 # select those peaks that do not overlap motif-matching loci
-# with base frequencies within the ranges of those that do
-peaksGR_no_hitsGRseq
-test <- peaksGR_no_hitsGRseq_AtoN[# A
-                                  peaksGR_no_hitsGRseq_AtoN$A >=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "A",]$min &
-                                  peaksGR_no_hitsGRseq_AtoN$A <=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "A",]$max &
-                                  # C
-                                  peaksGR_no_hitsGRseq_AtoN$C >=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "C",]$min &
-                                  peaksGR_no_hitsGRseq_AtoN$C <=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "C",]$max &
-                                  # G
-                                  peaksGR_no_hitsGRseq_AtoN$G >=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "G",]$min &
-                                  peaksGR_no_hitsGRseq_AtoN$G <=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "G",]$max &
-                                  # T
-                                  peaksGR_no_hitsGRseq_AtoN$T >=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "T",]$min &
-                                  peaksGR_no_hitsGRseq_AtoN$T <=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "T",]$max &
-                                  # N
-                                  peaksGR_no_hitsGRseq_AtoN$N >=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "N",]$min &
-                                  peaksGR_no_hitsGRseq_AtoN$N <=
-                                  peaksGR_hitsGRseq_AtoN_ranges[
-                                    rownames(peaksGR_hitsGRseq_AtoN_ranges) == "N",]$max,
-]
-
-peaksGR_no_hitsGRseq_AtoN_ranges <- data.frame(min = c(min(peaksGR_no_hitsGRseq_AtoN$A),
-                                                       min(peaksGR_no_hitsGRseq_AtoN$C),
-                                                       min(peaksGR_no_hitsGRseq_AtoN$G),
-                                                       min(peaksGR_no_hitsGRseq_AtoN$T),
-                                                       min(peaksGR_no_hitsGRseq_AtoN$N)),
-                                               max = c(max(peaksGR_no_hitsGRseq_AtoN$A),
-                                                       max(peaksGR_no_hitsGRseq_AtoN$C),
-                                                       max(peaksGR_no_hitsGRseq_AtoN$G),
-                                                       max(peaksGR_no_hitsGRseq_AtoN$T),
-                                                       max(peaksGR_no_hitsGRseq_AtoN$N)))
-rownames(peaksGR_no_hitsGRseq_AtoN_ranges) <- c("A", "C", "G", "T", "N")
-
-
-
-
-# Load table of representative genes and convert into GRanges
-genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
-                    colClasses = c(NA,
-                                   rep("NULL", 2),
-                                   rep(NA, 2),
-                                   "NULL", NA, "NULL", NA))
-colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
-genes <- genes[genes$chr != "chrUn",]
-genesGR <- GRanges(seqnames = genes$chr,
-                   ranges = IRanges(start = genes$start,
-                                    end = genes$end),
-                   strand = genes$strand,
-                   geneID = genes$geneID)
-print(genesGR)
-# Subset to include only those overlapping specified region (e.g., euchromatin)
-genesGR <- subsetByOverlaps(x = genesGR,
-                            ranges = regionGR,
-                            type = "any",
-                            invert = FALSE,
-                            ignore.strand = TRUE)
-
-# Obtain 1000-bp gene promoters and terminators
-promotersGR <- promoters(genesGR, upstream = 1000, downstream = 0)
-print(promotersGR)
-
-# Obtain regions immediately downstream of gene TSSs (TSS to TSS+499 bp)
-TSSsGR <- promoters(genesGR, upstream = 0, downstream = 500)
-print(TSSsGR)
-
-# Obtain regions immediately upstream of gene TTSs (TTS to TTS-499 bp)
-source("/projects/ajt200/Rfunctions/TTSplus.R")
-TTSsGR <- TTSplus(genesGR, upstream = 499, downstream = 0)
-print(TTSsGR)
-
-terminatorsGR <- TTSplus(genesGR, upstream = -1, downstream = 1000)
-print(terminatorsGR)
-
-
-# Convert windowed recombination rate into GRanges
-cMMb <- read.table(paste0(
-                   "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/",
-                   "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                   as.character(minMarkerDist), "bp_", winName, ".txt"))
-cMMbGR <- GRanges(seqnames = cMMb$chr,
-                  ranges = IRanges(start = cMMb$windowStart,
-                                   end = cMMb$windowEnd),
-                  strand = "*",
-                  cMMb = cMMb$cMMb)
-
-# Obtain winName-scaled cMMb values for each gene promoter and terminator
-# Where features overlap more than one winName window, calculate mean cMMb
-# genes
-gene_cMMb_overlaps <- findOverlaps(query = genesGR,
-                                   subject = cMMbGR,
-                                   type = "any",
-                                   select = "all",
-                                   ignore.strand = TRUE)
-gene_cMMb_overlapsList <- lapply(seq_along(genesGR), function(x) {
-  subjectHits(gene_cMMb_overlaps)[queryHits(gene_cMMb_overlaps) == x]
-})
-gene_cMMb <- sapply(gene_cMMb_overlapsList,
-                    function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
-genesGR <- GRanges(genesGR,
-                   geneID = genesGR$geneID,
-                   cMMb = gene_cMMb)
-
-# promoters
-promoter_cMMb_overlaps <- findOverlaps(query = promotersGR,
-                                       subject = cMMbGR,
-                                       type = "any",
-                                       select = "all",
-                                       ignore.strand = TRUE)
-promoter_cMMb_overlapsList <- lapply(seq_along(promotersGR), function(x) {
-  subjectHits(promoter_cMMb_overlaps)[queryHits(promoter_cMMb_overlaps) == x]
-})
-## OR
-#promoter_cMMb_overlapsList <- getOverlaps(coordinates = promotersGR,
-#                                          segments = cMMbGR,
-#                                          overlapType = "overlapping",
-#                                          whichOverlaps = TRUE,
-#                                          ignoreStrand = TRUE)
-promoter_cMMb <- sapply(promoter_cMMb_overlapsList,
-                        function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
-promotersGR <- GRanges(promotersGR,
-                       geneID = promotersGR$geneID,
-                       cMMb = promoter_cMMb)
-
-# TSSs
-TSS_cMMb_overlaps <- findOverlaps(query = TSSsGR,
-                                  subject = cMMbGR,
-                                  type = "any",
-                                  select = "all",
-                                  ignore.strand = TRUE)
-TSS_cMMb_overlapsList <- lapply(seq_along(TSSsGR), function(x) {
-  subjectHits(TSS_cMMb_overlaps)[queryHits(TSS_cMMb_overlaps) == x]
-})
-TSS_cMMb <- sapply(TSS_cMMb_overlapsList,
-                   function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
-TSSsGR <- GRanges(TSSsGR,
-                  geneID = TSSsGR$geneID,
-                  cMMb = TSS_cMMb)
-
-# TTSs
-TTS_cMMb_overlaps <- findOverlaps(query = TTSsGR,
-                                  subject = cMMbGR,
-                                  type = "any",
-                                  select = "all",
-                                  ignore.strand = TRUE)
-TTS_cMMb_overlapsList <- lapply(seq_along(TTSsGR), function(x) {
-  subjectHits(TTS_cMMb_overlaps)[queryHits(TTS_cMMb_overlaps) == x]
-})
-TTS_cMMb <- sapply(TTS_cMMb_overlapsList,
-                   function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
-TTSsGR <- GRanges(TTSsGR,
-                  geneID = TTSsGR$geneID,
-                  cMMb = TTS_cMMb)
-
-# terminators
-terminator_cMMb_overlaps <- findOverlaps(query = terminatorsGR,
-                                         subject = cMMbGR,
-                                         type = "any",
-                                         select = "all",
-                                         ignore.strand = TRUE)
-terminator_cMMb_overlapsList <- lapply(seq_along(terminatorsGR), function(x) {
-  subjectHits(terminator_cMMb_overlaps)[queryHits(terminator_cMMb_overlaps) == x]
-})
-terminator_cMMb <- sapply(terminator_cMMb_overlapsList,
-                          function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
-terminatorsGR <- GRanges(terminatorsGR,
-                         geneID = terminatorsGR$geneID,
-                         cMMb = terminator_cMMb)
-
-# Load peaks for given ChIP-seq dataset
-if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
-                      "H3K27me3_ChIP_SRR6350666",
-                      "H3K36me3_ChIP_SRR6350670",
-                      "H3K9ac_ChIP_SRR6350667",
-                      "CENH3_ChIP_SRR1686799")) {
-  peaksFile <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                      markChIP, "/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/",
-                      sigLevel, "/",
-                      libNameChIP, "_rangerPeaksGRmergedOverlaps_minuslog10_",
-                      sigLevel, "_noMinWidth.RData")
-} else {
-  peaksFile <- paste0("/home/ajt200/analysis/wheat/",
-                      markChIP, "/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/",
-                      sigLevel, "/",
-                      libNameChIP, "_rangerPeaksGRmergedOverlaps_minuslog10_",
-                      sigLevel, "_noMinWidth.RData")
+# but whose base frequencies are within 1 SD of the mean of those that do
+freqBool <- NULL
+for(i in 1:dim(peaksGR_no_hitsGRseq_AtoN)[1]) {
+  freqBool <- c(freqBool,
+                # A
+                peaksGR_no_hitsGRseq_AtoN[i,]$A >=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "A",]$meanMinusSD &
+                peaksGR_no_hitsGRseq_AtoN[i,]$A <=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "A",]$meanPlusSD &
+                # C
+                peaksGR_no_hitsGRseq_AtoN[i,]$C >=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "C",]$meanMinusSD &
+                peaksGR_no_hitsGRseq_AtoN[i,]$C <=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "C",]$meanPlusSD &
+                # G
+                peaksGR_no_hitsGRseq_AtoN[i,]$G >=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "G",]$meanMinusSD &
+                peaksGR_no_hitsGRseq_AtoN[i,]$G <=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "G",]$meanPlusSD &
+                # T
+                peaksGR_no_hitsGRseq_AtoN[i,]$T >=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "T",]$meanMinusSD &
+                peaksGR_no_hitsGRseq_AtoN[i,]$T <=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "T",]$meanPlusSD &
+                # N
+                peaksGR_no_hitsGRseq_AtoN[i,]$N >=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "N",]$meanMinusSD &
+                peaksGR_no_hitsGRseq_AtoN[i,]$N <=
+                  peaksGR_hitsGRseq_AtoN_stats[
+                    rownames(peaksGR_hitsGRseq_AtoN_stats) == "N",]$meanPlusSD)
 }
+peaksGR_no_hitsGRseq_AtoN_pass <- peaksGR_no_hitsGRseq_AtoN[freqBool,]
+peaksGR_no_hitsGRseq_pass <- peaksGR_no_hitsGRseq[freqBool,]
+peaksGR_no_hitsGR_pass <- peaksGR_no_hitsGR[freqBool,]
 
-load(peaksFile)
-peaksGR <- rangerPeaksGRmergedOverlaps
-rangerPeaksGRmergedOverlaps <- NULL
-# Subset to include only those overlapping specified region (e.g., euchromatin)
-peaksGR <- subsetByOverlaps(x = peaksGR,
-                            ranges = regionGR,
-                            type = "any",
-                            invert = FALSE,
-                            ignore.strand = TRUE)
-
-# Obtain gene parts that do or don't overlap peaks
-# genes
-gene_peak_overlapsGR <- subsetByOverlaps(x = genesGR,
-                                         ranges = peaksGR,
-                                         type = "any",
-                                         invert = FALSE,
-                                         ignore.strand = TRUE)
-gene_peak_nonoverlapsGR <- subsetByOverlaps(x = genesGR,
-                                            ranges = peaksGR,
-                                            type = "any",
-                                            invert = TRUE,
-                                            ignore.strand = TRUE)
-gene_peak_overlapsGR_extend <- GRanges(seqnames = seqnames(gene_peak_overlapsGR),
-                                       ranges = IRanges(start = start(gene_peak_overlapsGR)-maxDistance,
-                                                        end = end(gene_peak_overlapsGR)+maxDistance),
-                                       strand = strand(gene_peak_overlapsGR),
-                                       cMMb = gene_peak_overlapsGR$cMMb)
-gene_peak_nonoverlapsGR_nearby <- subsetByOverlaps(x = gene_peak_nonoverlapsGR,
-                                                   ranges = gene_peak_overlapsGR_extend,
-                                                   type = "any",
-                                                   invert = FALSE,
-                                                   ignore.strand = TRUE)
-# promoters
-promoter_peak_overlapsGR <- subsetByOverlaps(x = promotersGR,
-                                             ranges = peaksGR,
-                                             type = "any",
-                                             invert = FALSE,
-                                             ignore.strand = TRUE)
-promoter_peak_nonoverlapsGR <- subsetByOverlaps(x = promotersGR,
-                                                ranges = peaksGR,
-                                                type = "any",
-                                                invert = TRUE,
-                                                ignore.strand = TRUE)
-promoter_peak_overlapsGR_extend <- GRanges(seqnames = seqnames(promoter_peak_overlapsGR),
-                                           ranges = IRanges(start = start(promoter_peak_overlapsGR)-maxDistance,
-                                                            end = end(promoter_peak_overlapsGR)+maxDistance),
-                                           strand = strand(promoter_peak_overlapsGR),
-                                           cMMb = promoter_peak_overlapsGR$cMMb)
-promoter_peak_nonoverlapsGR_nearby <- subsetByOverlaps(x = promoter_peak_nonoverlapsGR,
-                                                       ranges = promoter_peak_overlapsGR_extend,
-                                                       type = "any",
-                                                       invert = FALSE,
-                                                       ignore.strand = TRUE)
-# TSSs
-TSS_peak_overlapsGR <- subsetByOverlaps(x = TSSsGR,
-                                        ranges = peaksGR,
-                                        type = "any",
-                                        invert = FALSE,
-                                        ignore.strand = TRUE)
-TSS_peak_nonoverlapsGR <- subsetByOverlaps(x = TSSsGR,
-                                           ranges = peaksGR,
-                                           type = "any",
-                                           invert = TRUE,
-                                           ignore.strand = TRUE)
-TSS_peak_overlapsGR_extend <- GRanges(seqnames = seqnames(TSS_peak_overlapsGR),
-                                      ranges = IRanges(start = start(TSS_peak_overlapsGR)-maxDistance,
-                                                       end = end(TSS_peak_overlapsGR)+maxDistance),
-                                      strand = strand(TSS_peak_overlapsGR),
-                                      cMMb = TSS_peak_overlapsGR$cMMb)
-TSS_peak_nonoverlapsGR_nearby <- subsetByOverlaps(x = TSS_peak_nonoverlapsGR,
-                                                  ranges = TSS_peak_overlapsGR_extend,
-                                                  type = "any",
-                                                  invert = FALSE,
-                                                  ignore.strand = TRUE)
-# TTSs
-TTS_peak_overlapsGR <- subsetByOverlaps(x = TTSsGR,
-                                        ranges = peaksGR,
-                                        type = "any",
-                                        invert = FALSE,
-                                        ignore.strand = TRUE)
-TTS_peak_nonoverlapsGR <- subsetByOverlaps(x = TTSsGR,
-                                           ranges = peaksGR,
-                                           type = "any",
-                                           invert = TRUE,
-                                           ignore.strand = TRUE)
-TTS_peak_overlapsGR_extend <- GRanges(seqnames = seqnames(TTS_peak_overlapsGR),
-                                      ranges = IRanges(start = start(TTS_peak_overlapsGR)-maxDistance,
-                                                       end = end(TTS_peak_overlapsGR)+maxDistance),
-                                      strand = strand(TTS_peak_overlapsGR),
-                                      cMMb = TTS_peak_overlapsGR$cMMb)
-TTS_peak_nonoverlapsGR_nearby <- subsetByOverlaps(x = TTS_peak_nonoverlapsGR,
-                                                  ranges = TTS_peak_overlapsGR_extend,
-                                                  type = "any",
-                                                  invert = FALSE,
-                                                  ignore.strand = TRUE)
-# terminators
-terminator_peak_overlapsGR <- subsetByOverlaps(x = terminatorsGR,
-                                               ranges = peaksGR,
-                                               type = "any",
-                                               invert = FALSE,
-                                               ignore.strand = TRUE)
-terminator_peak_nonoverlapsGR <- subsetByOverlaps(x = terminatorsGR,
-                                                  ranges = peaksGR,
-                                                  type = "any",
-                                                  invert = TRUE,
-                                                  ignore.strand = TRUE)
-terminator_peak_overlapsGR_extend <- GRanges(seqnames = seqnames(terminator_peak_overlapsGR),
-                                             ranges = IRanges(start = start(terminator_peak_overlapsGR)-maxDistance,
-                                                              end = end(terminator_peak_overlapsGR)+maxDistance),
-                                             strand = strand(terminator_peak_overlapsGR),
-                                             cMMb = terminator_peak_overlapsGR$cMMb)
-terminator_peak_nonoverlapsGR_nearby <- subsetByOverlaps(x = terminator_peak_nonoverlapsGR,
-                                                         ranges = terminator_peak_overlapsGR_extend,
-                                                         type = "any",
-                                                         invert = FALSE,
-                                                         ignore.strand = TRUE)
 
 # Define function to randomly select n rows from
 # a GRanges object (features)
