@@ -60,8 +60,8 @@ library(plotrix)
 regionDir <- paste0(region, "/")
 resDir <- paste0(regionDir, "results/")
 plotDir <- paste0(regionDir, "histograms/")
-gffDir <- "gff/"
-bedDir <- "bed/"
+gffDir <- paste0(regionDir, "gff/")
+bedDir <- paste0(regionDir, "bed/")
 system(paste0("[ -d ", regionDir, " ] || mkdir ", regionDir))
 system(paste0("[ -d ", resDir, " ] || mkdir ", resDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -210,7 +210,7 @@ hitsGR <- hitsGR[-subjectHits(mask_hits_overlap)]
 print(hitsGR)
 # Write as GRanges objects and in BED and GFF3 format
 save(hitsGR,
-     file = paste0(pwmName, "_motif_", motif, "_matchPWM_loci_in_",
+     file = paste0(regionDir, pwmName, "_motif_", motif, "_matchPWM_loci_in_",
                    genomeName, "genome_", region, ".RData"))
 hitsgff <- data.frame(chr = as.character(seqnames(hitsGR)),
                       source = as.character(rep(".")),
@@ -558,7 +558,7 @@ loci_cMMb_permTest <- function(targets,
              "minInterMarkerDist", as.character(minMarkerDist), "bp_",
              winName, "Scaled_cMMb_permTestResults.pdf"),
              height = 4.5, width = 5)
-  par(mar = c(3.1, 3.1, 4.1, 1.1),
+  par(mar = c(3.1, 3.1, 5.1, 1.1),
       mgp = c(1.85, 0.75, 0))
   ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
   #options(scipen = 100)
@@ -604,7 +604,7 @@ loci_cMMb_permTest <- function(targets,
                     bquote("Permutations = "*.(prettyNum(randomSets,
                                                          big.mark = ",",
                                                          trim = T))))
-  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
+  mtext(do.call(expression, titleText), side = 3, line = 4:1, cex = c(0.7, 0.7, 1, 1))
   lines(density(permTestResults@permuted),
         col = "dodgerblue3",
         lwd = 1.5)
@@ -643,6 +643,6 @@ loci_cMMb_permTest(targets = peaksGR_hitsGR,
                                         "_overlapping_", pwmName, "_motif_", motif, "_matchPWM_loci"),
                    targetsNamePlot = paste0("H2A.Z- and H3K27me3-enriched ASY1 peaks in ",
                                             genomeName, "-genome ", region,
-                                            " overlapping ", motif, "-matching loci"),
+                                            "\noverlapping ", motif, "-matching loci"),
                    resultsDir = resDir,
                    plotDir = plotDir)
