@@ -558,7 +558,7 @@ loci_cMMb_permTest <- function(targets,
              "minInterMarkerDist", as.character(minMarkerDist), "bp_",
              winName, "Scaled_cMMb_permTestResults.pdf"),
              height = 4.5, width = 5)
-  par(mar = c(3.1, 3.1, 5.1, 1.1),
+  par(mar = c(3.1, 3.1, 4.1, 1.1),
       mgp = c(1.85, 0.75, 0))
   ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
   #options(scipen = 100)
@@ -604,7 +604,7 @@ loci_cMMb_permTest <- function(targets,
                     bquote("Permutations = "*.(prettyNum(randomSets,
                                                          big.mark = ",",
                                                          trim = T))))
-  mtext(do.call(expression, titleText), side = 3, line = 4:1, cex = c(0.7, 0.7, 1, 1))
+  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
   lines(density(permTestResults@permuted),
         col = "dodgerblue3",
         lwd = 1.5)
@@ -641,8 +641,8 @@ loci_cMMb_permTest(targets = peaksGR_hitsGR,
                    targetsName = paste0("H2AZ_H3K27me3_enriched_ASY1_peaks_in_",
                                         genomeName, "genome_", region,
                                         "_overlapping_", pwmName, "_motif_", motif, "_matchPWM_loci"),
-                   targetsNamePlot = paste0("H2A.Z- and H3K27me3-enriched ASY1 peaks in ",
+                   targetsNamePlot = paste0("ASY1 peaks in ",
                                             genomeName, "-genome ", region,
-                                            "\noverlapping ", motif, "-matching loci"),
+                                            " overlapping ", motif),
                    resultsDir = resDir,
                    plotDir = plotDir)
