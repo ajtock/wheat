@@ -6,18 +6,18 @@
 # Usage:
 # /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted.R ASY1_CS_Rep1_ChIP both 107891 genes 3500 2000 2kb '2 kb' 20 20bp promoters
 
-libName <- "ASY1_CS_Rep1_ChIP"
-align <- "both"
-featureNumber <- 107891
-featureName <- "genes"
-bodyLength <- 3500
-upstream <- 2000
-downstream <- 2000
-flankName <- "2kb"
-flankNamePlot <- "2 kb"
-binSize <- 20
-binName <- "20bp"
-region <- "promoters"
+#libName <- "ASY1_CS_Rep1_ChIP"
+#align <- "both"
+#featureNumber <- 107891
+#featureName <- "genes"
+#bodyLength <- 3500
+#upstream <- 2000
+#downstream <- 2000
+#flankName <- "2kb"
+#flankNamePlot <- "2 kb"
+#binSize <- 20
+#binName <- "20bp"
+#region <- "promoters"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -90,67 +90,43 @@ mat1Sorted <- mat1[sort.int(mat1RegionRowMeans,
 
 # Load feature matrices for each chromatin dataset, log2-transform,
 # and sort by decreasing mat1RegionRowMeans
-
-ChIPNames1 <- c(
-                "
-                "H3K9me2_Rep1_ChIP",
-                "H3K4me3_Rep1_ChIP",
-                "CENH3_ChIP_SRR1686799"
-               )
-ChIPNames2 <- c(
-                "H3K4me3_ChIP_SRR6350668",
-                "H3K9ac_ChIP_SRR6350667",
-                "H3K27me3_ChIP_SRR6350666",
-                "H3K36me3_ChIP_SRR6350670"
-               )
-controlNames <- c(
-                  "MNase_Rep1",
-                  "H3_input_SRR6350669"
-                 )
-ChIPNamesPlot <- c(
-                  "H3K9me2",
-                  "H3K4me3",
-                  "CENH3",
-                  "H3K4me3 (IWGSC)",
-                  "H3K9ac",
-                  "H3K27me3",
-                  "H3K36me3",
-                  "MNase"
-                 )
-ChIPNames <- c(
-               "H3K9me2_Rep1_ChIP",
+ChIPnames <- c(
+               "ASY1_CS_Rep1_ChIP",
+               "DMC1_Rep1_ChIP",
+               "H2AZ_Rep1_ChIP",
                "H3K4me3_Rep1_ChIP",
-               "CENH3_ChIP_SRR1686799",
-               "H3K4me3_ChIP_SRR6350668",
-               "H3K9ac_ChIP_SRR6350667",
                "H3K27me3_ChIP_SRR6350666",
-               "H3K36me3_ChIP_SRR6350670",
+               "H3K9me2_Rep1_ChIP",
+               "H3K27me1_Rep1_ChIP",
                "MNase_Rep1"
               )
-ChIPDirs1 <- c(
-               "/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-               "/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/CENH3/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
-              )
-ChIPDirs2 <- c(
-               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K4me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K9ac/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K36me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
-              )
+controlNames <- c(
+                  "H3_input_SRR6350669",
+                  "MNase_Rep1"
+                 )
+ChIPDirs <- c(
+              "/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/H2AZ/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/H3K27me1/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+              "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
+             )
 controlDirs <- c(
-                 "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-                 "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/geneProfiles/matrices/"             
+                 "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
+                 "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
                 )
 
-ChIPmats1 <- mclapply(seq_along(ChIPNames1), function(x) {
-  as.matrix(read.table(paste0(ChIPDirs1[x],
-                              ChIPNames1[x],
+ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
+  as.matrix(read.table(paste0(ChIPDirs[x],
+                              ChIPNames[x],
                               "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
                               featureName, "_matrix_bin", binName,
                               "_flank", flankName, ".tab"),
                        header = F, skip = 3))
-}, mc.cores = length(ChIPNames1)) 
+}, mc.cores = length(ChIPNames)) 
 
 ChIPmats2 <- mclapply(seq_along(ChIPNames2), function(x) {
   as.matrix(read.table(paste0(ChIPDirs2[x],
