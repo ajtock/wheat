@@ -26,12 +26,12 @@ featureNumber <- as.numeric(args[3])
 featureName <- args[4]
 bodyLength <- as.numeric(args[5])
 upstream <- as.numeric(args[6])
-downstream <- as.numeric(args[7])
-flankName <- args[8]
-flankNamePlot <- args[9]
-binSize <- as.numeric(args[10])
-binName <- args[11]
-region <- args[12]
+downstream <- as.numeric(args[6])
+flankName <- args[7]
+flankNamePlot <- args[8]
+binSize <- as.numeric(args[9])
+binName <- args[10]
+region <- args[11]
 
 library(EnrichedHeatmap)
 library(circlize)
@@ -104,7 +104,7 @@ ChIPNames <- c(
 ChIPNamesPlot <- c(
                    "ASY1",
                    "DMC1",
-                   "H2AZ",
+                   "H2A.Z",
                    "H3K4me3",
                    "H3K27me3",
                    "H3K9me2",
@@ -306,13 +306,13 @@ featureHeatmap <- function(matSorted,
                   axis_name = c(paste0("-", flankNamePlot),
                                 featureStartLab, featureEndLab,
                                 paste0("+", flankNamePlot)),
-                  axis_name_gp = gpar(fontsize = 14),
+                  axis_name_gp = gpar(fontsize = 12),
                   border = FALSE,
                   pos_line_gp = gpar(col = "white", lty = 2, lwd = 2),
                   # If converting into png with pdfTotiffTopng.sh,
                   # set use_raster to FALSE
-                  #use_raster = FALSE)
-                  use_raster = TRUE, raster_device = "png", raster_quality = 0.1)
+                  use_raster = FALSE)
+                  #use_raster = TRUE, raster_device = "png", raster_quality = 4)
 }
 
 
@@ -367,5 +367,5 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     height = 8)
 draw(htmps,
      heatmap_legend_side = "bottom",
-     gap = unit(c(12), "mm"))
+     gap = unit(c(14), "mm"))
 dev.off()
