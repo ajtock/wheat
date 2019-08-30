@@ -34,9 +34,10 @@ binName <- args[11]
 region <- args[12]
 
 library(EnrichedHeatmap)
-library(parallel)
 library(circlize)
 library(RColorBrewer)
+library(gridExtra)
+library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
 print("Currently registered parallel backend name, version and cores")
@@ -45,11 +46,12 @@ print(getDoParVersion())
 print(getDoParWorkers())
 
 plotDir <- "./plots/"
-regionPlotDir <- paste0(plotDir, region, "/")
+regionPlotDir <- paste0(plotDir, region,
+                        "_by_", libName, "/")
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 system(paste0("[ -d ", regionPlotDir, " ] || mkdir ", regionPlotDir))
 plotDir <- regionPlotDir
- 
+
 # Load matrix and extract region for sorting of features
 mat1 <- as.matrix(read.table(paste0("../matrices/",
                                     libName,
@@ -90,20 +92,54 @@ mat1Sorted <- mat1[sort.int(mat1RegionRowMeans,
 
 # Load feature matrices for each chromatin dataset, log2-transform,
 # and sort by decreasing mat1RegionRowMeans
-ChIPnames <- c(
+ChIPNames <- c(
                "ASY1_CS_Rep1_ChIP",
                "DMC1_Rep1_ChIP",
                "H2AZ_Rep1_ChIP",
                "H3K4me3_Rep1_ChIP",
                "H3K27me3_ChIP_SRR6350666",
                "H3K9me2_Rep1_ChIP",
-               "H3K27me1_Rep1_ChIP",
-               "MNase_Rep1"
+               "H3K27me1_Rep1_ChIP"
               )
+ChIPNamesPlot <- c(
+                   "ASY1",
+                   "DMC1",
+                   "H2AZ",
+                   "H3K4me3",
+                   "H3K27me3",
+                   "H3K9me2",
+                   "H3K27me1"
+                  )
+ChIPColours <- c(
+                 "purple4",
+                 "green2",
+                 "dodgerblue",
+                 "forestgreen",
+                 "navy",
+                 "magenta3",
+                 "firebrick1"
+                )
+otherNames <- c(
+                "MNase_Rep1"
+               )
+otherNamesPlot <- c(
+                    "MNase"
+                   )
+otherColours <- c(
+                  "darkcyan"
+                 )
 controlNames <- c(
                   "H3_input_SRR6350669",
                   "MNase_Rep1"
                  )
+controlNamesPlot <- c(
+                      "Input",
+                      "MNase"
+                     )
+controlColours <- c(
+                    "grey40",
+                    "darkcyan"
+                   )
 ChIPDirs <- c(
               "/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
               "/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
@@ -111,9 +147,11 @@ ChIPDirs <- c(
               "/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
               "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
               "/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-              "/home/ajt200/analysis/wheat/H3K27me1/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
-              "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
+              "/home/ajt200/analysis/wheat/H3K27me1/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
              )
+otherDirs <- c(
+               "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
+              )
 controlDirs <- c(
                  "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/geneProfiles/matrices/",
                  "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles/matrices/"
@@ -128,14 +166,14 @@ ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
                        header = F, skip = 3))
 }, mc.cores = length(ChIPNames)) 
 
-ChIPmats2 <- mclapply(seq_along(ChIPNames2), function(x) {
-  as.matrix(read.table(paste0(ChIPDirs2[x],
-                              ChIPNames2[x],
+othermats <- mclapply(seq_along(otherNames), function(x) {
+  as.matrix(read.table(paste0(otherDirs[x],
+                              otherNames[x],
                               "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
                               featureName, "_matrix_bin", binName,
                               "_flank", flankName, ".tab"),
                        header = F, skip = 3))
-}, mc.cores = length(ChIPNames2)) 
+}, mc.cores = length(otherNames))
 
 controlmats <- mclapply(seq_along(controlNames), function(x) {
   as.matrix(read.table(paste0(controlDirs[x],
@@ -146,16 +184,26 @@ controlmats <- mclapply(seq_along(controlNames), function(x) {
                        header = F, skip = 3))
 }, mc.cores = length(controlNames)) 
 
-log2ChIPmats1 <- mclapply(seq_along(ChIPmats1), function(x) {
-  log2((ChIPmats1[[x]]+1)/(controlmats[[1]]+1))
-}, mc.cores = length(ChIPmats1))
- 
-log2ChIPmats2 <- mclapply(seq_along(ChIPmats2), function(x) {
-  log2((ChIPmats2[[x]]+1)/(controlmats[[2]]+1))
-}, mc.cores = length(ChIPmats2))
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
+log2ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
+  if(ChIPNames[x] %in% c(
+                         "ASY1_CS_Rep1_ChIP",
+                         "DMC1_Rep1_ChIP",
+                         "H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667"
+                        )) {
+    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIPmats[[x]]+1)/(controlmats[[1]]+1))
+  } else {
+    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIPmats[[x]]+1)/(controlmats[[2]]+1))
+  }
+}, mc.cores = length(ChIPmats))
 
-log2ChIPmats <- c(log2ChIPmats1, log2ChIPmats2, list(controlmats[[1]]))
-
+# Sorted by decreasing mat1RegionRowMeans (e.g., ASY1 in gene promoters)
 log2ChIPmatsSorted <- mclapply(seq_along(log2ChIPmats), function(x) {
   log2ChIPmats[[x]][sort.int(mat1RegionRowMeans,
                              decreasing = T,
@@ -177,6 +225,48 @@ for(x in seq_along(log2ChIPmatsSorted)) {
   class(log2ChIPmatsSorted[[x]]) = c("normalizedMatrix", "matrix")
 }
 
+othermatsSorted <- mclapply(seq_along(othermats), function(x) {
+  othermats[[x]][sort.int(mat1RegionRowMeans,
+                             decreasing = T,
+                             index.return = T,
+                             na.last = T)$ix,]
+}, mc.cores = length(othermats))
+
+for(x in seq_along(othermatsSorted)) {
+  attr(othermatsSorted[[x]], "upstream_index") = 1:(upstream/binSize)
+  attr(othermatsSorted[[x]], "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
+  attr(othermatsSorted[[x]], "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
+  attr(othermatsSorted[[x]], "extend") = c(upstream, downstream)
+  attr(othermatsSorted[[x]], "smooth") = FALSE
+  attr(othermatsSorted[[x]], "signal_name") = ChIPNamesPlot[x]
+  attr(othermatsSorted[[x]], "target_name") = featureName
+  attr(othermatsSorted[[x]], "target_is_single_point") = FALSE
+  attr(othermatsSorted[[x]], "background") = 0
+  attr(othermatsSorted[[x]], "signal_is_categorical") = FALSE
+  class(othermatsSorted[[x]]) = c("normalizedMatrix", "matrix")
+}
+
+controlmatsSorted <- mclapply(seq_along(controlmats), function(x) {
+  controlmats[[x]][sort.int(mat1RegionRowMeans,
+                             decreasing = T,
+                             index.return = T,
+                             na.last = T)$ix,]
+}, mc.cores = length(controlmats))
+
+for(x in seq_along(controlmatsSorted)) {
+  attr(controlmatsSorted[[x]], "upstream_index") = 1:(upstream/binSize)
+  attr(controlmatsSorted[[x]], "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
+  attr(controlmatsSorted[[x]], "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
+  attr(controlmatsSorted[[x]], "extend") = c(upstream, downstream)
+  attr(controlmatsSorted[[x]], "smooth") = FALSE
+  attr(controlmatsSorted[[x]], "signal_name") = ChIPNamesPlot[x]
+  attr(controlmatsSorted[[x]], "target_name") = featureName
+  attr(controlmatsSorted[[x]], "target_is_single_point") = FALSE
+  attr(controlmatsSorted[[x]], "background") = 0
+  attr(controlmatsSorted[[x]], "signal_is_categorical") = FALSE
+  class(controlmatsSorted[[x]]) = c("normalizedMatrix", "matrix")
+}
+
 if(featureName == "genes") {
   featureStartLab <- "TSS"
   featureEndLab <- "TTS"
@@ -186,107 +276,96 @@ if(featureName == "genes") {
 }
 
 # Heatmap plotting function
-geneHeatmap <- function(matSorted,
-                        col_fun,
-                        datName,
-                        rowOrder
-                       ) {
-  ht <- print(EnrichedHeatmap(mat = matSorted,
-                              top_annotation = NULL,
-                              col = col_fun,
-                              name = "Coverage",
-                              row_order = rowOrder,
-                              column_title = datName,
-                              axis_name = c(paste0("-", flankNamePlot),
-                                            featureStartLab, featureEndLab,
-                                            paste0("+", flankNamePlot)),
-                              border = FALSE,
-                              pos_line_gp = gpar(col = "white", lty = 2, lwd = 2),
-                              use_raster = TRUE))
-  
+# Note that for plotting heatmaps for individual datasets in separate PDFs,
+# must edit this function - print(EnrichedHeatmap(...))
+featureHeatmap <- function(matSorted,
+                           col_fun,
+                           colour,
+                           datName,
+                           rowOrder) {
+  EnrichedHeatmap(mat = matSorted,
+                  col = col_fun,
+                  row_order = rowOrder,
+                  column_title = datName,
+                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = colour,
+                                                                                        lwd = 3),
+                                                                              yaxis_side = "right",
+                                                                              yaxis_facing = "right",
+                                                                              yaxis_gp = gpar(fontsize = 10),
+                                                                              pos_line_gp = gpar(col = "black",
+                                                                                                 lty = 2,
+                                                                                                 lwd = 2))),
+                  top_annotation_height = unit(2, "cm"),
+                  width = unit(6, "cm"),
+                  name = datName,
+                  heatmap_legend_param = list(title = datName,
+                                              title_position = "topcenter",
+                                              title_gp = gpar(font = 2, fontsize = 12),
+                                              legend_direction = "horizontal",
+                                              labels_gp = gpar(fontsize = 10)),
+                  axis_name = c(paste0("-", flankNamePlot),
+                                featureStartLab, featureEndLab,
+                                paste0("+", flankNamePlot)),
+                  axis_name_gp = gpar(fontsize = 14),
+                  border = FALSE,
+                  pos_line_gp = gpar(col = "white", lty = 2, lwd = 2),
+                  # If converting into png with pdfTotiffTopng.sh,
+                  # set use_raster to FALSE
+                  #use_raster = FALSE)
+                  use_raster = TRUE, raster_device = "png", raster_quality = 0.1)
 }
 
-# Plot sRNA data
+
+# Define heatmap colours
 rich8to6equal <- c("#000041", "#0000CB", "#0081FF", "#FDEE02", "#FFAB00", "#FF3300")
-foreach(x = 1:5) %dopar% {
-  sRNA_col_fun <- colorRamp2(quantile(c(sRNAmatsSorted[[x]]),
-                                      c(0.998, 0.9982, 0.9984, 0.9986, 0.9988, 0.999),
-                                      na.rm = T),
-                             rich8to6equal)
-  pdf(paste0(plotDir, sRNAsizes[x], "nt_sRNAs_around_top", featureNumber, featureName,
-             "_heatmap_ordered_by_",
-             libName, "_in_", region, ".pdf"),
-      width = 5, height = 10)
-  geneHeatmap(matSorted = sRNAmatsSorted[[x]][1:featureNumber,],
-              col_fun = sRNA_col_fun,
-              datName = paste0(sRNAsizes[x], "-nt sRNAs"),
-              rowOrder = c(1:dim(sRNAmatsSorted[[x]][1:featureNumber,])[1])
-             )
-  dev.off()
-}
 
-# 33-nt sRNAs
-  sRNA_col_fun <- colorRamp2(quantile(c(sRNAmatsSorted[[6]]),
-                                      c(0.999, 0.99902, 0.99904, 0.99906, 0.99908, 0.9991),
-                                      na.rm = T),
-                             rich8to6equal)
-  pdf(paste0(plotDir, sRNAsizes[6], "nt_sRNAs_around_top", featureNumber, featureName,
-             "_heatmap_ordered_by_",
-             libName, "_in_", region, ".pdf"),
-      width = 5, height = 10)
-  geneHeatmap(matSorted = sRNAmatsSorted[[6]][1:featureNumber,],
-              col_fun = sRNA_col_fun,
-              datName = paste0(sRNAsizes[6], "-nt sRNAs"),
-              rowOrder = c(1:dim(sRNAmatsSorted[[6]][1:featureNumber,])[1])
-             )
-  dev.off()
-
-# 34-nt sRNAs
-  sRNA_col_fun <- colorRamp2(quantile(c(sRNAmatsSorted[[7]]),
-                                      c(0.999, 0.9992, 0.9994, 0.9996, 0.99985, 0.9999),
-                                      na.rm = T),
-                             rich8to6equal)
-  pdf(paste0(plotDir, sRNAsizes[7], "nt_sRNAs_around_top", featureNumber, featureName,
-             "_heatmap_ordered_by_",
-             libName, "_in_", region, ".pdf"),
-      width = 5, height = 10)
-  geneHeatmap(matSorted = sRNAmatsSorted[[7]][1:featureNumber,],
-              col_fun = sRNA_col_fun,
-              datName = paste0(sRNAsizes[7], "-nt sRNAs"),
-              rowOrder = c(1:dim(sRNAmatsSorted[[7]][1:featureNumber,])[1])
-             )
-  dev.off()
-
-# Plot ChIP data
-foreach(x = 1:7) %dopar% {
-  ChIP_col_fun <- colorRamp2(quantile(c(log2ChIPmatsSorted[[x]]),
+# Plot together
+# ChIP
+log2ChIPhtmpList <- mclapply(seq_along(ChIPNames), function(x) {
+  ChIP_col_fun <- colorRamp2(quantile(log2ChIPmatsSorted[[x]],
                                       c(0.1, 0.3, 0.5, 0.7, 0.9, 0.95),
                                       na.rm = T),
                              rich8to6equal)
-  pdf(paste0(plotDir, ChIPNames[x], "_around_top", featureNumber, featureName,
-             "_heatmap_ordered_by_",
-             libName, "_in_", region, ".pdf"),
-      width = 5, height = 10)
-  geneHeatmap(matSorted = log2ChIPmatsSorted[[x]][1:featureNumber,],
-              col_fun = ChIP_col_fun,
-              datName = ChIPNamesPlot[x],
-              rowOrder = c(1:dim(log2ChIPmatsSorted[[x]][1:featureNumber,])[1])
-             )
-  dev.off()
-}
-
-# MNase
-  ChIP_col_fun <- colorRamp2(quantile(c(log2ChIPmatsSorted[[8]]),
+  featureHeatmap(matSorted = log2ChIPmatsSorted[[x]],
+                 col_fun = ChIP_col_fun,
+                 colour = ChIPColours[x],
+                 datName = ChIPNamesPlot[x],
+                 rowOrder = c(1:dim(log2ChIPmatsSorted[[x]])[1]))
+}, mc.cores = length(log2ChIPmatsSorted))
+otherhtmpList <- mclapply(seq_along(otherNames), function(x) {
+  ChIP_col_fun <- colorRamp2(quantile(othermatsSorted[[x]],
                                       c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
                                       na.rm = T),
                              rich8to6equal)
-  pdf(paste0(plotDir, ChIPNames[8], "_around_top", featureNumber, featureName,
-             "_heatmap_ordered_by_",
-             libName, "_in_", region, ".pdf"),
-      width = 5, height = 10)
-  geneHeatmap(matSorted = log2ChIPmatsSorted[[8]][1:featureNumber,],
-              col_fun = ChIP_col_fun,
-              datName = ChIPNamesPlot[8],
-              rowOrder = c(1:dim(log2ChIPmatsSorted[[8]][1:featureNumber,])[1])
-             )
-  dev.off()
+  featureHeatmap(matSorted = othermatsSorted[[x]],
+                 col_fun = ChIP_col_fun,
+                 colour = otherColours[x],
+                 datName = otherNamesPlot[x],
+                 rowOrder = c(1:dim(othermatsSorted[[x]])[1]))
+}, mc.cores = length(othermatsSorted))
+controlhtmpList <- mclapply(seq_along(controlNames), function(x) {
+  ChIP_col_fun <- colorRamp2(quantile(controlmatsSorted[[x]],
+                                      c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
+                                      na.rm = T),
+                             rich8to6equal)
+  featureHeatmap(matSorted = controlmatsSorted[[x]],
+                 col_fun = ChIP_col_fun,
+                 colour = controlColours[x],
+                 datName = controlNamesPlot[x],
+                 rowOrder = c(1:dim(controlmatsSorted[[x]])[1]))
+}, mc.cores = length(controlmatsSorted))
+
+htmpList <- c(log2ChIPhtmpList, otherhtmpList, controlhtmpList[[1]])
+
+htmps <- NULL
+for(x in 1:length(htmpList)) {
+  htmps <- htmps + htmpList[[x]]
+}
+pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
+           "_heatmaps_ordered_by_", libName, "_in_", region, ".pdf"),
+    width = 3*length(htmpList),
+    height = 8)
+draw(htmps,
+     heatmap_legend_side = "bottom",
+     gap = unit(c(12), "mm"))
+dev.off()
