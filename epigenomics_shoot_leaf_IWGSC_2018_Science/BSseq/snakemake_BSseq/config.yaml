@@ -23,11 +23,11 @@ MAPPING:
   reference_prefix: "wheat_v1.0"
   extra_params_bismark:
   # Example to relax mapping
-  #extra_params: " --score_min L,0,-0.4 --un"
+  #extra_params_bismark: " --score_min L,0,-0.4 --un"
 
-REPORT:
-  binsize: 50
-  extra_params_bamCoverage:
-  extra_params_meth_extractor: " --comprehensive --report --buffer_size 8G"
-  extra_params_bismark2bedGraph:
-  extra_params_coverage2cytosine: " --CX"
+#REPORT:
+#  binsize: 50
+#  extra_params_bamCoverage:
+#  extra_params_meth_extractor: " --comprehensive --report --buffer_size 8G"
+#  extra_params_bismark2bedGraph:
+#  extra_params_coverage2cytosine: " --CX"
