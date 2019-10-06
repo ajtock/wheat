@@ -1,9 +1,8 @@
 SAMPLES: ["BSseq_Rep2a_SRR6792682"]
 THREADS: 48
 TRIM:
-  extra_params_trim_galore:
   # Example for trimming 10 bp off read 5' ends
-  #extra_params_trim_galore: " --clip_R1 10 --clip_R2 10"
+  extra_params_trim_galore: "--clip_R1 10 --clip_R2 10"
 
 # NOTE: reference genome-specific mapping parameters
 MAPPING:
@@ -20,7 +19,7 @@ MAPPING:
   # reference_prefix is used for naming alignment output files;
   # this should be the name of the FASTA file (e.g., wheat_v1.0.fa)
   # without the .fa extension
-  reference_prefix: "wheat_v1.0"
+  reference_prefix: "wheat_v1.0_incl_organelles_controls"
   extra_params_bismark:
   # Example to relax mapping
   #extra_params_bismark: " --score_min L,0,-0.4 --un"

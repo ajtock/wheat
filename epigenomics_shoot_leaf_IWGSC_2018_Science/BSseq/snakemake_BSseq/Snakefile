@@ -1,5 +1,5 @@
 # Snakemake workflow for automated processing of DNA methylation data
-# derived from whole-genome bisulfite-sequencing (WGBS or BS-seq)
+# derived from whole-genome bisulfite sequencing (WGBS or BS-seq)
 # Adapted from https://github.com/seb-mueller/snakemake-bisulfite
 
 # Chromosome sizes file below ("data/index/wheat_v1.0.fa.sizes") must exist
@@ -67,23 +67,26 @@ else:
 shell.executable("/bin/bash")
 shell.prefix("set -euo pipefail; ")
 
-# ruleorder: fastqc_raw > trim > bismark > deduplicate > sort > methylation_extractor > bismark2bedGraph
-# to make shell rule to work we need to determine the base path of Snakefile since we expect
+# ruleorder: fastqc_raw > trim_galore > fastqc_trimmed > bismark > deduplicate > sort > methylation_extractor > bismark2bedGraph
 
 rule all:
     input:
-        # fastqc_raw
-        expand("logs/fastqc/raw/{sample}_{mate}_fastqc.html",
+#        # fastqc_raw
+#        expand("logs/fastqc/raw/{sample}_{mate}_fastqc.html",
+#               sample = sample,
+#               mate = mate),       
+#        # trim_galore
+#        expand("trimmed/{sample}_{mate}_trimmed.fastq.gz",
+#               sample = sample,
+#               mate = mate),
+#        # fastqc_trimmed
+#        expand("logs/fastqc/trimmed/{sample}_{mate}_trimmed_fastqc.html",
+#               sample = sample,
+#               mate = mate),       
+        # bismark
+        expand("mapped/{sample}_MappedOn_{refbase}_pe.bam",
                sample = sample,
-               mate = mate),       
-        # trim_galore
-        expand("trimmed/{sample}_{mate}_trimmed.fastq.gz",
-               sample = sample,
-               mate = mate),
-        # fastqc_trimmed
-        expand("logs/fastqc/trimmed/{sample}_{mate}_trimmed_fastqc.html",
-               sample = sample,
-               mate = mate),       
+               refbase = refbase),
 #        # bismark mapping
 #        # expand("mapped/{sample}_MappedOn_" + refbase +"_trim_bismark_pe.bam", sample=SAMPLES.index),
 #        # deduplication
@@ -175,15 +178,13 @@ rule trim_galore:
         r2log = "{sample}_" + mate[1] + ".fastq.gz_trimming_report.txt",
         selog = "logs/trim_galore/{sample}_trimmed.log"
     shell:
-        "(trim_galore --paired"
-        "             --cores 4"
-        "             --output_dir trimmed"
-        "             {params.extra}"
-        "             {input.r1} {input.r2}) &> {log.selog};"
-        "rename 's/val_[12].fq.gz/trimmed.fastq.gz/g' trimmed/{wildcards.sample}* ;"
-        "mkdir --parents logs/trim_galore ;"
-        "mv trimmed/{log.r1log} logs/trim_galore/ ;"
-        "mv trimmed/{log.r2log} logs/trim_galore/"
+        """
+        (trim_galore --paired --cores 4 --output_dir trimmed {params.extra} {input.r1} {input.r2} ) &> {log.selog} 
+        rename 's/val_[12].fq.gz/trimmed.fastq.gz/g' trimmed/{wildcards.sample}*
+        mkdir --parents logs/trim_galore
+        mv trimmed/{log.r1log} logs/trim_galore/
+        mv trimmed/{log.r2log} logs/trim_galore/
+        """
 
 # Run fastqc on R1 and R2 trimmed data
 rule fastqc_trimmed:
@@ -201,37 +202,34 @@ rule fastqc_trimmed:
     wrapper:
         "0.38.0/bio/fastqc"
 
-## https://cutadapt.readthedocs.io/en/stable/guide.html#bisulfite-sequencing-rrbs
-#rule trim_individual:
-#    input:
-#        R1 = "data/{sample}_" + mate[0] + ".fastq.gz",
-#        R2 = "data/{sample}_" + mate[1] + ".fastq.gz"
-#    log:
-#        log1="{sample}_" + mate[0] + ".fastq.gz_trimming_report.txt",
-#        log2="{sample}_" + mate[1] + ".fastq.gz_trimming_report.txt",
-#    output:
-#        # trim_galore alway seems to output fq indpendent of fq|fastq input
-#        read1="trimmed/{sample}_" + mate[0] + "_trim.fq.gz",
-#        read2="trimmed/{sample}_" + mate[1] + "_trim.fq.gz",
-#    shell:
-#        """
-#        trim_galore {extra_params_trim} --paired --trim1 {input.read1} {input.read2} --output_dir trimmed
-#        rename 's/val_[12]/trim/g' trimmed/{wildcards.sample}*
-#        mkdir -p logs/trim
-#        mv  trimmed/{log.log1} logs/trim/
-#        mv  trimmed/{log.log2} logs/trim/
-#        """
-#
-## trim_galore [options] <filename(s)>
-## -o/--output_dir <DIR>   If specified all output will be written to this directory instead of the current directory.
-#    # """--length <INT>"""
-## --paired                This option performs length trimming of quality/adapter/RRBS trimmed reads for
-## -t/--trim1              Trims 1 bp off every read from its 3' end. This may be needed for FastQ files that
-## trim_galore --paired bsseq_sample1_R1.fastq.gz bsseq_sample1_R2.fastq.gz
-## results in:
-## bsseq_sample1_R1_val_1.fq.gz
-## bsseq_sample1_R2_val_2.fq.gz
-#
+# Align to reference genome and call methylated cytosines
+rule bismark:
+    """Map reads using bismark and call methylated cytosines"""
+    input:
+        r1 = "trimmed/{sample}_" + mate[0] + "_trimmed.fastq.gz",
+        r2 = "trimmed/{sample}_" + mate[1] + "_trimmed.fastq.gz"
+    output:
+        "mapped/{sample}_MappedOn_{refbase}_pe.bam"
+    threads: 8
+    params:
+        extra = config["MAPPING"]["extra_params_bismark"]
+    log:
+        selog  = "logs/bismark/{sample}_MappedOn_{refbase}.log",   
+        replog = "logs/bismark/{sample}_MappedOn_{refbase}_PE_report.txt",
+        nuclog = "logs/bismark/{sample}_MappedOn_{refbase}_pe.nucleotide_stats.txt"
+    shell:
+        # USAGE: bismark [options] <genome_folder> {-1 <mates1> -2 <mates2> | <singles>}
+        "(bismark {params.extra}"
+        " --bowtie2"
+        " --parallel {threads}"
+        " --nucleotide_coverage"
+        " --basename {wildcards.sample}_MappedOn_{refbase}"
+        " --output_dir mapped"
+        " {reference}"
+        " -1 {input.r1} -2 {input.r2} ) &> {log.selog}; "
+        "mv mapped/{wildcards.sample}_MappedOn_{refbase}_PE_report.txt {log.replog}; "
+        "mv mapped/{wildcards.sample}_MappedOn_{refbase}_pe.nucleotide_stats.txt {log.nuclog}"
+
 #rule bismark:
 #    input:
 #        # read="trimmed/{sample}_trimmed.fq.gz",

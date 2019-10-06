@@ -1,0 +1,15 @@
+channels:
+  - bioconda
+dependencies:
+  - bowtie2=2.3.5
+  - fastqc=0.11.8
+  - trim-galore=0.6.4
+  - multiqc=1.7
+  - samtools=1.9
+  - bamtools=2.5.1
+  - bismark=0.20.0
+  - python=3.7.3
+  - pandas=0.25.1
+  - cutadapt=2.5
+  - ucsc-bedgraphtobigwig=357
+  - deeptools=3.3.1
