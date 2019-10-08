@@ -63,7 +63,7 @@ write.table(mRNA_rep[,1:9],
 mRNA_rep_bed <- data.frame(chr = as.character(mRNA_rep[,1]),
                            start = as.integer(mRNA_rep[,4]-1),
                            end = as.integer(mRNA_rep[,5]),
-                           name = as.character("."),
+                           name = as.integer(1:length(mRNA_rep[,1])),
                            score = as.numeric(mRNA_rep[,6]),
                            strand = as.character(mRNA_rep[,7]))
 write.table(mRNA_rep_bed,
