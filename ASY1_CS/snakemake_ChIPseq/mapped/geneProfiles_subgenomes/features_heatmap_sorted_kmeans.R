@@ -45,12 +45,9 @@ print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
 
-plotDir <- "./plots/"
-regionPlotDir <- paste0(plotDir, region,
-                        "_by_", libName, "/")
-system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
-system(paste0("[ -d ", regionPlotDir, " ] || mkdir ", regionPlotDir))
-plotDir <- regionPlotDir
+outDir <- paste0("clusters_by_log2_", libName,
+                 "_control_in_", region, "/")
+system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 
 # Load ChIP matrix
 mat1 <- as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/",
@@ -129,7 +126,7 @@ set.seed(938402845)
 # Initialise ratio_ss as a vector of 0s to be replaced with the ratio
 # of the within-cluster sum of squares to the total sum of squares
 # for each number of clusters
-kMax <- 20
+kMax <- 10
 ratio_ss <- rep(0, kMax)
 
 # Apply k-means clustering to log2ChIPmat for k in 1:15
@@ -139,14 +136,14 @@ for(k in 1:kMax) {
   print(k)
   km <- kmeans(x = log2ChIPmatRegion,
                centers = k,
-               iter.max = 30,
-               nstart = 20)
+               iter.max = 10,
+               nstart = 10)
   ratio_ss[k] <- km$tot.withinss / km$totss
 }
-#21: Quick-TRANSfer stage steps exceeded maximum (= 1767250)
+#19: Quick-TRANSfer stage steps exceeded maximum (= 1767250)
 
 # Make a scree ("elbow") plot
-pdf(paste0("screePlot_k_clusters_log2_",
+pdf(paste0(outDir, "screePlot_k_clusters_log2_",
            libName, "_control_around_",
            region, "_of_", featureName, ".pdf"))
 plot(x = 1:kMax, y = ratio_ss,
@@ -155,314 +152,47 @@ plot(x = 1:kMax, y = ratio_ss,
 abline(h = 0.2, lty = 2, col = "red")
 dev.off()
 
+# First run garbage collection to free up memory
+gc()
+# Set seed for reproducible results
+set.seed(938402845)
 
-if( region == "promoters" ) {
-  mat1Region <- mat1[,(((upstream-500)/binSize)+1):(upstream/binSize)]
-} else if ( region == "terminators" ) {
-  mat1Region <- mat1[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(500/binSize))]
-} else if ( region == "bodies" ) {
-  mat1Region <- mat1[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
-} else {
-  print("The region name provided does not match 'promoters', 'terminators', or 'bodies'")
-}
-mat1RegionRowMeans <- rowMeans(mat1Region, na.rm = T)
-mat1RegionRowMeansSorted <- sort.int(mat1RegionRowMeans,
-                                     decreasing = T,
-                                     index.return = T,
-                                     na.last = T)
-mat1RegionRowSums <- rowSums(mat1Region, na.rm = T)
-mat1RegionRowSumsSorted <- sort.int(mat1RegionRowSums,
-                                    decreasing = T,
-                                    index.return = T,
-                                    na.last = T)
-mat1RegionRowMedians <- apply(X = mat1Region,
-                              MARGIN = 1,
-                              FUN = median)
-mat1RegionRowMediansSorted <- sort.int(mat1RegionRowMedians,
-                                       decreasing = T,
-                                       index.return = T,
-                                       na.last = T)
-mat1Sorted <- mat1[sort.int(mat1RegionRowMeans,
-                            decreasing = T,
-                            index.return = T,
-                            na.last = T)$ix,]
+# 4 clusters
+kDef <- 4
+km <- kmeans(x = log2ChIPmatRegion,
+             centers = kDef,
+             iter.max = 10,
+             nstart = 10)
 
-# Load feature matrices for each chromatin dataset, log2-transform,
-# and sort by decreasing mat1RegionRowMeans
-ChIPNames <- c(
-               "ASY1_CS_Rep1_ChIP",
-               "DMC1_Rep1_ChIP",
-               "H2AZ_Rep1_ChIP",
-               "H3K4me3_Rep1_ChIP",
-               "H3K27me3_ChIP_SRR6350666",
-               "H3K9me2_Rep1_ChIP",
-               "H3K27me1_Rep1_ChIP"
-              )
-ChIPNamesPlot <- c(
-                   "ASY1",
-                   "DMC1",
-                   "H2A.Z",
-                   "H3K4me3",
-                   "H3K27me3",
-                   "H3K9me2",
-                   "H3K27me1"
-                  )
-ChIPColours <- c(
-                 "purple4",
-                 "green2",
-                 "dodgerblue",
-                 "forestgreen",
-                 "navy",
-                 "magenta3",
-                 "firebrick1"
-                )
-otherNames <- c(
-                "MNase_Rep1"
-               )
-otherNamesPlot <- c(
-                    "MNase"
-                   )
-otherColours <- c(
-                  "darkcyan"
-                 )
-controlNames <- c(
-                  "H3_input_SRR6350669",
-                  "MNase_Rep1"
-                 )
-controlNamesPlot <- c(
-                      "Input",
-                      "MNase"
-                     )
-controlColours <- c(
-                    "grey40",
-                    "darkcyan"
-                   )
-ChIPDirs <- c(
-              "/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/H2AZ/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/H3K27me3/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/H3K9me2/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-              "/home/ajt200/analysis/wheat/H3K27me1/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/"
-             )
-otherDirs <- c(
-               "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/"
-              )
-controlDirs <- c(
-                 "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-                 "/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/"
-                )
+## Calculate Dunn's index to assess compactness and separation of clusters
+## "The Dunn Index is the ratio of the smallest distance between observations
+## not in the same cluster to the largest intra-cluster distance.
+## The Dunn Index has a value between zero and infinity, and should be maximized."
+## (NOTE: takes a long time)
+#library(clValid)
+#km_dunn <- dunn(clusters = km$cluster, Data = log2ChIPmatRegion)
 
-ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
-  as.matrix(read.table(paste0(ChIPDirs[x],
-                              ChIPNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(ChIPNames)) 
+# Get feature indices for each cluster
+featureIndicesList <- lapply(seq_along(1:kDef), function(k) {
+  which(km$cluster == k)
+})
 
-othermats <- mclapply(seq_along(otherNames), function(x) {
-  as.matrix(read.table(paste0(otherDirs[x],
-                              otherNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(otherNames))
-
-controlmats <- mclapply(seq_along(controlNames), function(x) {
-  as.matrix(read.table(paste0(controlDirs[x],
-                              controlNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(controlNames)) 
-
-# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
-# for each matrix depending on library
-log2ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
-  if(ChIPNames[x] %in% c(
-                         "ASY1_CS_Rep1_ChIP",
-                         "DMC1_Rep1_ChIP",
-                         "H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667"
-                        )) {
-    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIPmats[[x]]+1)/(controlmats[[1]]+1))
-  } else {
-    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIPmats[[x]]+1)/(controlmats[[2]]+1))
-  }
-}, mc.cores = length(ChIPmats))
-
-# Sorted by decreasing mat1RegionRowMeans (e.g., ASY1 in gene promoters)
-log2ChIPmatsSorted <- mclapply(seq_along(log2ChIPmats), function(x) {
-  log2ChIPmats[[x]][sort.int(mat1RegionRowMeans,
-                             decreasing = T,
-                             index.return = T,
-                             na.last = T)$ix,]
-}, mc.cores = length(log2ChIPmats))
-
-for(x in seq_along(log2ChIPmatsSorted)) {
-  attr(log2ChIPmatsSorted[[x]], "upstream_index") = 1:(upstream/binSize)
-  attr(log2ChIPmatsSorted[[x]], "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
-  attr(log2ChIPmatsSorted[[x]], "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
-  attr(log2ChIPmatsSorted[[x]], "extend") = c(upstream, downstream)
-  attr(log2ChIPmatsSorted[[x]], "smooth") = FALSE
-  attr(log2ChIPmatsSorted[[x]], "signal_name") = ChIPNamesPlot[x]
-  attr(log2ChIPmatsSorted[[x]], "target_name") = featureName
-  attr(log2ChIPmatsSorted[[x]], "target_is_single_point") = FALSE
-  attr(log2ChIPmatsSorted[[x]], "background") = 0
-  attr(log2ChIPmatsSorted[[x]], "signal_is_categorical") = FALSE
-  class(log2ChIPmatsSorted[[x]]) = c("normalizedMatrix", "matrix")
-}
-
-othermatsSorted <- mclapply(seq_along(othermats), function(x) {
-  othermats[[x]][sort.int(mat1RegionRowMeans,
-                             decreasing = T,
-                             index.return = T,
-                             na.last = T)$ix,]
-}, mc.cores = length(othermats))
-
-for(x in seq_along(othermatsSorted)) {
-  attr(othermatsSorted[[x]], "upstream_index") = 1:(upstream/binSize)
-  attr(othermatsSorted[[x]], "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
-  attr(othermatsSorted[[x]], "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
-  attr(othermatsSorted[[x]], "extend") = c(upstream, downstream)
-  attr(othermatsSorted[[x]], "smooth") = FALSE
-  attr(othermatsSorted[[x]], "signal_name") = ChIPNamesPlot[x]
-  attr(othermatsSorted[[x]], "target_name") = featureName
-  attr(othermatsSorted[[x]], "target_is_single_point") = FALSE
-  attr(othermatsSorted[[x]], "background") = 0
-  attr(othermatsSorted[[x]], "signal_is_categorical") = FALSE
-  class(othermatsSorted[[x]]) = c("normalizedMatrix", "matrix")
-}
-
-controlmatsSorted <- mclapply(seq_along(controlmats), function(x) {
-  controlmats[[x]][sort.int(mat1RegionRowMeans,
-                             decreasing = T,
-                             index.return = T,
-                             na.last = T)$ix,]
-}, mc.cores = length(controlmats))
-
-for(x in seq_along(controlmatsSorted)) {
-  attr(controlmatsSorted[[x]], "upstream_index") = 1:(upstream/binSize)
-  attr(controlmatsSorted[[x]], "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
-  attr(controlmatsSorted[[x]], "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
-  attr(controlmatsSorted[[x]], "extend") = c(upstream, downstream)
-  attr(controlmatsSorted[[x]], "smooth") = FALSE
-  attr(controlmatsSorted[[x]], "signal_name") = ChIPNamesPlot[x]
-  attr(controlmatsSorted[[x]], "target_name") = featureName
-  attr(controlmatsSorted[[x]], "target_is_single_point") = FALSE
-  attr(controlmatsSorted[[x]], "background") = 0
-  attr(controlmatsSorted[[x]], "signal_is_categorical") = FALSE
-  class(controlmatsSorted[[x]]) = c("normalizedMatrix", "matrix")
-}
-
-if(featureName == "genes") {
-  featureStartLab <- "TSS"
-  featureEndLab <- "TTS"
-} else {
-  featureStartLab <- "Start"
-  featureEndLab <- "End"
-}
-
-# Heatmap plotting function
-# Note that for plotting heatmaps for individual datasets in separate PDFs,
-# must edit this function - print(EnrichedHeatmap(...))
-featureHeatmap <- function(matSorted,
-                           col_fun,
-                           colour,
-                           datName,
-                           rowOrder) {
-  EnrichedHeatmap(mat = matSorted,
-                  col = col_fun,
-                  row_order = rowOrder,
-                  column_title = datName,
-                  top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = colour,
-                                                                                        lwd = 3),
-                                                                              yaxis_side = "right",
-                                                                              yaxis_facing = "right",
-                                                                              yaxis_gp = gpar(fontsize = 10),
-                                                                              pos_line_gp = gpar(col = "black",
-                                                                                                 lty = 2,
-                                                                                                 lwd = 2))),
-                  top_annotation_height = unit(2, "cm"),
-                  width = unit(6, "cm"),
-                  name = datName,
-                  heatmap_legend_param = list(title = datName,
-                                              title_position = "topcenter",
-                                              title_gp = gpar(font = 2, fontsize = 12),
-                                              legend_direction = "horizontal",
-                                              labels_gp = gpar(fontsize = 10)),
-                  axis_name = c(paste0("-", flankNamePlot),
-                                featureStartLab, featureEndLab,
-                                paste0("+", flankNamePlot)),
-                  axis_name_gp = gpar(fontsize = 12),
-                  border = FALSE,
-                  pos_line_gp = gpar(col = "white", lty = 2, lwd = 2),
-                  # If converting into png with pdfTotiffTopng.sh,
-                  # set use_raster to FALSE
-                  #use_raster = FALSE)
-                  use_raster = TRUE, raster_device = "png", raster_quality = 10)
-}
+# Load features 
+features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                              substring(featureName, first = 10), ".gff3"), header = F)
+# Separate into clusters
+featuresClusterList <- lapply(seq_along(1:kDef), function(k) {
+  features[featureIndicesList[[k]],]
+})
+featureIDsClusterList <- lapply(seq_along(1:kDef), function(k) {
+  sub(pattern = "\\.\\d+", replacement = "",
+      x = as.vector(features[featureIndicesList[[k]],]$V9))
+})
+sapply(seq_along(featureIDsClusterList), function(k) {
+  write.table(featureIDsClusterList[[k]],
+              file = paste0(outDir, "cluster", as.character(k), "_of_", as.character(kDef),
+                            "_by_log2_", libName, "_control_in_", region, ".txt"),
+                            quote = F, row.names = F, col.names = F)
+})
 
 
-# Define heatmap colours
-rich8to6equal <- c("#000041", "#0000CB", "#0081FF", "#FDEE02", "#FFAB00", "#FF3300")
-
-# Plot together
-# ChIP
-log2ChIPhtmpList <- mclapply(seq_along(ChIPNames), function(x) {
-  ChIP_col_fun <- colorRamp2(quantile(log2ChIPmatsSorted[[x]],
-                                      c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
-                                      na.rm = T),
-                             rich8to6equal)
-  featureHeatmap(matSorted = log2ChIPmatsSorted[[x]],
-                 col_fun = ChIP_col_fun,
-                 colour = ChIPColours[x],
-                 datName = ChIPNamesPlot[x],
-                 rowOrder = c(1:dim(log2ChIPmatsSorted[[x]])[1]))
-}, mc.cores = length(log2ChIPmatsSorted))
-otherhtmpList <- mclapply(seq_along(otherNames), function(x) {
-  ChIP_col_fun <- colorRamp2(quantile(othermatsSorted[[x]],
-                                      c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
-                                      na.rm = T),
-                             rich8to6equal)
-  featureHeatmap(matSorted = othermatsSorted[[x]],
-                 col_fun = ChIP_col_fun,
-                 colour = otherColours[x],
-                 datName = otherNamesPlot[x],
-                 rowOrder = c(1:dim(othermatsSorted[[x]])[1]))
-}, mc.cores = length(othermatsSorted))
-controlhtmpList <- mclapply(seq_along(controlNames), function(x) {
-  ChIP_col_fun <- colorRamp2(quantile(controlmatsSorted[[x]],
-                                      c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
-                                      na.rm = T),
-                             rich8to6equal)
-  featureHeatmap(matSorted = controlmatsSorted[[x]],
-                 col_fun = ChIP_col_fun,
-                 colour = controlColours[x],
-                 datName = controlNamesPlot[x],
-                 rowOrder = c(1:dim(controlmatsSorted[[x]])[1]))
-}, mc.cores = length(controlmatsSorted))
-
-htmpList <- c(log2ChIPhtmpList, otherhtmpList, controlhtmpList[[1]])
-
-htmps <- NULL
-for(x in 1:length(htmpList)) {
-  htmps <- htmps + htmpList[[x]]
-}
-pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
-           "_heatmaps_ordered_by_", libName, "_in_", region, ".pdf"),
-    width = 3*length(htmpList),
-    height = 8)
-draw(htmps,
-     heatmap_legend_side = "bottom",
-     gap = unit(c(14), "mm"))
-dev.off()
