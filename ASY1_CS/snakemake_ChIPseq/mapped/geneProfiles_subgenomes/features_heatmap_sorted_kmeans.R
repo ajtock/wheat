@@ -3,8 +3,7 @@
 # Cluster genes by log2(ChIP/control)
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp promoters
-
+# /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp terminators
 
 libName <- "ASY1_CS_Rep1_ChIP"
 dirName <- "ASY1_CS"
@@ -17,7 +16,7 @@ flankName <- "2kb"
 flankNamePlot <- "2 kb"
 binSize <- 20
 binName <- "20bp"
-region <- "promoters"
+region <- "terminators"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -101,14 +100,60 @@ log2ChIPmat <- if(libName %in% c(
   log2((mat1+1)/(controlmats[[2]]+1))
 }
 
-# Determine number of clusters to be used for k-means clustering
-# Get within-cluster sum of squares
-wss <- (nrow(log2ChIPmat) - 1) * sum(apply(X = log2ChIPmat, MARGIN = 2, FUN = var, na.rm = T))
-
-for(i in 2:15) {
-  wss[i] <- sum(kmeans(log2ChIPmat,
-                       centers = i)$withinss)
+# Extract region for clustering of features (adjust promoter/terminator size as necessary)
+if( region == "promoters" ) {
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-500)/binSize)+1):(upstream/binSize)]
+} else if ( region == "terminators" ) {
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(500/binSize))]
+} else if ( region == "bodies" ) {
+  log2ChIPmatRegion <- log2ChIPmat[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
+} else {
+  print("The region name provided does not match 'promoters', 'terminators', or 'bodies'")
 }
+log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion, na.rm = T)
+log2ChIPmatRegionRowMeansSorted <- sort.int(log2ChIPmatRegionRowMeans,
+                                            decreasing = T,
+                                            index.return = T,
+                                            na.last = T)
+
+# Determine number of clusters to be used for k-means clustering
+# by generating a scree ("elbow") plot of the ratio of the
+# within-cluster sum of squares (WSS) to the total sum of squares (TSS)
+# for k clusters
+
+# First run garbage collection to free up memory
+gc()
+# Set seed for reproducible results
+set.seed(938402845)
+
+# Initialise ratio_ss as a vector of 0s to be replaced with the ratio
+# of the within-cluster sum of squares to the total sum of squares
+# for each number of clusters
+kMax <- 20
+ratio_ss <- rep(0, kMax)
+
+# Apply k-means clustering to log2ChIPmat for k in 1:15
+# and obtain the ratio of the within-cluster sum of squares (WSS) to
+# the total sum of squares (TSS) for each number of clusters
+for(k in 1:kMax) {
+  print(k)
+  km <- kmeans(x = log2ChIPmatRegion,
+               centers = k,
+               iter.max = 30,
+               nstart = 20)
+  ratio_ss[k] <- km$tot.withinss / km$totss
+}
+#21: Quick-TRANSfer stage steps exceeded maximum (= 1767250)
+
+# Make a scree ("elbow") plot
+pdf(paste0("screePlot_k_clusters_log2_",
+           libName, "_control_around_",
+           region, "_of_", featureName, ".pdf"))
+plot(x = 1:kMax, y = ratio_ss,
+     type = "b",
+     xlab = "k", ylab = "WSS / TSS")
+abline(h = 0.2, lty = 2, col = "red")
+dev.off()
 
 
 if( region == "promoters" ) {
