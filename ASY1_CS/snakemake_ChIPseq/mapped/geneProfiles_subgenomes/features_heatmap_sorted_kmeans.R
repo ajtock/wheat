@@ -120,7 +120,7 @@ log2ChIPmatRegionRowMeansSorted <- sort.int(log2ChIPmatRegionRowMeans,
 
 # First run garbage collection to free up memory
 gc()
-# Set seed for reproducible results
+# Set seed for reproducible clusters
 set.seed(938402845)
 
 # Initialise ratio_ss as a vector of 0s to be replaced with the ratio
@@ -143,8 +143,8 @@ for(k in 1:kMax) {
 #19: Quick-TRANSfer stage steps exceeded maximum (= 1767250)
 
 # Make a scree ("elbow") plot
-pdf(paste0(outDir, "screePlot_k_clusters_log2_",
-           libName, "_control_around_",
+pdf(paste0(outDir, "screePlot_k_clusters_by_log2_",
+           libName, "_control_in_",
            region, "_of_", featureName, ".pdf"))
 plot(x = 1:kMax, y = ratio_ss,
      type = "b",
@@ -154,7 +154,7 @@ dev.off()
 
 # First run garbage collection to free up memory
 gc()
-# Set seed for reproducible results
+# Set seed for reproducible clusters
 set.seed(938402845)
 
 # 4 clusters
@@ -191,8 +191,9 @@ featureIDsClusterList <- lapply(seq_along(1:kDef), function(k) {
 sapply(seq_along(featureIDsClusterList), function(k) {
   write.table(featureIDsClusterList[[k]],
               file = paste0(outDir, "cluster", as.character(k), "_of_", as.character(kDef),
-                            "_by_log2_", libName, "_control_in_", region, ".txt"),
-                            quote = F, row.names = F, col.names = F)
+                            "_by_log2_", libName, "_control_in_",
+                            region, "_of_", featureName, ".txt"),
+              quote = F, row.names = F, col.names = F)
 })
 
 
