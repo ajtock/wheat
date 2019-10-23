@@ -227,12 +227,12 @@ featureHeatmap <- function(matSorted,
                            colour,
                            datName,
                            rowSplit) {
-  Heatmap(matrix = rowSplit,
+  Heatmap(rowSplit,
           col = structure(colour, names = paste0("Cluster ", 1:kDef)),
           name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
   EnrichedHeatmap(mat = matSorted,
                   col = col_fun,
-                  row_title_rot = 0,
+#                  row_title_rot = 0,
                   column_title = datName,
                   top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = colour,
                                                                                         lwd = 3),
@@ -281,7 +281,7 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     height = 8)
 draw(log2ChIPhtmp,
      split = km$cluster,,
-     heatmap_legend_side = "bottom"
-     #gap = unit(c(14), "mm")
+     heatmap_legend_side = "bottom",
+     gap = unit(c(2), "mm")
     )
 dev.off()
