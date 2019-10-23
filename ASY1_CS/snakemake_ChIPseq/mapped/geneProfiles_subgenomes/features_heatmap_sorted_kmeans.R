@@ -5,33 +5,32 @@
 # Usage:
 # /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp terminators
 
-libName <- "ASY1_CS_Rep1_ChIP"
-dirName <- "ASY1_CS"
-align <- "both"
-featureName <- "genes_in_Agenome_genomewide"
-bodyLength <- 3500
-upstream <- 2000
-downstream <- 2000
-flankName <- "2kb"
-flankNamePlot <- "2 kb"
-binSize <- 20
-binName <- "20bp"
-region <- "promoters"
+#libName <- "ASY1_CS_Rep1_ChIP"
+#dirName <- "ASY1_CS"
+#align <- "both"
+#featureName <- "genes_in_Agenome_genomewide"
+#bodyLength <- 3500
+#upstream <- 2000
+#downstream <- 2000
+#flankName <- "2kb"
+#flankNamePlot <- "2 kb"
+#binSize <- 20
+#binName <- "20bp"
+#region <- "promoters"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
 dirName <- args[2]
 align <- args[3]
-featureNumber <- as.numeric(args[4])
-featureName <- args[5]
-bodyLength <- as.numeric(args[6])
-upstream <- as.numeric(args[7])
-downstream <- as.numeric(args[7])
-flankName <- args[8]
-flankNamePlot <- args[9]
-binSize <- as.numeric(args[10])
-binName <- args[11]
-region <- args[12]
+featureName <- args[4]
+bodyLength <- as.numeric(args[5])
+upstream <- as.numeric(args[6])
+downstream <- as.numeric(args[6])
+flankName <- args[7]
+flankNamePlot <- args[8]
+binSize <- as.numeric(args[9])
+binName <- args[10]
+region <- args[11]
 
 library(EnrichedHeatmap)
 library(circlize)
@@ -114,6 +113,15 @@ log2ChIPmatRegionRowMeansSorted <- sort.int(log2ChIPmatRegionRowMeans,
                                             decreasing = T,
                                             index.return = T,
                                             na.last = T)
+log2ChIPmatRegionSorted <- log2ChIPmatRegion[sort.int(log2ChIPmatRegionRowMeans,
+                                                      decreasing = T,
+                                                      index.return = T,
+                                                      na.last = T)$ix,]
+log2ChIPmatSorted <- log2ChIPmat[sort.int(log2ChIPmatRegionRowMeans,
+                                          decreasing = T,
+                                          index.return = T,
+                                          na.last = T)$ix,]
+
 
 # Determine number of clusters to be used for k-means clustering
 # by generating a scree ("elbow") plot of the ratio of the
@@ -204,7 +212,7 @@ sapply(seq_along(featureIDsClusterList), function(k) {
   attr(log2ChIPmat, "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
   attr(log2ChIPmat, "extend") = c(upstream, downstream)
   attr(log2ChIPmat, "smooth") = FALSE
-  attr(log2ChIPmat, "signal_name") = ChIPNamesPlot[x]
+  attr(log2ChIPmat, "signal_name") = libName
   attr(log2ChIPmat, "target_name") = featureName
   attr(log2ChIPmat, "target_is_single_point") = FALSE
   attr(log2ChIPmat, "background") = 0
@@ -227,12 +235,12 @@ featureHeatmap <- function(matSorted,
                            colour,
                            datName,
                            rowSplit) {
-  Heatmap(rowSplit,
-          col = structure(colour, names = paste0("Cluster ", 1:kDef)),
-          name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
+#  Heatmap(rowSplit,
+#          col = structure(colour, names = paste0("Cluster ", 1:kDef)),
+#          name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
   EnrichedHeatmap(mat = matSorted,
                   col = col_fun,
-#                  row_title_rot = 0,
+                  row_title_rot = 0,
                   column_title = datName,
                   top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = colour,
                                                                                         lwd = 3),
@@ -280,8 +288,8 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     width = 3,
     height = 8)
 draw(log2ChIPhtmp,
-     split = km$cluster,,
-     heatmap_legend_side = "bottom",
-     gap = unit(c(2), "mm")
+     split = km$cluster,
+     heatmap_legend_side = "bottom"
+     #gap = unit(c(2), "mm")
     )
 dev.off()
