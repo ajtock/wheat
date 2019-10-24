@@ -5,18 +5,18 @@
 # Usage:
 # /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp terminators
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
-#align <- "both"
-#featureName <- "genes_in_Agenome_genomewide"
-#bodyLength <- 3500
-#upstream <- 2000
-#downstream <- 2000
-#flankName <- "2kb"
-#flankNamePlot <- "2 kb"
-#binSize <- 20
-#binName <- "20bp"
-#region <- "promoters"
+libName <- "ASY1_CS_Rep1_ChIP"
+dirName <- "ASY1_CS"
+align <- "both"
+featureName <- "genes_in_Bgenome_genomewide"
+bodyLength <- 3500
+upstream <- 2000
+downstream <- 2000
+flankName <- "2kb"
+flankNamePlot <- "2 kb"
+binSize <- 20
+binName <- "20bp"
+region <- "promoters"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -121,7 +121,8 @@ log2ChIPmatSorted <- log2ChIPmat[sort.int(log2ChIPmatRegionRowMeans,
                                           decreasing = T,
                                           index.return = T,
                                           na.last = T)$ix,]
-
+# Replace NAs in log2ChIPmatRegion with 0
+log2ChIPmatRegion[which(is.na(log2ChIPmatRegion))] <- 0
 
 # Determine number of clusters to be used for k-means clustering
 # by generating a scree ("elbow") plot of the ratio of the
@@ -173,6 +174,21 @@ km <- kmeans(x = log2ChIPmatRegion,
              centers = kDef,
              iter.max = 10,
              nstart = 10)
+# Adjust the names of clusters so that cluster 1 has highest levels
+x <- tapply(X = rowMeans(log2ChIPmatRegion),
+            INDEX = km$cluster,
+            FUN = mean)
+od <- as.integer(names(x))
+names(od) <- order(x, decreasing = T)
+#od <- structure(order(x, decreasing = TRUE),
+#                names = names(x))
+km$cluster <- as.character(od[km$cluster])
+
+km$cluster <- paste0("Cluster ", od[as.character(km$cluster)])
+
+replace(x = km$cluster,
+        list = as.character(1:kDef),
+        values = as.character(order(x, decreasing = F)))
 
 ## Calculate Dunn's index to assess compactness and separation of clusters
 ## "The Dunn Index is the ratio of the smallest distance between observations
@@ -184,7 +200,7 @@ km <- kmeans(x = log2ChIPmatRegion,
 
 # Get feature indices for each cluster
 featureIndicesList <- lapply(seq_along(1:kDef), function(k) {
-  which(km$cluster == k)
+  which(km$cluster == paste0("Cluster ", k))
 })
 
 # Load features 
@@ -235,15 +251,15 @@ featureHeatmap <- function(matSorted,
                            colour,
                            datName,
                            rowSplit) {
-#  Heatmap(rowSplit,
-#          col = structure(colour, names = paste0("Cluster ", 1:kDef)),
-#          name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
+  Heatmap(rowSplit,
+          col = structure(colour, names = paste0("Cluster ", 1:kDef)),
+          name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
   EnrichedHeatmap(mat = matSorted,
                   col = col_fun,
                   row_title_rot = 0,
                   column_title = datName,
                   top_annotation = HeatmapAnnotation(enriched = anno_enriched(gp = gpar(col = colour,
-                                                                                        lwd = 3),
+                                                                                        lwd = 2),
                                                                               yaxis_side = "left",
                                                                               yaxis_facing = "left",
                                                                               yaxis_gp = gpar(fontsize = 10),
@@ -280,7 +296,7 @@ ChIP_col_fun <- colorRamp2(quantile(log2ChIPmat,
                            rich8to6equal)
 log2ChIPhtmp <- featureHeatmap(matSorted = log2ChIPmat,
                                col_fun = ChIP_col_fun,
-                               colour = c("dodgerblue2", "purple3", "green2", "darkorange1"),
+                               colour = c("darkorange1", "green2", "purple3", "deepskyblue"),
                                datName = "ASY1",
                                rowSplit = km$cluster)
 pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
@@ -289,7 +305,7 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     height = 8)
 draw(log2ChIPhtmp,
      split = km$cluster,
-     heatmap_legend_side = "bottom"
-     #gap = unit(c(2), "mm")
+     heatmap_legend_side = "bottom",
+     gap = unit(c(2), "mm")
     )
 dev.off()

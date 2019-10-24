@@ -2,20 +2,20 @@
 
 ########################################
 # Analyse genes for GO term enrichment #
-# relative to all TAIR10 genes         #
+# relative to genes in given subgenome #
 ########################################
 
-# This script is based on a useful post by Avril Coghlan:
+# This script is based on a post by Avril Coghlan:
 # http://avrilomics.blogspot.co.uk/2015/07/using-topgo-to-test-for-go-term.html
 
 # Doesn't work with mclapply or dopar
 
 # Example usage:
-# /applications/R/R-3.5.0/bin/Rscript ./topGO_gene_clusters.R BP 0.05 'log2_ASY1_CS_Rep1_ChIP_control_in_terminators' 1 4 'genomewide' 'A'
+# /applications/R/R-3.5.0/bin/Rscript ./topGO_gene_clusters.R BP 0.1 'log2_ASY1_CS_Rep1_ChIP_control_in_promoters' 1 4 'genomewide' 'A'
 
 #ont <- "BP"
-#sigLevel <- 0.05
-#clusterBy <- "log2_ASY1_CS_Rep1_ChIP_control_in_terminators"
+#sigLevel <- 0.1
+#clusterBy <- "log2_ASY1_CS_Rep1_ChIP_control_in_promoters"
 #clusterFirst <- 1
 #clusterLast <- 4
 #region <- "genomewide"
@@ -77,8 +77,8 @@ genesetGO <- function(target) {
   capture.output(resultTopGO <- runTest(GOdata, algorithm = "weight01", statistic = "fisher"),
                  file="/dev/null")
   
-  # Count number of results where elim gives a P-value <= sigLevel
-  mySummary <- summary(attributes(resultElim)$score <= as.numeric(sigLevel))
+  # Count number of results where weight01 gives a P-value <= sigLevel
+  mySummary <- summary(attributes(resultTopGO)$score <= as.numeric(sigLevel))
   if(length(mySummary) > 2) {
     numSignif <- as.integer(mySummary[[3]])
   } else {
@@ -94,8 +94,8 @@ genesetGO <- function(target) {
                                        elimFisher = resultElim,
                                        weightFisher = resultWeight,
                                        topGOFisher = resultTopGO,
-                                       orderBy = "elimFisher",
-                                       ranksOf = "elimFisher",
+                                       orderBy = "topGOFisher",
+                                       ranksOf = "weightFisher",
                                        topNodes = numSignif),
                  file="/dev/null")
   
