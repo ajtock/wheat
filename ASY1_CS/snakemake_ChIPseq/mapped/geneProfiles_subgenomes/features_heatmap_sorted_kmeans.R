@@ -557,7 +557,7 @@ draw(htmps,
      split = km$cluster,
      row_order = row_order,
      heatmap_legend_side = "bottom",
-     gap = rep(unit(c(1, 14), "mm"), length(htmps))
+     gap = unit(c(1, rep(14, length(htmpList)-1)), "mm")
     )
 dev.off()
 
