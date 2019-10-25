@@ -8,10 +8,10 @@
 # This script is based on a post by Avril Coghlan:
 # http://avrilomics.blogspot.co.uk/2015/07/using-topgo-to-test-for-go-term.html
 
-# Doesn't work with mclapply or dopar
-
-# Example usage:
+# Usage:
 # /applications/R/R-3.5.0/bin/Rscript ./topGO_gene_clusters.R BP 0.1 'log2_ASY1_CS_Rep1_ChIP_control_in_promoters' 1 4 'genomewide' 'A'
+
+# Doesn't work with mclapply or dopar
 
 #ont <- "BP"
 #sigLevel <- 0.1

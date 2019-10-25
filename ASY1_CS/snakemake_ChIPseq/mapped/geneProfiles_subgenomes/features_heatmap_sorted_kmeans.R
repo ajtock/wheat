@@ -174,21 +174,16 @@ km <- kmeans(x = log2ChIPmatRegion,
              centers = kDef,
              iter.max = 10,
              nstart = 10)
-# Adjust the names of clusters so that cluster 1 has highest levels
+# Adjust the cluster numbers so that cluster 1 has highest levels
 x <- tapply(X = rowMeans(log2ChIPmatRegion),
             INDEX = km$cluster,
             FUN = mean)
-od <- as.integer(names(x))
-names(od) <- order(x, decreasing = T)
-#od <- structure(order(x, decreasing = TRUE),
-#                names = names(x))
-km$cluster <- as.character(od[km$cluster])
+od <- order(structure(order(x, decreasing = TRUE),
+                      names = names(x)),
+            decreasing = F)
+km$cluster <- od[km$cluster]
+km$cluster <- paste0("Cluster ", km$cluster)
 
-km$cluster <- paste0("Cluster ", od[as.character(km$cluster)])
-
-replace(x = km$cluster,
-        list = as.character(1:kDef),
-        values = as.character(order(x, decreasing = F)))
 
 ## Calculate Dunn's index to assess compactness and separation of clusters
 ## "The Dunn Index is the ratio of the smallest distance between observations
@@ -198,10 +193,38 @@ replace(x = km$cluster,
 #library(clValid)
 #km_dunn <- dunn(clusters = km$cluster, Data = log2ChIPmatRegion)
 
-# Get feature indices for each cluster
-featureIndicesList <- lapply(seq_along(1:kDef), function(k) {
-  which(km$cluster == paste0("Cluster ", k))
-})
+# Order genes in each cluster by decreasing log2ChIPmat levels in region
+# to define "row_order" for heatmaps
+combineRowOrders <- function(cluster_bool_list) {
+  do.call("c", lapply(cluster_bool_list, function(x) {
+    cluster_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    which(x)[order(cluster_log2ChIPmatRegionRowMeans, decreasing = T)]
+  }))
+}
+row_order <- combineRowOrders(cluster_bool_list =
+  lapply(seq_along(1:kDef), function(k) { 
+    km$cluster == paste0("Cluster ", k)
+  })
+)
+# Order gene IDs in each cluster by decreasing log2ChIPmat levels in region
+# for use in GO term enrichment analysis
+listCombineRowOrders <- function(cluster_bool_list) {
+  do.call(list, lapply(cluster_bool_list, function(x) {
+    cluster_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    which(x)[order(cluster_log2ChIPmatRegionRowMeans, decreasing = T)]
+  }))
+}
+featureIndicesList <- listCombineRowOrders(cluster_bool_list =
+  lapply(seq_along(1:kDef), function(k) {
+    km$cluster == paste0("Cluster ", k)
+  })
+)
+
+# Alternatively, with original ordering:
+## Get feature indices for each cluster
+#featureIndicesList <- lapply(seq_along(1:kDef), function(k) {
+#  which(km$cluster == paste0("Cluster ", k))
+#})
 
 # Load features 
 features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
@@ -221,6 +244,7 @@ sapply(seq_along(featureIDsClusterList), function(k) {
                             region, "_of_", featureName, ".txt"),
               quote = F, row.names = F, col.names = F)
 })
+
 
 # Convert coverage matrix into heatmap format
   attr(log2ChIPmat, "upstream_index") = 1:(upstream/binSize)
@@ -243,6 +267,7 @@ if(grepl("genes", featureName)) {
   featureEndLab <- "End"
 }
 
+
 # Heatmap plotting function
 # Note that for plotting heatmaps for individual datasets in separate PDFs,
 # must edit this function - print(EnrichedHeatmap(...))
@@ -253,7 +278,8 @@ featureHeatmap <- function(matSorted,
                            rowSplit) {
   Heatmap(rowSplit,
           col = structure(colour, names = paste0("Cluster ", 1:kDef)),
-          name = "", show_row_names = FALSE, width = unit(3, "mm")) + 
+          name = "", show_row_names = FALSE, show_heatmap_legend = FALSE,
+          width = unit(3, "mm")) + 
   EnrichedHeatmap(mat = matSorted,
                   col = col_fun,
                   row_title_rot = 0,
@@ -305,7 +331,8 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     height = 8)
 draw(log2ChIPhtmp,
      split = km$cluster,
+     row_order = row_order,
      heatmap_legend_side = "bottom",
-     gap = unit(c(2), "mm")
+     gap = unit(c(2, 14), "mm")
     )
 dev.off()
