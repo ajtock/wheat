@@ -3,20 +3,20 @@
 # Cluster genes by log2(ChIP/control)
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp terminators
+# /applications/R/R-3.4.0/bin/Rscript features_heatmap_sorted_kmeans.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp promoters
 
-libName <- "ASY1_CS_Rep1_ChIP"
-dirName <- "ASY1_CS"
-align <- "both"
-featureName <- "genes_in_Bgenome_genomewide"
-bodyLength <- 3500
-upstream <- 2000
-downstream <- 2000
-flankName <- "2kb"
-flankNamePlot <- "2 kb"
-binSize <- 20
-binName <- "20bp"
-region <- "promoters"
+#libName <- "ASY1_CS_Rep1_ChIP"
+#dirName <- "ASY1_CS"
+#align <- "both"
+#featureName <- "genes_in_Agenome_genomewide"
+#bodyLength <- 3500
+#upstream <- 2000
+#downstream <- 2000
+#flankName <- "2kb"
+#flankNamePlot <- "2 kb"
+#binSize <- 20
+#binName <- "20bp"
+#region <- "promoters"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -264,21 +264,6 @@ sapply(seq_along(featureIDsClusterList), function(k) {
                             region, "_of_", featureName, ".txt"),
               quote = F, row.names = F, col.names = F)
 })
-
-
-## Convert coverage matrix into heatmap format
-#  attr(log2ChIPmat, "upstream_index") = 1:(upstream/binSize)
-#  attr(log2ChIPmat, "target_index") = ((upstream/binSize)+1):((upstream+bodyLength)/binSize)
-#  attr(log2ChIPmat, "downstream_index") = (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))
-#  attr(log2ChIPmat, "extend") = c(upstream, downstream)
-#  attr(log2ChIPmat, "smooth") = FALSE
-#  attr(log2ChIPmat, "signal_name") = "ASY1"
-#  attr(log2ChIPmat, "target_name") = featureName
-#  attr(log2ChIPmat, "target_is_single_point") = FALSE
-#  attr(log2ChIPmat, "background") = 0
-#  attr(log2ChIPmat, "signal_is_categorical") = FALSE
-#  class(log2ChIPmat) = c("normalizedMatrix", "matrix")
-
 
 # Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
 # and sort by decreasing log2mat1RegionRowMeans
