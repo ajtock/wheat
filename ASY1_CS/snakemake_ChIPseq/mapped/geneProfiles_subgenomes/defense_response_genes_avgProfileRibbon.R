@@ -77,10 +77,10 @@ ChIPNames <- c(
                "ASY1_CS_Rep1_ChIP",
                "DMC1_Rep1_ChIP",
                "H2AZ_Rep1_ChIP",
+               "H3K27me3_ChIP_SRR6350666",
                "H3K4me3_Rep1_ChIP",
                "H3K4me1_Rep1_ChIP_SRR8126618",
                "H3K27ac_Rep1_ChIP_SRR8126621",
-               "H3K27me3_ChIP_SRR6350666",
                "H3K9me2_Rep1_ChIP",
                "H3K27me1_Rep1_ChIP"
               )
@@ -88,10 +88,10 @@ ChIPNamesDir <- c(
                   "ASY1_CS",
                   "DMC1",
                   "H2AZ",
+                  "H3K27me3",
                   "H3K4me3",
                   "H3K4me1",
                   "H3K27ac",
-                  "H3K27me3",
                   "H3K9me2",
                   "H3K27me1"
                  )
@@ -99,10 +99,10 @@ ChIPNamesPlot <- c(
                    "ASY1",
                    "DMC1",
                    "H2A.Z",
+                   "H3K27me3",
                    "H3K4me3",
                    "H3K4me1",
                    "H3K27ac",
-                   "H3K27me3",
                    "H3K9me2",
                    "H3K27me1"
                   )
@@ -110,10 +110,10 @@ ChIPColours <- c(
                  "purple4",
                  "green2",
                  "dodgerblue",
+                 "navy",
                  "forestgreen",
                  "goldenrod1",
                  "orange",
-                 "navy",
                  "magenta3",
                  "firebrick1"
                 )
@@ -708,8 +708,8 @@ ymax_list_control <- lapply(seq_along(controlNamesPlot), function(x) {
 
 # Plot average coverage profiles with 95% CI ribbon
 ## feature
-ggObjGA_combined_log2ChIP <- NULL
-ggObj1_combined_log2ChIP <- lapply(seq_along(summaryDFfeature_list_log2ChIP), function(x) {
+ggObjGA_combined <- NULL
+ggObj1_combined_log2ChIP <- lapply(seq_along(ChIPNames), function(x) {
   summaryDFfeature <- summaryDFfeature_log2ChIP[summaryDFfeature_log2ChIP$libName ==
                                                   ChIPNamesPlot[x],]
   ggplot(data = summaryDFfeature,
@@ -754,7 +754,7 @@ ggObj1_combined_log2ChIP <- lapply(seq_along(summaryDFfeature_list_log2ChIP), fu
         panel.grid = element_blank(),
         panel.border = element_rect(size = 3.5, colour = "black"),
         panel.background = element_blank(),
-        plot.margin = unit(c(0.3,1.1,0.0,0.3), "cm"),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
   ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~ "(" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFfeature$n[1],
@@ -762,7 +762,7 @@ ggObj1_combined_log2ChIP <- lapply(seq_along(summaryDFfeature_list_log2ChIP), fu
                  ")"))
 })
 ## ranLoc
-ggObj2_combined_log2ChIP <- lapply(seq_along(summaryDFranLoc_list_log2ChIP), function(x) {
+ggObj2_combined_log2ChIP <- lapply(seq_along(ChIPNames), function(x) {
   summaryDFranLoc <- summaryDFranLoc_log2ChIP[summaryDFranLoc_log2ChIP$libName ==
                                                   ChIPNamesPlot[x],]
   ggplot(data = summaryDFranLoc,
@@ -807,22 +807,129 @@ ggObj2_combined_log2ChIP <- lapply(seq_along(summaryDFranLoc_list_log2ChIP), fun
         panel.grid = element_blank(),
         panel.border = element_rect(size = 3.5, colour = "black"),
         panel.background = element_blank(),
-        plot.margin = unit(c(0.3,1.1,0.0,0.3), "cm"),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
   ggtitle(bquote("Random loci (" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFranLoc$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
 })
-ggObjGA_combined_log2ChIP <- grid.arrange(grobs = c(ggObj1_combined_log2ChIP,
-                                                    ggObj2_combined_log2ChIP),
-                                          layout_matrix = cbind(1:length(ChIPNames),
-                                                                (length(ChIPNames)+1):(length(ChIPNames)*2)))
-                                          #nrow = length(ChIPNames), ncol = 2)
+## feature
+ggObj1_combined_other <- lapply(seq_along(otherNames), function(x) {
+  summaryDFfeature <- summaryDFfeature_other[summaryDFfeature_other$libName ==
+                                               otherNamesPlot[x],]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = libName),
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = libName),
+            size = 1) +
+  scale_colour_manual(values = otherColours[x]) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = libName),
+              alpha = 0.4) +
+  scale_fill_manual(values = otherColours[x]) +
+  scale_y_continuous(limits = c(ymin_list_other[[x]], ymax_list_other[[x]]),
+                     labels = function(x) sprintf("%5.2f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_list_other[[x]])[1])-(downstream/binSize),
+                              dim(summaryDFfeature_list_other[[x]])[1]),
+                   labels = c(paste0("-", flankNamePlot),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankNamePlot))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_list_other[[x]])[1])-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = otherNamesPlot[x]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = otherColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+})
+## ranLoc
+ggObj2_combined_other <- lapply(seq_along(otherNames), function(x) {
+  summaryDFranLoc <- summaryDFranLoc_other[summaryDFranLoc_other$libName ==
+                                             otherNamesPlot[x],]
+  ggplot(data = summaryDFranLoc,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = libName),
+        ) +
+  geom_line(data = summaryDFranLoc,
+            mapping = aes(colour = libName),
+            size = 1) +
+  scale_colour_manual(values = otherColours[x]) +
+  geom_ribbon(data = summaryDFranLoc,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = libName),
+              alpha = 0.4) +
+  scale_fill_manual(values = otherColours[x]) +
+  scale_y_continuous(limits = c(ymin_list_other[[x]], ymax_list_other[[x]]),
+                     labels = function(x) sprintf("%5.2f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFranLoc_list_other[[x]])[1])-(downstream/binSize),
+                              dim(summaryDFranLoc_list_other[[x]])[1]),
+                   labels = c(paste0("-", flankNamePlot),
+                              "Start",
+                              "End",
+                              paste0("+", flankNamePlot))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFranLoc_list_other[[x]])[1])-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = otherNamesPlot[x]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = otherColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote("Random loci (" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFranLoc$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+})
+ggObjGA_combined <- grid.arrange(grobs = c(ggObj1_combined_log2ChIP,
+                                           ggObj1_combined_other,
+                                           ggObj2_combined_log2ChIP,
+                                           ggObj2_combined_other),
+                                 layout_matrix = cbind(1:length(c(ChIPNames, otherNames)),
+                                                       (length(c(ChIPNames, otherNames))+1):(length(c(ChIPNames, otherNames))*2)))
 ggsave(paste0(plotDir,
               "avgProfiles_around_",
               featureNamePlot, "_in_cluster", clusterNo,
               "_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
               "_of_", featureName, ".pdf"),
-       plot = ggObjGA_combined_log2ChIP,
-       height = 6.5*length(ChIPNames), width = 14, limitsize = FALSE)
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(ChIPNames, otherNames)), width = 14, limitsize = FALSE)
