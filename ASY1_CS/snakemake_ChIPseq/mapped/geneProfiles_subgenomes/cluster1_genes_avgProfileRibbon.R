@@ -1,14 +1,14 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Plot average coverage profiles with 95% CIs around
-# Cluster 1 genes annotated with the "defense response" GO term; e.g.,
-# clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/GO/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide_GO_BP/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide_GO_BP_enrichment_GO\:0006952.txt
+# Cluster 1 genes; e.g.,
+# clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript defense_response_genes_avgProfileRibbon.R genes_in_Agenome_genomewide 'Defense_response_genes' 3500 2000 2kb '2 kb' 20 20bp promoters '1' '4' '0006952' both
+# /applications/R/R-3.5.0/bin/Rscript cluster1_genes_avgProfileRibbon.R genes_in_Agenome_genomewide 'ASY1_Cluster1_genes' 3500 2000 2kb '2 kb' 20 20bp promoters '1' '4' '0006952' both
 
 #featureName <- "genes_in_Agenome_genomewide"
-#featureNamePlot <- "Defense_response_genes"
+#featureNamePlot <- "ASY1_Cluster1_genes"
 #bodyLength <- 3500
 #upstream <- 2000
 #downstream <- 2000
@@ -54,14 +54,15 @@ system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 IDs <- as.character(read.table(paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
-                                      "/GO/cluster", clusterNo, "_of_", clusterLast,
-                                      "_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region, "_of_", featureName,
-                                      "_GO_BP/cluster", clusterNo, "_of_", clusterLast,
-                                      "_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region, "_of_", featureName,
-                                      "_GO_BP_enrichment_GO:", GO_ID, ".txt"),
-                               colClasses = c("NULL", NA), header = F)$V2)
-IDs <- unlist(strsplit(x = IDs,
-                       split = ","))
+                                      "/cluster", clusterNo, "_of_", clusterLast,
+                                      "_by_log2_ASY1_CS_Rep1_ChIP_control_in_",
+                                      region,"_of_", featureName, ".txt"),
+                               header = F)$V1)
+nonIDs <- as.character(read.table(paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
+                                         "/cluster", clusterLast, "_of_", clusterLast,
+                                         "_by_log2_ASY1_CS_Rep1_ChIP_control_in_",
+                                         region,"_of_", featureName, ".txt"),
+                                  header = F)$V1)
 
 # Load features
 features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
@@ -70,25 +71,26 @@ features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_dow
 featureIDs <- sub(pattern = "\\.\\d+", replacement = "",
                   features$V9)
 ID_indices <- which(featureIDs %in% IDs)
-nonIDs <- featureIDs[!(featureIDs %in% IDs)]
-# Function to randomly select feature IDs not present in IDs
-ran_nonIDs_select <- function(nonIDsChr, n) {
-  sample(x = nonIDsChr,
-         size = n,
-         replace = FALSE)
-}
-# Apply ran_nonIDs_select() function on a per-chromosome basis
-# and create growing vector of feature IDs called ran_nonIDs
-set.seed(9237452)
-ran_nonIDs <- NULL
-for(i in 1:length(levels(features$V1))) {
-  IDsChr <- IDs[grepl(paste0("TraesCS", i), IDs)]
-  nonIDsChr <- nonIDs[grepl(paste0("TraesCS", i), nonIDs)] 
-  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-                                     n = length(IDsChr))
-  ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
-}
-ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
+#nonIDs <- featureIDs[!(featureIDs %in% IDs)]
+## Function to randomly select feature IDs not present in IDs
+#ran_nonIDs_select <- function(nonIDsChr, n) {
+#  sample(x = nonIDsChr,
+#         size = n,
+#         replace = FALSE)
+#}
+## Apply ran_nonIDs_select() function on a per-chromosome basis
+## and create growing vector of feature IDs called ran_nonIDs
+#set.seed(9237452)
+#ran_nonIDs <- NULL
+#for(i in 1:length(levels(features$V1))) {
+#  IDsChr <- IDs[grepl(paste0("TraesCS", i), IDs)]
+#  nonIDsChr <- nonIDs[grepl(paste0("TraesCS", i), nonIDs)] 
+#  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
+#                                     n = length(IDsChr))
+#  ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
+#}
+#ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
+nonID_indices <- which(featureIDs %in% nonIDs)
 
 # Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
 # and sort by decreasing log2mat1RegionRowMeans
@@ -309,7 +311,7 @@ log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
 }, mc.cores = length(ChIP_ranLocMats))
 
 # Add column names, and
-# extract only row numbers (features and ranLoc) in ID_indices and ran_nonID_indices
+# extract only row numbers (features and ranLoc) in ID_indices and nonID_indices
 for(x in seq_along(log2ChIP_featureMats)) {
   colnames(log2ChIP_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
                                            paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
@@ -319,7 +321,7 @@ for(x in seq_along(log2ChIP_featureMats)) {
                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
 }
 log2ChIP_ranFeatMats <- lapply(seq_along(log2ChIP_featureMats), function(x) {
-  log2ChIP_featureMats[[x]][ran_nonID_indices,]
+  log2ChIP_featureMats[[x]][nonID_indices,]
 })
 log2ChIP_featureMats <- lapply(seq_along(log2ChIP_featureMats), function(x) {
   log2ChIP_featureMats[[x]][ID_indices,]
@@ -336,7 +338,7 @@ for(x in seq_along(other_featureMats)) {
                                        paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
 }
 other_ranFeatMats <- lapply(seq_along(other_featureMats), function(x) {
-  other_featureMats[[x]][ran_nonID_indices,]
+  other_featureMats[[x]][nonID_indices,]
 })
 other_featureMats <- lapply(seq_along(other_featureMats), function(x) {
   other_featureMats[[x]][ID_indices,]
@@ -353,7 +355,7 @@ for(x in seq_along(control_featureMats)) {
                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
 }
 control_ranFeatMats <- lapply(seq_along(control_featureMats), function(x) {
-  control_featureMats[[x]][ran_nonID_indices,]
+  control_featureMats[[x]][nonID_indices,]
 })
 control_featureMats <- lapply(seq_along(control_featureMats), function(x) {
   control_featureMats[[x]][ID_indices,]
@@ -1010,7 +1012,7 @@ ggObj2_combined_log2ChIP <- lapply(seq_along(ChIPNames), function(x) {
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote("Random genes" ~ "(" * italic("n") ~ "=" ~
+  ggtitle(bquote("ASY1 Cluster" * .(clusterLast) ~ "genes (" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFranFeat$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
@@ -1169,7 +1171,7 @@ ggObj2_combined_other <- lapply(seq_along(otherNames), function(x) {
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote("Random genes" ~ "(" * italic("n") ~ "=" ~
+  ggtitle(bquote("ASY1 Cluster" * .(clusterLast) ~ "genes (" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFranFeat$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
