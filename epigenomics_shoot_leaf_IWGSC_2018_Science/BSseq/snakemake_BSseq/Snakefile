@@ -345,21 +345,22 @@ else:
 
 # Extract the methylation call for each cytosine analysed
 # and output in context-specific files
+# NOTE: BAM must be unsorted, with second read in a pair following first
 rule methylation_extractor:
     """Extract the methylation call for each cytosine analysed in context-specific manner"""
     input:
-        "mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam"
+        "mapped/dedup/{sample}_MappedOn_{refbase}_dedup.bam"
     output:
-        CpG = "methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
-        CHG = "methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
-        CHH = "methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz"
+        CpG = "methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup.txt.gz",
+        CHG = "methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup.txt.gz",
+        CHH = "methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup.txt.gz"
     # "Please note that a typical process of extracting a BAM file and writing out '.gz'
     # output streams will in fact use ~3 cores per value of --parallel <int> specified
     # (1 for the methylation extractor itself, 1 for a Samtools stream, 1 for GZIP stream),
     # so --parallel 10 is likely to use around 30 cores of system resources."
     threads: 10
     log:
-        "logs/methylation_extractor/{sample}_MappedOn_{refbase}_dedup_sort_methylation_extractor.log"
+        "logs/methylation_extractor/{sample}_MappedOn_{refbase}_dedup_methylation_extractor.log"
     shell:
         # USAGE: bismark_methylation_extractor [options] <filenames>
         "(bismark_methylation_extractor"
