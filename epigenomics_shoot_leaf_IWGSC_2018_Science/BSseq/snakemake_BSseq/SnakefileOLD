@@ -2,11 +2,6 @@
 # derived from whole-genome bisulfite sequencing (WGBS or BS-seq)
 # Adapted from https://github.com/seb-mueller/snakemake-bisulfite
 
-## ***IMPORTANT***: This Snakemake pipeline should not be run with
-## Bismark version 0.21.0 or later due to the addition of HISAT2 support,
-## which requires Python 2, which conflicts with the Python 3 requirements
-## of other parts of this pipeline (e.g., pigz part of trim_galore rule)
-
 # Chromosome sizes file below ("data/index/wheat_v1.0.fa.sizes") must exist
 # before running snakemake
 # e.g., in "data/index/" run:
@@ -91,33 +86,38 @@ rule all:
         #expand("mapped/{sample}_MappedOn_{refbase}.bam",
         #       sample = sample,
         #       refbase = refbase),
-        ## deduplicate_bismark
-        #expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup.bam",
-        #       sample = sample,
-        #       refbase = refbase),
-        #expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam",
-        #       sample = sample,
-        #       refbase = refbase),
-        ## samtools
-        #expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam.{bamidx}",
-        #       sample = sample,
-        #       refbase = refbase,
-        #       bamidx = bamidx),
-        ## bamCoverage
-        #expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bw",
-        #       sample = sample,
-        #       refbase = refbase),
-        # methylation_extractor
-        expand("methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        # deduplicate_bismark
+        expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup.bam",
                sample = sample,
                refbase = refbase),
-        expand("methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam",
                sample = sample,
                refbase = refbase),
-        expand("methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        # samtools
+        expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam.{bamidx}",
+               sample = sample,
+               refbase = refbase,
+               bamidx = bamidx),
+        # bamCoverage
+        expand("mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bw",
                sample = sample,
                refbase = refbase),
+#        # deduplication
+#        # expand("mapped/{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.bam", sample=SAMPLES.index),
+#        # sorting
+#        expand("mapped/{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.sorted.bam", sample=SAMPLES.index),
+#        expand("mapped/bws/{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.sorted.bw", sample=SAMPLES.index),
+#        # "mapped/{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.bw",
+#        # extracting methyl for all 3 contexts
+#        expand("methylation_extracted/CHG_context_{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.sorted.txt.gz", sample=SAMPLES.index),
+#        expand("methylation_extracted/CpG_context_{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.sorted.txt.gz", sample=SAMPLES.index),
+#        expand("methylation_extracted/CHH_context_{sample}_MappedOn_" + refbase +"_trim_bismark_pe.deduplicated.sorted.txt.gz", sample=SAMPLES.index),
+#        # CHH="mapped/CHH_context_{sample}_MappedOn_{refbase}_trimmed_bismark_pe.deduplicated.sorted.bam",
+#        # expand("mapped/{sample}/{sample}_trimmed_bismark.deduplicated.sorted.bam.bai",sample=SAMPLES),
+#        # expand("mapped/{sample}/{sample}_trimmed_bismark.deduplicated.sorted.bam",sample=SAMPLES),
 #
+#        # expand("mapped/{sample}/{sample}_trimmed_bismark.nucleotide_stats.txt", sample=SAMPLES),
+#        # expand("mapped/{sample}/{sample}_trimmed_bismark.deduplication_report.txt", sample=SAMPLES),
 #        # expand("mapped/{sample}/{sample}_trimmed_bismark_SE_report.txt", sample=SAMPLES),
 #        # expand("mapped/{sample}/{sample}_trimmed_bismark.deduplicated.sorted.M-bias.txt", sample=SAMPLES),
 #        # expand("mapped/{sample}/{sample}_trimmed_bismark.deduplicated.sorted_splitting_report.txt", sample=SAMPLES),
@@ -343,61 +343,6 @@ else:
             " --extendReads"
             " --binSize {params.binSize} -p {threads} ) &> {log}"
 
-# Extract the methylation call for each cytosine analysed
-# and output in context-specific files
-rule methylation_extractor:
-    """Extract the methylation call for each cytosine analysed in context-specific manner"""
-    input:
-        "mapped/dedup/{sample}_MappedOn_{refbase}_dedup_sort.bam"
-    output:
-        CpG = "methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
-        CHG = "methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
-        CHH = "methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz"
-    # "Please note that a typical process of extracting a BAM file and writing out '.gz'
-    # output streams will in fact use ~3 cores per value of --parallel <int> specified
-    # (1 for the methylation extractor itself, 1 for a Samtools stream, 1 for GZIP stream),
-    # so --parallel 10 is likely to use around 30 cores of system resources."
-    threads: 10
-    log:
-        "logs/methylation_extractor/{sample}_MappedOn_{refbase}_dedup_sort_methylation_extractor.log"
-    shell:
-        # USAGE: bismark_methylation_extractor [options] <filenames>
-        "(bismark_methylation_extractor"
-        " --paired-end"
-        " --comprehensive"
-        " --output methylation_extracted"
-        " --gzip"
-        " --parallel {threads}"
-        " {input} ) &> {log}"
-
-#    shell:
-#        """
-#        bismark_methylation_extractor {params.extra} --gzip --paired-end --multicore {threads}  --genome_folder {params.ref} -s {input.bam} --output methylation_extracted 2> {log}
-#        """
-#rule methylation_extractor:
-#    # USAGE: bismark_methylation_extractor [options] <filenames>
-#    input:
-#        bam="mapped/{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.bam",
-#    output:
-#        CHH="methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.txt.gz",
-#        CHG="methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.txt.gz",
-#        CpG="methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.txt.gz",
-#        # "methylation_extracted/{CONTEXT}_context_{sample}_MappedOn_{refbase}_trim_bismark_pe.deduplicated.sorted.txt.gz",
-#        # split="mapped/{sample}/{sample}_trim_bismark.deduplicated.sorted_splitting_report.txt",
-#        # mbias="mapped/{sample}/{sample}_trim_bismark.deduplicated.sorted.M-bias.txt",
-#        # cg="mapped/{sample}/CpG_context_{sample}_trim_bismark.deduplicated.sorted.txt.gz",
-#        # chg="mapped/{sample}/CHG_context_{sample}_trim_bismark.deduplicated.sorted.txt.gz",
-#        # chh="mapped/{sample}/CHH_context_{sample}_trim_bismark.deduplicated.sorted.txt.gz",
-#    params:
-#        ref=REFERENCE,
-#        extra=extra_params_meth_extractor,
-#    threads: 4
-#    log:
-#        "logs/bismark/{sample}_MappedOn_{refbase}.methylation_extractor.log",
-#    shell:
-#        """
-#        bismark_methylation_extractor {params.extra} --gzip --paired-end --multicore {threads}  --genome_folder {params.ref} -s {input.bam} --output methylation_extracted 2> {log}
-#        """
 ##%_fusedICv2_all.cov2cyt: %_fusedICv2_pe.bam
 ##	#not doing --bedgraph option since the filenames are messed up, doing this manualy
 ##	#p stands for paired end

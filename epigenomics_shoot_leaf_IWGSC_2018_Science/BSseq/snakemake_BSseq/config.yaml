@@ -1,9 +1,11 @@
-SAMPLES: ["BSseq_Rep2a_SRR6792682"]
-THREADS: 48
+SAMPLES: ["BSseq_Rep8a_SRR6792678"]
+THREADS: 32
+## Trim Galore!
 TRIM:
   # Example for trimming 10 bp off read 5' ends
   extra_params_trim_galore: "--clip_R1 10 --clip_R2 10"
 
+## Bismark and SAMtools
 # NOTE: reference genome-specific mapping parameters
 MAPPING:
   # This directory must contain the bisulfite-converted
@@ -20,12 +22,15 @@ MAPPING:
   # this should be the name of the FASTA file (e.g., wheat_v1.0.fa)
   # without the .fa extension
   reference_prefix: "wheat_v1.0_incl_organelles_controls"
-  extra_params_bismark:
+  extra_params_bismark: ""
   # Example to relax mapping
-  #extra_params_bismark: " --score_min L,0,-0.4 --un"
+  #extra_params_bismark: "--score_min L,0,-0.4 --un"
+  sortMemory: "4G"
 
-#REPORT:
-#  binsize: 50
+## bamCoverage
+COVERAGE:
+  binSize: 50
+
 #  extra_params_bamCoverage:
 #  extra_params_meth_extractor: " --comprehensive --report --buffer_size 8G"
 #  extra_params_bismark2bedGraph:

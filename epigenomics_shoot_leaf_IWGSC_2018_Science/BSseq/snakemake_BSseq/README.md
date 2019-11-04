@@ -6,7 +6,9 @@ Supported protocols:
 - [**WGBS**](https://en.wikipedia.org/wiki/Bisulfite_sequencing)
 - [NEBNext Enzymatic Methyl-seq (**EM-seq**)](https://international.neb.com/about-neb/news-and-press-releases/new-england-biolabs-to-present-latest-innovations-for-ngs-sample-preparation-at-agbt-2017)
 
-Note, both WGBS and EM-seq produce the same kind of data, so no adjustment for postprocessing needed.
+Both WGBS and EM-seq produce the same kind of data, so no adjustment for post-processing is needed.
+
+***IMPORTANT***: This Snakemake pipeline should not be run with Bismark version 0.21.0 or later due to the addition of HISAT2 support, which requires Python 2, which conflicts with the Python 3 requirements of other parts of this pipeline (e.g., pigz part of trim\_galore rule)
 
 # Requirements
 - demultiplexed fastq.gz files in located in `data` directory. They need to be in the form `{sample}_R1.fastq.gz`
