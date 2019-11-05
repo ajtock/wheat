@@ -108,13 +108,13 @@ rule all:
         #       sample = sample,
         #       refbase = refbase),
         # methylation_extractor
-        expand("methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        expand("methylation_extracted/CpG_context_{sample}_MappedOn_{refbase}_dedup.txt.gz",
                sample = sample,
                refbase = refbase),
-        expand("methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        expand("methylation_extracted/CHG_context_{sample}_MappedOn_{refbase}_dedup.txt.gz",
                sample = sample,
                refbase = refbase),
-        expand("methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup_sort.txt.gz",
+        expand("methylation_extracted/CHH_context_{sample}_MappedOn_{refbase}_dedup.txt.gz",
                sample = sample,
                refbase = refbase),
 #
@@ -231,7 +231,7 @@ rule bismark:
         r1 = "trimmed/{sample}_" + mate[0] + "_trimmed.fastq.gz",
         r2 = "trimmed/{sample}_" + mate[1] + "_trimmed.fastq.gz"
     output:
-        "mapped/{sample}_MappedOn_{refbase}.bam"
+        protected("mapped/{sample}_MappedOn_{refbase}.bam")
     threads: 8
     params:
         extra = config["MAPPING"]["extra_params_bismark"]
