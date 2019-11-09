@@ -384,8 +384,8 @@ rule bismark2bedGraph:
     input:
         "methylation_extracted/{context}_context_{sample}_MappedOn_{refbase}_dedup.txt.gz"
     output:
-        bedGraph = "coverage/{sample}_MappedOn_{refbase}_dedup_{context}",
-        cov      = "coverage/{sample}_MappedOn_{refbase}_dedup_{context}.gz.bismark.cov"
+        bedGraph = temp("coverage/{sample}_MappedOn_{refbase}_dedup_{context}"),
+        cov      = temp("coverage/{sample}_MappedOn_{refbase}_dedup_{context}.gz.bismark.cov")
     params:
         # config.yaml specifies --ample_memory OR --buffer_size 50%
         # See config.yaml for best option to use for given samples
