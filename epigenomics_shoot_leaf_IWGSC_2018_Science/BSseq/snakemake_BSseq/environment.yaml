@@ -13,3 +13,4 @@ dependencies:
   - cutadapt=2.5
   - ucsc-bedgraphtobigwig=357
   - deeptools=3.3.1
+  - perl-gdgraph=1.54
