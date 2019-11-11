@@ -154,6 +154,23 @@ otherColours <- c(
                   "darkcyan",
                   "purple"
                  )
+DNAmethNames <- c(
+                  "BSseq_Rep8a_SRR6792678"
+                 )
+DNAmethNamesDir <- c(
+                     "BSseq"
+                    )
+DNAmethNamesPlot <- c(
+                      "mCG",
+                      "mCHG",
+                      "mCHH"
+                     )
+DNAmethColours <- c(
+                    "navy",
+                    "blue",
+                    "deepskyblue1"
+                   )
+
 ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
   if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
                          "H3K27me3_ChIP_SRR6350666",
@@ -184,6 +201,12 @@ otherDirs <- sapply(seq_along(otherNames), function(x) {
     }
   }
 })
+DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
+  paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+         DNAmethNamesDir[x],
+         "/snakemake_BSseq/coverage/geneProfiles_subgenomes/matrices/")
+})
+        
 # feature
 ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
   as.matrix(read.table(paste0(ChIPDirs[x],
@@ -201,6 +224,27 @@ other_featureMats <- mclapply(seq_along(otherNames), function(x) {
                               "_flank", flankName, ".tab"),
                        header = F, skip = 3))
 }, mc.cores = length(otherNames))
+DNAmeth_featureMats <- list(
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CpG_",
+                              featureName, "_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3)),
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHG_",
+                              featureName, "_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3)),
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHH_",
+                              featureName, "_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3))
+)
+
 # ranLoc
 ChIP_ranLocMats <- mclapply(seq_along(ChIPNames), function(x) {
   as.matrix(read.table(paste0(ChIPDirs[x],
@@ -218,6 +262,26 @@ other_ranLocMats <- mclapply(seq_along(otherNames), function(x) {
                               "_flank", flankName, ".tab"),
                        header = F, skip = 3))
 }, mc.cores = length(otherNames))
+DNAmeth_ranLocMats <- list(
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CpG_",
+                              featureName, "_ranLoc_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3)),
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHG_",
+                              featureName, "_ranLoc_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3)),
+  as.matrix(read.table(paste0(DNAmethDirs,
+                              DNAmethNames,
+                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHH_",
+                              featureName, "_ranLoc_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3))
+)
 
 # Load control matrices
 controlNames <- c(
@@ -363,6 +427,23 @@ control_featureMats <- lapply(seq_along(control_featureMats), function(x) {
 control_ranLocMats <- lapply(seq_along(control_ranLocMats), function(x) {
   control_ranLocMats[[x]][ID_indices,]
 })
+for(x in seq_along(DNAmeth_featureMats)) {
+  colnames(DNAmeth_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(DNAmeth_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                         paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                         paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+DNAmeth_ranFeatMats <- lapply(seq_along(DNAmeth_featureMats), function(x) {
+  DNAmeth_featureMats[[x]][nonID_indices,]
+})
+DNAmeth_featureMats <- lapply(seq_along(DNAmeth_featureMats), function(x) {
+  DNAmeth_featureMats[[x]][ID_indices,]
+})
+DNAmeth_ranLocMats <- lapply(seq_along(DNAmeth_ranLocMats), function(x) {
+  DNAmeth_ranLocMats[[x]][ID_indices,]
+})
 
 ## feature
 # Transpose matrix and convert into dataframe
@@ -381,6 +462,11 @@ wideDFfeature_list_control <- mclapply(seq_along(control_featureMats), function(
   data.frame(window = colnames(control_featureMats[[x]]),
              t(control_featureMats[[x]]))
 }, mc.cores = length(control_featureMats))
+
+wideDFfeature_list_DNAmeth <- mclapply(seq_along(DNAmeth_featureMats), function(x) {
+  data.frame(window = colnames(DNAmeth_featureMats[[x]]),
+             t(DNAmeth_featureMats[[x]]))
+}, mc.cores = length(DNAmeth_featureMats))
 
 # Convert into tidy data.frame (long format)
 tidyDFfeature_list_log2ChIP  <- mclapply(seq_along(wideDFfeature_list_log2ChIP), function(x) {
@@ -404,6 +490,13 @@ tidyDFfeature_list_control  <- mclapply(seq_along(wideDFfeature_list_control), f
          -window)
 }, mc.cores = length(wideDFfeature_list_control))
 
+tidyDFfeature_list_DNAmeth  <- mclapply(seq_along(wideDFfeature_list_DNAmeth), function(x) {
+  gather(data  = wideDFfeature_list_DNAmeth[[x]],
+         key   = feature,
+         value = coverage,
+         -window)
+}, mc.cores = length(wideDFfeature_list_DNAmeth))
+
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
 for(x in seq_along(tidyDFfeature_list_log2ChIP)) {
@@ -419,6 +512,11 @@ for(x in seq_along(tidyDFfeature_list_other)) {
 for(x in seq_along(tidyDFfeature_list_control)) {
   tidyDFfeature_list_control[[x]]$window <- factor(tidyDFfeature_list_control[[x]]$window,
                                                    levels = as.character(wideDFfeature_list_control[[x]]$window))
+}
+
+for(x in seq_along(tidyDFfeature_list_DNAmeth)) {
+  tidyDFfeature_list_DNAmeth[[x]]$window <- factor(tidyDFfeature_list_DNAmeth[[x]]$window,
+                                                   levels = as.character(wideDFfeature_list_DNAmeth[[x]]$window))
 }
 
 # Create summary data.frame in which each row corresponds to a window (Column 1),
@@ -512,6 +610,34 @@ for(x in seq_along(summaryDFfeature_list_control)) {
 
 names(summaryDFfeature_list_control) <- controlNamesPlot
 
+summaryDFfeature_list_DNAmeth  <- mclapply(seq_along(tidyDFfeature_list_DNAmeth), function(x) {
+  data.frame(window = as.character(wideDFfeature_list_DNAmeth[[x]]$window),
+             n      = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
+                             FUN   = length),
+             mean   = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
+                             FUN   = mean,
+                             na.rm = TRUE),
+             sd     = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
+                             FUN   = sd,
+                             na.rm = TRUE))
+}, mc.cores = length(tidyDFfeature_list_DNAmeth))
+
+for(x in seq_along(summaryDFfeature_list_DNAmeth)) {
+  summaryDFfeature_list_DNAmeth[[x]]$window <- factor(summaryDFfeature_list_DNAmeth[[x]]$window,
+                                                      levels = as.character(wideDFfeature_list_DNAmeth[[x]]$window))
+  summaryDFfeature_list_DNAmeth[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_DNAmeth[[x]])[1])
+  summaryDFfeature_list_DNAmeth[[x]]$sem <- summaryDFfeature_list_DNAmeth[[x]]$sd/sqrt(summaryDFfeature_list_DNAmeth[[x]]$n-1)
+  summaryDFfeature_list_DNAmeth[[x]]$CI_lower <- summaryDFfeature_list_DNAmeth[[x]]$mean -
+    qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]]$n-1)*summaryDFfeature_list_DNAmeth[[x]]$sem
+  summaryDFfeature_list_DNAmeth[[x]]$CI_upper <- summaryDFfeature_list_DNAmeth[[x]]$mean +
+    qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]]$n-1)*summaryDFfeature_list_DNAmeth[[x]]$sem
+}
+
+names(summaryDFfeature_list_DNAmeth) <- DNAmethNamesPlot
+
 # Convert list summaryDFfeature_list_log2ChIP into a single data.frame for plotting
 summaryDFfeature_log2ChIP <- bind_rows(summaryDFfeature_list_log2ChIP, .id = "libName")
 summaryDFfeature_log2ChIP$libName <- factor(summaryDFfeature_log2ChIP$libName,
@@ -524,6 +650,10 @@ summaryDFfeature_other$libName <- factor(summaryDFfeature_other$libName,
 summaryDFfeature_control <- bind_rows(summaryDFfeature_list_control, .id = "libName")
 summaryDFfeature_control$libName <- factor(summaryDFfeature_control$libName,
                                            levels = names(summaryDFfeature_list_control))
+
+summaryDFfeature_DNAmeth <- bind_rows(summaryDFfeature_list_DNAmeth, .id = "libName")
+summaryDFfeature_DNAmeth$libName <- factor(summaryDFfeature_DNAmeth$libName,
+                                           levels = names(summaryDFfeature_list_DNAmeth))
 
 ## ranFeat
 # Transpose matrix and convert into dataframe
@@ -542,6 +672,11 @@ wideDFranFeat_list_control <- mclapply(seq_along(control_ranFeatMats), function(
   data.frame(window = colnames(control_ranFeatMats[[x]]),
              t(control_ranFeatMats[[x]]))
 }, mc.cores = length(control_ranFeatMats))
+
+wideDFranFeat_list_DNAmeth <- mclapply(seq_along(DNAmeth_ranFeatMats), function(x) {
+  data.frame(window = colnames(DNAmeth_ranFeatMats[[x]]),
+             t(DNAmeth_ranFeatMats[[x]]))
+}, mc.cores = length(DNAmeth_ranFeatMats))
 
 # Convert into tidy data.frame (long format)
 tidyDFranFeat_list_log2ChIP  <- mclapply(seq_along(wideDFranFeat_list_log2ChIP), function(x) {
@@ -565,6 +700,13 @@ tidyDFranFeat_list_control  <- mclapply(seq_along(wideDFranFeat_list_control), f
          -window)
 }, mc.cores = length(wideDFranFeat_list_control))
 
+tidyDFranFeat_list_DNAmeth  <- mclapply(seq_along(wideDFranFeat_list_DNAmeth), function(x) {
+  gather(data  = wideDFranFeat_list_DNAmeth[[x]],
+         key   = ranFeat,
+         value = coverage,
+         -window)
+}, mc.cores = length(wideDFranFeat_list_DNAmeth))
+
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
 for(x in seq_along(tidyDFranFeat_list_log2ChIP)) {
@@ -580,6 +722,11 @@ for(x in seq_along(tidyDFranFeat_list_other)) {
 for(x in seq_along(tidyDFranFeat_list_control)) {
   tidyDFranFeat_list_control[[x]]$window <- factor(tidyDFranFeat_list_control[[x]]$window,
                                                    levels = as.character(wideDFranFeat_list_control[[x]]$window))
+}
+
+for(x in seq_along(tidyDFranFeat_list_DNAmeth)) {
+  tidyDFranFeat_list_DNAmeth[[x]]$window <- factor(tidyDFranFeat_list_DNAmeth[[x]]$window,
+                                                   levels = as.character(wideDFranFeat_list_DNAmeth[[x]]$window))
 }
 
 # Create summary data.frame in which each row corresponds to a window (Column 1),
@@ -673,6 +820,34 @@ for(x in seq_along(summaryDFranFeat_list_control)) {
 
 names(summaryDFranFeat_list_control) <- controlNamesPlot
 
+summaryDFranFeat_list_DNAmeth  <- mclapply(seq_along(tidyDFranFeat_list_DNAmeth), function(x) {
+  data.frame(window = as.character(wideDFranFeat_list_DNAmeth[[x]]$window),
+             n      = tapply(X     = tidyDFranFeat_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranFeat_list_DNAmeth[[x]]$window,
+                             FUN   = length),
+             mean   = tapply(X     = tidyDFranFeat_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranFeat_list_DNAmeth[[x]]$window,
+                             FUN   = mean,
+                             na.rm = TRUE),
+             sd     = tapply(X     = tidyDFranFeat_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranFeat_list_DNAmeth[[x]]$window,
+                             FUN   = sd,
+                             na.rm = TRUE))
+}, mc.cores = length(tidyDFranFeat_list_DNAmeth))
+
+for(x in seq_along(summaryDFranFeat_list_DNAmeth)) {
+  summaryDFranFeat_list_DNAmeth[[x]]$window <- factor(summaryDFranFeat_list_DNAmeth[[x]]$window,
+                                                      levels = as.character(wideDFranFeat_list_DNAmeth[[x]]$window))
+  summaryDFranFeat_list_DNAmeth[[x]]$winNo <- factor(1:dim(summaryDFranFeat_list_DNAmeth[[x]])[1])
+  summaryDFranFeat_list_DNAmeth[[x]]$sem <- summaryDFranFeat_list_DNAmeth[[x]]$sd/sqrt(summaryDFranFeat_list_DNAmeth[[x]]$n-1)
+  summaryDFranFeat_list_DNAmeth[[x]]$CI_lower <- summaryDFranFeat_list_DNAmeth[[x]]$mean -
+    qt(0.975, df = summaryDFranFeat_list_DNAmeth[[x]]$n-1)*summaryDFranFeat_list_DNAmeth[[x]]$sem
+  summaryDFranFeat_list_DNAmeth[[x]]$CI_upper <- summaryDFranFeat_list_DNAmeth[[x]]$mean +
+    qt(0.975, df = summaryDFranFeat_list_DNAmeth[[x]]$n-1)*summaryDFranFeat_list_DNAmeth[[x]]$sem
+}
+
+names(summaryDFranFeat_list_DNAmeth) <- DNAmethNamesPlot
+
 # Convert list summaryDFranFeat_list_log2ChIP into a single data.frame for plotting
 summaryDFranFeat_log2ChIP <- bind_rows(summaryDFranFeat_list_log2ChIP, .id = "libName")
 summaryDFranFeat_log2ChIP$libName <- factor(summaryDFranFeat_log2ChIP$libName,
@@ -685,6 +860,10 @@ summaryDFranFeat_other$libName <- factor(summaryDFranFeat_other$libName,
 summaryDFranFeat_control <- bind_rows(summaryDFranFeat_list_control, .id = "libName")
 summaryDFranFeat_control$libName <- factor(summaryDFranFeat_control$libName,
                                            levels = names(summaryDFranFeat_list_control))
+
+summaryDFranFeat_DNAmeth <- bind_rows(summaryDFranFeat_list_DNAmeth, .id = "libName")
+summaryDFranFeat_DNAmeth$libName <- factor(summaryDFranFeat_DNAmeth$libName,
+                                           levels = names(summaryDFranFeat_list_DNAmeth))
 
 ## ranLoc
 # Transpose matrix and convert into dataframe
@@ -703,6 +882,11 @@ wideDFranLoc_list_control <- mclapply(seq_along(control_ranLocMats), function(x)
   data.frame(window = colnames(control_ranLocMats[[x]]),
              t(control_ranLocMats[[x]]))
 }, mc.cores = length(control_ranLocMats))
+
+wideDFranLoc_list_DNAmeth <- mclapply(seq_along(DNAmeth_ranLocMats), function(x) {
+  data.frame(window = colnames(DNAmeth_ranLocMats[[x]]),
+             t(DNAmeth_ranLocMats[[x]]))
+}, mc.cores = length(DNAmeth_ranLocMats))
 
 # Convert into tidy data.frame (long format)
 tidyDFranLoc_list_log2ChIP  <- mclapply(seq_along(wideDFranLoc_list_log2ChIP), function(x) {
@@ -726,6 +910,13 @@ tidyDFranLoc_list_control  <- mclapply(seq_along(wideDFranLoc_list_control), fun
          -window)
 }, mc.cores = length(wideDFranLoc_list_control))
 
+tidyDFranLoc_list_DNAmeth  <- mclapply(seq_along(wideDFranLoc_list_DNAmeth), function(x) {
+  gather(data  = wideDFranLoc_list_DNAmeth[[x]],
+         key   = ranLoc,
+         value = coverage,
+         -window)
+}, mc.cores = length(wideDFranLoc_list_DNAmeth))
+
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
 for(x in seq_along(tidyDFranLoc_list_log2ChIP)) {
@@ -741,6 +932,11 @@ for(x in seq_along(tidyDFranLoc_list_other)) {
 for(x in seq_along(tidyDFranLoc_list_control)) {
   tidyDFranLoc_list_control[[x]]$window <- factor(tidyDFranLoc_list_control[[x]]$window,
                                                   levels = as.character(wideDFranLoc_list_control[[x]]$window))
+}
+
+for(x in seq_along(tidyDFranLoc_list_DNAmeth)) {
+  tidyDFranLoc_list_DNAmeth[[x]]$window <- factor(tidyDFranLoc_list_DNAmeth[[x]]$window,
+                                                  levels = as.character(wideDFranLoc_list_DNAmeth[[x]]$window))
 }
 
 # Create summary data.frame in which each row corresponds to a window (Column 1),
@@ -834,6 +1030,34 @@ for(x in seq_along(summaryDFranLoc_list_control)) {
 
 names(summaryDFranLoc_list_control) <- controlNamesPlot
 
+summaryDFranLoc_list_DNAmeth  <- mclapply(seq_along(tidyDFranLoc_list_DNAmeth), function(x) {
+  data.frame(window = as.character(wideDFranLoc_list_DNAmeth[[x]]$window),
+             n      = tapply(X     = tidyDFranLoc_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranLoc_list_DNAmeth[[x]]$window,
+                             FUN   = length),
+             mean   = tapply(X     = tidyDFranLoc_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranLoc_list_DNAmeth[[x]]$window,
+                             FUN   = mean,
+                             na.rm = TRUE),
+             sd     = tapply(X     = tidyDFranLoc_list_DNAmeth[[x]]$coverage,
+                             INDEX = tidyDFranLoc_list_DNAmeth[[x]]$window,
+                             FUN   = sd,
+                             na.rm = TRUE))
+}, mc.cores = length(tidyDFranLoc_list_DNAmeth))
+
+for(x in seq_along(summaryDFranLoc_list_DNAmeth)) {
+  summaryDFranLoc_list_DNAmeth[[x]]$window <- factor(summaryDFranLoc_list_DNAmeth[[x]]$window,
+                                                     levels = as.character(wideDFranLoc_list_DNAmeth[[x]]$window))
+  summaryDFranLoc_list_DNAmeth[[x]]$winNo <- factor(1:dim(summaryDFranLoc_list_DNAmeth[[x]])[1])
+  summaryDFranLoc_list_DNAmeth[[x]]$sem <- summaryDFranLoc_list_DNAmeth[[x]]$sd/sqrt(summaryDFranLoc_list_DNAmeth[[x]]$n-1)
+  summaryDFranLoc_list_DNAmeth[[x]]$CI_lower <- summaryDFranLoc_list_DNAmeth[[x]]$mean -
+    qt(0.975, df = summaryDFranLoc_list_DNAmeth[[x]]$n-1)*summaryDFranLoc_list_DNAmeth[[x]]$sem
+  summaryDFranLoc_list_DNAmeth[[x]]$CI_upper <- summaryDFranLoc_list_DNAmeth[[x]]$mean +
+    qt(0.975, df = summaryDFranLoc_list_DNAmeth[[x]]$n-1)*summaryDFranLoc_list_DNAmeth[[x]]$sem
+}
+
+names(summaryDFranLoc_list_DNAmeth) <- DNAmethNamesPlot
+
 # Convert list summaryDFranLoc_list_log2ChIP into a single data.frame for plotting
 summaryDFranLoc_log2ChIP <- bind_rows(summaryDFranLoc_list_log2ChIP, .id = "libName")
 summaryDFranLoc_log2ChIP$libName <- factor(summaryDFranLoc_log2ChIP$libName,
@@ -846,6 +1070,10 @@ summaryDFranLoc_other$libName <- factor(summaryDFranLoc_other$libName,
 summaryDFranLoc_control <- bind_rows(summaryDFranLoc_list_control, .id = "libName")
 summaryDFranLoc_control$libName <- factor(summaryDFranLoc_control$libName,
                                           levels = names(summaryDFranLoc_list_control))
+
+summaryDFranLoc_DNAmeth <- bind_rows(summaryDFranLoc_list_DNAmeth, .id = "libName")
+summaryDFranLoc_DNAmeth$libName <- factor(summaryDFranLoc_DNAmeth$libName,
+                                          levels = names(summaryDFranLoc_list_DNAmeth))
 
 
 # Define feature start and end labels for plotting
@@ -907,6 +1135,23 @@ ymax_list_control <- lapply(seq_along(controlNamesPlot), function(x) {
                                    controlNamesPlot[x],]$CI_upper,
         summaryDFranLoc_control[summaryDFranLoc_control$libName ==
                                   controlNamesPlot[x],]$CI_upper))
+})
+
+ymin_list_DNAmeth <- lapply(seq_along(DNAmethNamesPlot), function(x) {
+  min(c(summaryDFfeature_DNAmeth[summaryDFfeature_DNAmeth$libName ==
+                                   DNAmethNamesPlot[x],]$CI_lower,
+        summaryDFranFeat_DNAmeth[summaryDFranFeat_DNAmeth$libName ==
+                                   DNAmethNamesPlot[x],]$CI_lower,
+        summaryDFranLoc_DNAmeth[summaryDFranLoc_DNAmeth$libName ==
+                                  DNAmethNamesPlot[x],]$CI_lower))
+})
+ymax_list_DNAmeth <- lapply(seq_along(DNAmethNamesPlot), function(x) {
+  max(c(summaryDFfeature_DNAmeth[summaryDFfeature_DNAmeth$libName ==
+                                   DNAmethNamesPlot[x],]$CI_upper,
+        summaryDFranFeat_DNAmeth[summaryDFranFeat_DNAmeth$libName ==
+                                   DNAmethNamesPlot[x],]$CI_upper,
+        summaryDFranLoc_DNAmeth[summaryDFranLoc_DNAmeth$libName ==
+                                  DNAmethNamesPlot[x],]$CI_upper))
 })
 
 # Plot average coverage profiles with 95% CI ribbon
@@ -1229,19 +1474,181 @@ ggObj3_combined_other <- lapply(seq_along(otherNames), function(x) {
                              big.mark = ",", trim = T)) *
                  ")"))
 })
+## feature
+ggObj1_combined_DNAmeth <- lapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_DNAmeth[summaryDFfeature_DNAmeth$libName ==
+                                                 DNAmethNamesPlot[x],]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = libName),
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = libName),
+            size = 1) +
+  scale_colour_manual(values = DNAmethColours[x]) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = libName),
+              alpha = 0.4) +
+  scale_fill_manual(values = DNAmethColours[x]) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%5.2f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_list_DNAmeth[[x]])[1])-(downstream/binSize),
+                              dim(summaryDFfeature_list_DNAmeth[[x]])[1]),
+                   labels = c(paste0("-", flankNamePlot),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankNamePlot))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_list_DNAmeth[[x]])[1])-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+})
+## ranFeat
+ggObj2_combined_DNAmeth <- lapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFranFeat <- summaryDFranFeat_DNAmeth[summaryDFranFeat_DNAmeth$libName ==
+                                               DNAmethNamesPlot[x],]
+  ggplot(data = summaryDFranFeat,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = libName),
+        ) +
+  geom_line(data = summaryDFranFeat,
+            mapping = aes(colour = libName),
+            size = 1) +
+  scale_colour_manual(values = DNAmethColours[x]) +
+  geom_ribbon(data = summaryDFranFeat,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = libName),
+              alpha = 0.4) +
+  scale_fill_manual(values = DNAmethColours[x]) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%5.2f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFranFeat_list_DNAmeth[[x]])[1])-(downstream/binSize),
+                              dim(summaryDFranFeat_list_DNAmeth[[x]])[1]),
+                   labels = c(paste0("-", flankNamePlot),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankNamePlot))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFranFeat_list_DNAmeth[[x]])[1])-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote("ASY1 Cluster" * .(clusterLast) ~ "genes (" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFranFeat$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+})
+## ranLoc
+ggObj3_combined_DNAmeth <- lapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFranLoc <- summaryDFranLoc_DNAmeth[summaryDFranLoc_DNAmeth$libName ==
+                                             DNAmethNamesPlot[x],]
+  ggplot(data = summaryDFranLoc,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = libName),
+        ) +
+  geom_line(data = summaryDFranLoc,
+            mapping = aes(colour = libName),
+            size = 1) +
+  scale_colour_manual(values = DNAmethColours[x]) +
+  geom_ribbon(data = summaryDFranLoc,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = libName),
+              alpha = 0.4) +
+  scale_fill_manual(values = DNAmethColours[x]) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%5.2f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFranLoc_list_DNAmeth[[x]])[1])-(downstream/binSize),
+                              dim(summaryDFranLoc_list_DNAmeth[[x]])[1]),
+                   labels = c(paste0("-", flankNamePlot),
+                              "Start",
+                              "End",
+                              paste0("+", flankNamePlot))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFranLoc_list_DNAmeth[[x]])[1])-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote("Random loci (" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFranLoc$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+})
 ggObjGA_combined <- grid.arrange(grobs = c(ggObj1_combined_log2ChIP,
                                            ggObj1_combined_other,
+                                           ggObj1_combined_DNAmeth,
                                            ggObj2_combined_log2ChIP,
                                            ggObj2_combined_other,
+                                           ggObj2_combined_DNAmeth,
                                            ggObj3_combined_log2ChIP,
-                                           ggObj3_combined_other),
-                                 layout_matrix = cbind(1:length(c(ChIPNames, otherNames)),
-                                                       (length(c(ChIPNames, otherNames))+1):(length(c(ChIPNames, otherNames))*2),
-                                                       ((length(c(ChIPNames, otherNames))*2)+1):(length(c(ChIPNames, otherNames))*3)))
+                                           ggObj3_combined_other,
+                                           ggObj3_combined_DNAmeth),
+                                 layout_matrix = cbind(1:length(c(ChIPNames, otherNames, DNAmethNamesPlot)),
+                                                       (length(c(ChIPNames, otherNames, DNAmethNamesPlot))+1):(length(c(ChIPNames, otherNames, DNAmethNamesPlot))*2),
+                                                       ((length(c(ChIPNames, otherNames, DNAmethNamesPlot))*2)+1):(length(c(ChIPNames, otherNames, DNAmethNamesPlot))*3)))
 ggsave(paste0(plotDir,
               "avgProfiles_around_",
               featureNamePlot, "_in_cluster", clusterNo,
               "_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
-              "_of_", featureName, ".pdf"),
+              "_of_", featureName, "_v111119.pdf"),
        plot = ggObjGA_combined,
-       height = 6.5*length(c(ChIPNames, otherNames)), width = 21, limitsize = FALSE)
+       height = 6.5*length(c(ChIPNames, otherNames, DNAmethNamesPlot)), width = 21, limitsize = FALSE)
