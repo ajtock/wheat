@@ -1,14 +1,25 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Cluster genes by log2(ChIP/control)
+#
+# Divide features into quantiles based on mean log2(libName ChIP/control)
+# in a given feature region (e.g., promoters).
+# Extract and save feature IDs for each quantile for further analyses
+# (e.g., GO enrichment and average + 95% CI profile plotting).
+# Calculate mean winName-scaled recombination rate (cM/Mb) from
+# the promoter to the terminator of each feature.
+# Plot feature quantile heatmaps for various genomics datasets
+# Plot feature quantile recombination rate densities in a
+# heat map or violin plot
+#
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_features_into_quantiles.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp promoters 4
+# /applications/R/R-3.4.0/bin/Rscript group_features_into_quantiles.R ASY1_CS_Rep1_ChIP ASY1_CS both genes_in_Agenome_genomewide 3500 2000 2kb '2 kb' 20 20bp promoters 4 100kb 1
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #align <- "both"
-#featureName <- "genes_in_Agenome_genomewide"
+#featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
+#                               split = ","))
 #bodyLength <- 3500
 #upstream <- 2000
 #downstream <- 2000
@@ -18,6 +29,8 @@
 #binName <- "20bp"
 #region <- "promoters"
 #quantiles <- 4
+#winName <- "100kb"
+#minMarkerDist <- 1
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -33,8 +46,18 @@ binSize <- as.numeric(args[9])
 binName <- args[10]
 region <- args[11]
 quantiles <- as.numeric(args[12])
+winName <- args[13]
+minMarkerDist <-  as.numeric(args[14])
 
+library(GenomicRanges)
+library(dplyr)
 library(parallel)
+library(doParallel)
+registerDoParallel(cores = detectCores())
+print("Currently registered parallel backend name, version and cores")
+print(getDoParName())
+print(getDoParVersion())
+print(getDoParWorkers())
 
 outDir <- paste0("quantiles_by_log2_", libName,
                  "_control_in_", region, "/")
@@ -43,14 +66,23 @@ system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load ChIP matrix
-mat1 <- as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/",
-                                    dirName,
-                                    "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
-                                    libName,
-                                    "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                                    featureName, "_matrix_bin", binName,
-                                    "_flank", flankName, ".tab"),
-                             header = F, skip = 3))
+mat1 <- lapply(seq_along(featureName), function(y) {
+  as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/",
+                              dirName,
+                              "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
+                              libName,
+                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                              featureName[y], "_matrix_bin", binName,
+                              "_flank", flankName, ".tab"),
+                       header = F, skip = 3))
+})
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+if(length(featureName) == 3) {
+ mat1 <- do.call(rbind, mat1)
+} else {
+ mat1 <- mat1[[1]]
+}
 
 # Load control matrices
 controlNames <- c(
@@ -70,18 +102,29 @@ controlDirs <- sapply(seq_along(controlNames), function(x) {
            controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
   } else {
     if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
-      stop("controlNames[x] is neither H3_input_SRR6350669 nor MNase_Rep1")
+      stop(paste0("controlNames[", x, "] is neither H3_input_SRR6350669 nor MNase_Rep1"))
     }
   }
 })
 controlmats <- mclapply(seq_along(controlNames), function(x) {
-  as.matrix(read.table(paste0(controlDirs[x],
-                              controlNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
 }, mc.cores = length(controlNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+controlmats <- mclapply(seq_along(controlmats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, controlmats[[x]])
+  } else {
+    controlmats[[x]][[1]]
+  }
+}, mc.cores = length(controlmats))
 
 # Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
 # for ChIP matrix depending on library
@@ -103,11 +146,11 @@ log2ChIPmat <- if(libName %in% c(
   log2((mat1+1)/(controlmats[[2]]+1))
 }
 
-# Extract region for clustering of features (adjust promoter/terminator size as necessary)
+# Extract region for ordering of features (adjust promoter/terminator size as necessary)
 if( region == "promoters" ) {
-  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-500)/binSize)+1):(upstream/binSize)]
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-1000)/binSize)+1):(upstream/binSize)]
 } else if ( region == "terminators" ) {
-  log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(500/binSize))]
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 } else if ( region == "bodies" ) {
   log2ChIPmatRegion <- log2ChIPmat[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
 } else {
@@ -126,124 +169,200 @@ log2ChIPmatSorted <- log2ChIPmat[sort.int(log2ChIPmatRegionRowMeans,
                                           decreasing = T,
                                           index.return = T,
                                           na.last = T)$ix,]
-# Replace NAs in log2ChIPmatRegion with 0
-log2ChIPmatRegion[which(is.na(log2ChIPmatRegion))] <- 0
+## Replace NAs in log2ChIPmatRegion with 0
+#log2ChIPmatRegion[which(is.na(log2ChIPmatRegion))] <- 0
 
-# Determine number of clusters to be used for k-means clustering
-# by generating a scree ("elbow") plot of the ratio of the
-# within-cluster sum of squares (WSS) to the total sum of squares (TSS)
-# for k clusters
-
-# First run garbage collection to free up memory
-gc()
-# Set seed for reproducible clusters
-set.seed(938402845)
-
-# Initialise ratio_ss as a vector of 0s to be replaced with the ratio
-# of the within-cluster sum of squares to the total sum of squares
-# for each number of clusters
-kMax <- 10
-ratio_ss <- rep(0, kMax)
-
-# Apply k-means clustering to log2ChIPmat for k in 1:15
-# and obtain the ratio of the within-cluster sum of squares (WSS) to
-# the total sum of squares (TSS) for each number of clusters
-for(k in 1:kMax) {
-  print(k)
-  km <- kmeans(x = log2ChIPmatRegion,
-               centers = k,
-               iter.max = 10,
-               nstart = 10)
-  ratio_ss[k] <- km$tot.withinss / km$totss
+# Load features 
+features <- lapply(seq_along(featureName), function(y) {
+  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                    substring(featureName[y], first = 10), ".gff3"),
+             colClasses = c(NA,
+                            rep("NULL", 2),
+                            rep(NA, 2),
+                            "NULL", NA, "NULL", NA),
+             header = F)
+})
+if(length(featureName) == 3) {
+  features <- do.call(rbind, features)
+} else {
+  features <- features[[1]]
 }
-#19: Quick-TRANSfer stage steps exceeded maximum (= 1767250)
+colnames(features) <- c("chr", "start", "end", "strand", "featureID")
+featuresGR <- GRanges(seqnames = features$chr,
+                      ranges = IRanges(start = features$start,
+                                       end = features$end),
+                      strand = features$strand,
+                      featureID = features$featureID)
+# Extend feature boundaries to include promoters and terminators for calculation of
+# winName-scaled recombination rate
+featuresGR_ext <- GRanges(seqnames = seqnames(featuresGR),
+                          ranges = IRanges(start = start(featuresGR)-1000,
+                                           end = end(featuresGR)+1000),
+                          strand = strand(featuresGR),
+                          featureID = featuresGR$featureID)
+print(featuresGR_ext)
 
-# Make a scree ("elbow") plot
-pdf(paste0(outDir, "screePlot_k_clusters_by_log2_",
-           libName, "_control_in_",
-           region, "_of_", featureName, ".pdf"))
-plot(x = 1:kMax, y = ratio_ss,
-     type = "b",
-     xlab = "k", ylab = "WSS / TSS")
-abline(h = 0.2, lty = 2, col = "red")
-dev.off()
+# Convert windowed recombination rate into GRanges
+cMMb <- read.table(paste0(
+                   "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/",
+                   "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
+                   as.character(minMarkerDist), "bp_", winName, ".txt"))
+cMMbGR <- GRanges(seqnames = cMMb$chr,
+                  ranges = IRanges(start = cMMb$windowStart,
+                                   end = cMMb$windowEnd),
+                  strand = "*",
+                  cMMb = cMMb$cMMb)
 
-# First run garbage collection to free up memory
-gc()
-# Set seed for reproducible clusters
-set.seed(938402845)
+# Obtain winName-scaled cMMb values for each feature between promoter and terminator
+# Where features overlap more than one winName window, calculate mean cMMb
+feature_cMMb_overlaps <- findOverlaps(query = featuresGR_ext,
+                                      subject = cMMbGR,
+                                      type = "any",
+                                      select = "all",
+                                      ignore.strand = TRUE)
+feature_cMMb_overlapsList <- lapply(seq_along(featuresGR_ext), function(x) {
+  subjectHits(feature_cMMb_overlaps)[queryHits(feature_cMMb_overlaps) == x]
+})
+## OR
+#feature_cMMb_overlapsList <- getOverlaps(coordinates = featuresGR_ext,
+#                                         segments = cMMbGR,
+#                                         overlapType = "overlapping",
+#                                         whichOverlaps = TRUE,
+#                                         ignoreStrand = TRUE)
+feature_cMMb <- sapply(feature_cMMb_overlapsList,
+                       function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
+featuresGR <- GRanges(featuresGR,
+                      featureID = featuresGR$featureID,
+                      log2ChIPmatRegionRowMeans = log2ChIPmatRegionRowMeans,
+                      cMMb = feature_cMMb)
 
-# 4 clusters
-kDef <- 4
-km <- kmeans(x = log2ChIPmatRegion,
-             centers = kDef,
-             iter.max = 10,
-             nstart = 10)
-# Adjust the cluster numbers so that cluster 1 has highest levels
-x <- tapply(X = rowMeans(log2ChIPmatRegion),
-            INDEX = km$cluster,
-            FUN = mean)
-od <- order(structure(order(x, decreasing = TRUE),
-                      names = names(x)),
-            decreasing = F)
-km$cluster <- od[km$cluster]
-km$cluster <- paste0("Cluster ", km$cluster)
+# Divide features into quantiles based on decreasing log2ChIPmatRegionRowMeans
+featuresDF <- data.frame(featuresGR,
+                         quantile = as.character("."))
+for(j in 1:length(quantiles)) {
+  featuresDF$quantile <-
+  featuresDF$quantile <- ifelse(!is.na(featuresDF$log2ChIPmatRegionRowMeans) &
+                                featuresDF$log2ChIPmatRegionRowMeans <= quantile(featuresDF$log2ChIPmatRegionRowMeans, j/quantiles, na.rm = T),
+                                yes = paste0("Quantile ", j),
+                                no = "")
+  featuresDF[featuresDF$log2ChIPmatRegionRowMeans <=
+               quantile(featuresDF$log2ChIPmatRegionRowMeans, j/quantiles, na.rm = T),]$quantile <- paste0("Quantile ", j)
+}
 
-## Calculate Dunn's index to assess compactness and separation of clusters
-## "The Dunn Index is the ratio of the smallest distance between observations
-## not in the same cluster to the largest intra-cluster distance.
-## The Dunn Index has a value between zero and infinity, and should be maximized."
-## (NOTE: takes a long time)
-#library(clValid)
-#km_dunn <- dunn(clusters = km$cluster, Data = log2ChIPmatRegion)
+featuresDF[featuresDF$log2ChIPmatRegionRowMeans <= 
+featuresDF_ordered <- featuresDF[order(featuresDF$log2ChIPmatRegionRowMeans,
+                                       decreasing = T,
+                                       na.last = TRUE),]
+quantilesN <- round(dim(featuresDF_ordered)[1]/quantiles)
+quantilesCum <- cumsum(c(1,
+                         rep(quantilesN,
+                             times = quantiles)))
+if(quantilesCum[length(quantilesCum)] < dim(featuresDF_ordered)[1]) {
+  quantilesCum <- c(quantilesCum, dim(featuresDF_ordered)[1])
+}
+quantile
+quantilesStats <- data.frame()
+for(j in 1:length(quantilesCum)) {
+  print(j)
+  if(j == 1) {
+    quantilejFeatures <- featuresDF_ordered[(quantilesCum[j]):(quantilesCum[j+1]-1),]
+    print(paste0("condition 1: quantile ", j))
+    print(dim(quantilejFeatures))
+  }
+  if(j > 1 & j < quantiles) {
+    quantilejFeatures <- featuresDF_ordered[(quantilesCum[j]):(quantilesCum[j+1]-1),]
+    print(paste0("condition 2: quantile ", j))
+    print(dim(quantilejFeatures))
+  }
+  if(j == quantiles) {
+    quantilejFeatures <- featuresDF_ordered[(quantilesCum[j]):(quantilesCum[length(quantilesCum)]),]
+    print(paste0("condition 3: quantile ", j))
+    print(dim(quantilejFeatures))
+  }
+  quantilejFeatures <- data.frame(quantilejFeatures,
+                                  quantile = paste0("Quantile ", j))
+  if(j <= quantiles) {
+    stats <- data.frame(quantile = as.integer(j),
+                        n = as.integer(dim(quantilejFeatures)[1]),
+                        mean_width = as.integer(round(mean(quantilejFeatures$width, na.rm = T))),
+                        total_width = as.integer(sum(quantilejFeatures$width, na.rm = T)),
+                        mean_log2ChIPmatRegionRowMeans = as.numeric(mean(quantilejFeatures$log2ChIPmatRegionRowMeans, na.rm = T)))
+    quantilesStats <- rbind(quantilesStats, stats)
+    write.table(quantilejFeatures,
+                file = paste0(outDir,
+                              "quantile", j, "_of_", quantiles,
+                              "_by_log2_", libName, "_control_in_",
+                              region, "_of_",
+                              substring(featureName[1][1], first = 1, last = 5), "_in_",
+                              paste0(substring(featureName, first = 10, last = 16),
+                                     collapse = "_"), "_",
+                              substring(featureName[1][1], first = 18), ".txt"),
+                quote = FALSE, sep = "\t", row.names = FALSE)
+  }
+}
+write.table(quantilesStats,
+            file = paste0(outDir,
+                          "summary_", quantiles, "quantiles_by_log2_", libName, "_control_in_",
+                          region, "_of_",
+                          substring(featureName[1][1], first = 1, last = 5), "_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), ".txt"),
+            quote = FALSE, sep = "\t", row.names = FALSE)
 
-# Order genes in each cluster by decreasing log2ChIPmatRegion levels
+
+  write.table(featureIDsClusterList[[k]],
+              file = paste0(outDir, "quantile", as.character(k), "_of_", as.character(quantiles),
+                            "_by_log2_", libName, "_control_in_",
+                            region, "_of_", featureName, ".txt"),
+              quote = F, row.names = F, col.names = F)
+# Order features in each quantile by decreasing log2ChIPmatRegion levels
 # to define "row_order" for heatmaps
-combineRowOrders <- function(cluster_bool_list) {
-  do.call("c", lapply(cluster_bool_list, function(x) {
-    cluster_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    which(x)[order(cluster_log2ChIPmatRegionRowMeans, decreasing = T)]
+combineRowOrders <- function(quantile_bool_list) {
+  do.call("c", lapply(quantile_bool_list, function(x) {
+    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
   }))
 }
-row_order <- combineRowOrders(cluster_bool_list =
-  lapply(seq_along(1:kDef), function(k) { 
-    km$cluster == paste0("Cluster ", k)
+row_order <- combineRowOrders(quantile_bool_list =
+  lapply(seq_along(1:quantiles), function(k) { 
+    km$quantile == paste0("Cluster ", k)
   })
 )
-# Order gene IDs in each cluster by decreasing log2ChIPmatRegion levels
+# Order feature IDs in each quantile by decreasing log2ChIPmatRegion levels
 # for use in GO term enrichment analysis
-listCombineRowOrders <- function(cluster_bool_list) {
-  do.call(list, lapply(cluster_bool_list, function(x) {
-    cluster_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    which(x)[order(cluster_log2ChIPmatRegionRowMeans, decreasing = T)]
+listCombineRowOrders <- function(quantile_bool_list) {
+  do.call(list, lapply(quantile_bool_list, function(x) {
+    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
   }))
 }
-featureIndicesList <- listCombineRowOrders(cluster_bool_list =
-  lapply(seq_along(1:kDef), function(k) {
-    km$cluster == paste0("Cluster ", k)
+featureIndicesList <- listCombineRowOrders(quantile_bool_list =
+  lapply(seq_along(1:quantiles), function(k) {
+    km$quantile == paste0("Cluster ", k)
   })
 )
 # Alternatively, with original ordering:
-## Get feature indices for each cluster
-#featureIndicesList <- lapply(seq_along(1:kDef), function(k) {
-#  which(km$cluster == paste0("Cluster ", k))
+## Get feature indices for each quantile
+#featureIndicesList <- lapply(seq_along(1:quantiles), function(k) {
+#  which(km$quantile == paste0("Cluster ", k))
 #})
 
 # Load features 
 features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
                               substring(featureName, first = 10), ".gff3"),
                        header = F)
-# Separate into clusters
-featuresClusterList <- lapply(seq_along(1:kDef), function(k) {
+# Separate into quantiles
+featuresClusterList <- lapply(seq_along(1:quantiles), function(k) {
   features[featureIndicesList[[k]],]
 })
-featureIDsClusterList <- lapply(seq_along(1:kDef), function(k) {
+featureIDsClusterList <- lapply(seq_along(1:quantiles), function(k) {
   sub(pattern = "\\.\\d+", replacement = "",
       x = as.vector(features[featureIndicesList[[k]],]$V9))
 })
 sapply(seq_along(featureIDsClusterList), function(k) {
   write.table(featureIDsClusterList[[k]],
-              file = paste0(outDir, "cluster", as.character(k), "_of_", as.character(kDef),
+              file = paste0(outDir, "quantile", as.character(k), "_of_", as.character(quantiles),
                             "_by_log2_", libName, "_control_in_",
                             region, "_of_", featureName, ".txt"),
               quote = F, row.names = F, col.names = F)
@@ -469,12 +588,12 @@ featureHeatmap <- function(mat,
 
 # Define heatmap colours
 rich8to6equal <- c("#0000CB", "#0081FF", "#87CEFA", "#FDEE02", "#FFAB00", "#FF3300")
-clusterColours <- c("darkorange1", "green2", "purple3", "deepskyblue")
+quantileColours <- c("darkorange1", "green2", "purple3", "deepskyblue")
 
-# Create cluster colour block "heatmap"
-clusterBlockhtmp <-   Heatmap(km$cluster,
-                              col = structure(clusterColours,
-                                              names = paste0("Cluster ", 1:kDef)),
+# Create quantile colour block "heatmap"
+quantileBlockhtmp <-   Heatmap(km$quantile,
+                              col = structure(quantileColours,
+                                              names = paste0("Cluster ", 1:quantiles)),
                               show_row_names = FALSE, show_heatmap_legend = FALSE,
                               width = unit(3, "mm"), name = "") 
 # Plot together
@@ -485,7 +604,7 @@ log2ChIPhtmpList <- mclapply(seq_along(ChIPNames), function(x) {
                              rich8to6equal)
   featureHeatmap(mat = log2ChIPmats[[x]],
                  col_fun = ChIP_col_fun,
-                 colour = clusterColours,
+                 colour = quantileColours,
                  datName = ChIPNamesPlot[x])
 }, mc.cores = length(log2ChIPmats))
 otherhtmpList <- mclapply(seq_along(otherNames), function(x) {
@@ -495,7 +614,7 @@ otherhtmpList <- mclapply(seq_along(otherNames), function(x) {
                              rich8to6equal)
   featureHeatmap(mat = othermats[[x]],
                  col_fun = ChIP_col_fun,
-                 colour = clusterColours,
+                 colour = quantileColours,
                  datName = otherNamesPlot[x])
 }, mc.cores = length(othermats))
 controlhtmpList <- mclapply(seq_along(controlNames), function(x) {
@@ -505,11 +624,11 @@ controlhtmpList <- mclapply(seq_along(controlNames), function(x) {
                              rich8to6equal)
   featureHeatmap(mat = controlmats[[x]],
                  col_fun = ChIP_col_fun,
-                 colour = clusterColours,
+                 colour = quantileColours,
                  datName = controlNamesPlot[x])
 }, mc.cores = length(controlmats))
 
-htmpList <- c(clusterBlockhtmp, 
+htmpList <- c(quantileBlockhtmp, 
               log2ChIPhtmpList,
               otherhtmpList,
               controlhtmpList[[1]])
@@ -519,11 +638,11 @@ for(x in 1:length(htmpList)) {
   htmps <- htmps + htmpList[[x]]
 }
 pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
-           "_heatmaps_clustered_by_log2_", libName, "_control_in_", region, ".pdf"),
+           "_heatmaps_quantileed_by_log2_", libName, "_control_in_", region, ".pdf"),
     width = 3*length(htmpList),
     height = 8)
 draw(htmps,
-     split = km$cluster,
+     split = km$quantile,
      row_order = row_order,
      heatmap_legend_side = "bottom",
      gap = unit(c(1, rep(14, length(htmpList)-1)), "mm")
@@ -539,13 +658,13 @@ dev.off()
 #                               col_fun = ChIP_col_fun,
 #                               colour = c("darkorange1", "green2", "purple3", "deepskyblue"),
 #                               datName = "ASY1",
-#                               rowSplit = km$cluster)
+#                               rowSplit = km$quantile)
 #pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
-#           "_heatmaps_clustered_by_log2_", libName, "_control_in_", region, ".pdf"),
+#           "_heatmaps_quantileed_by_log2_", libName, "_control_in_", region, ".pdf"),
 #    width = 3,
 #    height = 8)
 #draw(log2ChIPhtmp,
-#     split = km$cluster,
+#     split = km$quantile,
 #     row_order = row_order,
 #     heatmap_legend_side = "bottom",
 #     gap = unit(c(2, 14), "mm")
