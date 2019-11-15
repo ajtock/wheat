@@ -238,36 +238,31 @@ featuresGR <- GRanges(featuresGR,
 
 # Divide features into quantiles based on decreasing log2ChIPmatRegionRowMeans
 featuresDF <- data.frame(featuresGR,
-                         quantile = as.character("."))
-for(j in 1:length(quantiles)) {
-  featuresDF$quantile <-
-  featuresDF$quantile <- ifelse(!is.na(featuresDF$log2ChIPmatRegionRowMeans) &
-                                featuresDF$log2ChIPmatRegionRowMeans <= quantile(featuresDF$log2ChIPmatRegionRowMeans, j/quantiles, na.rm = T),
-                                yes = paste0("Quantile ", j),
-                                no = "")
-  featuresDF[featuresDF$log2ChIPmatRegionRowMeans <=
-               quantile(featuresDF$log2ChIPmatRegionRowMeans, j/quantiles, na.rm = T),]$quantile <- paste0("Quantile ", j)
+                         quantile = as.character(""),
+                         stringsAsFactors = F)
+featuresDF$log2ChIPmatRegionRowMeans[which(is.na(featuresDF$log2ChIPmatRegionRowMeans))] <- 0
+for(j in 1:quantiles) {
+  if(j < quantiles) {
+    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= (quantiles/quantiles)-((j-1)/quantiles) &
+                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >  (quantiles/quantiles)-(j/quantiles), ]$quantile <- paste0("Quantile ", j)
+  } else {
+    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= (quantiles/quantiles)-((j-1)/quantiles) &
+                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >= (quantiles/quantiles)-(j/quantiles), ]$quantile <- paste0("Quantile ", j)
+  }
+  write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", j),],
+              file = paste0(outDir,
+                            "quantile", j, "_of_", quantiles,
+                            "_by_log2_", libName, "_control_in_",
+                            region, "_of_",
+                            substring(featureName[1][1], first = 1, last = 5), "_in_",
+                            paste0(substring(featureName, first = 10, last = 16),
+                                   collapse = "_"), "_",
+                            substring(featureName[1][1], first = 18), ".txt"),
+              quote = FALSE, sep = "\t", row.names = FALSE)
 }
 
-featuresDF[featuresDF$log2ChIPmatRegionRowMeans <= 
-featuresDF_ordered <- featuresDF[order(featuresDF$log2ChIPmatRegionRowMeans,
-                                       decreasing = T,
-                                       na.last = TRUE),]
-quantilesN <- round(dim(featuresDF_ordered)[1]/quantiles)
-quantilesCum <- cumsum(c(1,
-                         rep(quantilesN,
-                             times = quantiles)))
-if(quantilesCum[length(quantilesCum)] < dim(featuresDF_ordered)[1]) {
-  quantilesCum <- c(quantilesCum, dim(featuresDF_ordered)[1])
-}
-quantile
-quantilesStats <- data.frame()
-for(j in 1:length(quantilesCum)) {
-  print(j)
-  if(j == 1) {
-    quantilejFeatures <- featuresDF_ordered[(quantilesCum[j]):(quantilesCum[j+1]-1),]
-    print(paste0("condition 1: quantile ", j))
-    print(dim(quantilejFeatures))
+
+
   }
   if(j > 1 & j < quantiles) {
     quantilejFeatures <- featuresDF_ordered[(quantilesCum[j]):(quantilesCum[j+1]-1),]
