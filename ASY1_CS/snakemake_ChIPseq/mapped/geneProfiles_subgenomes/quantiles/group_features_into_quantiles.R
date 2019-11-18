@@ -223,7 +223,7 @@ feature_cMMb_overlaps <- findOverlaps(query = featuresGR_ext,
 feature_cMMb_overlapsList <- lapply(seq_along(featuresGR_ext), function(x) {
   subjectHits(feature_cMMb_overlaps)[queryHits(feature_cMMb_overlaps) == x]
 })
-## OR
+## OR using segmentSeq::getOverlaps()
 #feature_cMMb_overlapsList <- getOverlaps(coordinates = featuresGR_ext,
 #                                         segments = cMMbGR,
 #                                         overlapType = "overlapping",
@@ -241,17 +241,20 @@ featuresDF <- data.frame(featuresGR,
                          quantile = as.character(""),
                          stringsAsFactors = F)
 featuresDF$log2ChIPmatRegionRowMeans[which(is.na(featuresDF$log2ChIPmatRegionRowMeans))] <- 0
-for(j in 1:quantiles) {
-  if(j < quantiles) {
-    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= (quantiles/quantiles)-((j-1)/quantiles) &
-                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >  (quantiles/quantiles)-(j/quantiles), ]$quantile <- paste0("Quantile ", j)
+quantilesStats <- data.frame()
+for(k in 1:quantiles) {
+  if(k < quantiles) {
+  # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
+    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   } else {
-    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= (quantiles/quantiles)-((j-1)/quantiles) &
-                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >= (quantiles/quantiles)-(j/quantiles), ]$quantile <- paste0("Quantile ", j)
+  # Final quantile should span 0 to, e.g., 0.25 proportions of features
+    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   }
-  write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", j),],
+  write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
               file = paste0(outDir,
-                            "quantile", j, "_of_", quantiles,
+                            "quantile", k, "_of_", quantiles,
                             "_by_log2_", libName, "_control_in_",
                             region, "_of_",
                             substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -259,7 +262,60 @@ for(j in 1:quantiles) {
                                    collapse = "_"), "_",
                             substring(featureName[1][1], first = 18), ".txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
+  stats <- data.frame(quantile = as.integer(k),
+                      n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
+                      mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
+                      total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
+                      mean_log2ChIPmatRegionRowMeans = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$log2ChIPmatRegionRowMeans, na.rm = T)))
+  quantilesStats <- rbind(quantilesStats, stats)
 }
+write.table(quantilesStats,
+            file = paste0(outDir,
+                          "summary_", quantiles, "quantiles_by_log2_", libName, "_control_in_",
+                          region, "_of_",
+                          substring(featureName[1][1], first = 1, last = 5), "_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), ".txt"),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+
+# Order features in each quantile by decreasing log2ChIPmatRegion levels
+# to define "row_order" for heatmaps
+combineRowOrders <- function(quantile_bool_list) {
+  do.call("c", lapply(quantile_bool_list, function(x) {
+    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    quantile_log2ChIPmatRegionRowMeans[which(is.na(quantile_log2ChIPmatRegionRowMeans))] <- 0
+    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
+  }))
+}
+row_order <- combineRowOrders(quantile_bool_list =
+  lapply(seq_along(1:quantiles), function(k) { 
+    featuresDF$quantile == paste0("Quantile ", k)
+  })
+)
+# Confirm row order is as would be obtained by alternative method
+stopifnot(identical(order(featuresDF$log2ChIPmatRegionRowMeans, decreasing=T), row_order))
+
+# Order feature IDs in each quantile by decreasing log2ChIPmatRegion levels
+# for use in GO term enrichment analysis
+listCombineRowOrders <- function(quantile_bool_list) {
+  do.call(list, lapply(quantile_bool_list, function(x) {
+    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
+    quantile_log2ChIPmatRegionRowMeans[which(is.na(quantile_log2ChIPmatRegionRowMeans))] <- 0
+    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
+  }))
+}
+featureIndicesList <- listCombineRowOrders(quantile_bool_list =
+  lapply(seq_along(1:quantiles), function(k) {
+    featuresDF$quantile == paste0("Quantile ", k)
+  })
+)
+# Alternatively, with original ordering:
+## Get feature indices for each quantile
+#featureIndicesList <- lapply(seq_along(1:quantiles), function(k) {
+#  which(featuresDF$quantile == paste0("Quantile ", k))
+#})
+
 
 
 
@@ -306,57 +362,25 @@ write.table(quantilesStats,
             quote = FALSE, sep = "\t", row.names = FALSE)
 
 
-  write.table(featureIDsClusterList[[k]],
+  write.table(featureIDsQuantileList[[k]],
               file = paste0(outDir, "quantile", as.character(k), "_of_", as.character(quantiles),
                             "_by_log2_", libName, "_control_in_",
                             region, "_of_", featureName, ".txt"),
               quote = F, row.names = F, col.names = F)
-# Order features in each quantile by decreasing log2ChIPmatRegion levels
-# to define "row_order" for heatmaps
-combineRowOrders <- function(quantile_bool_list) {
-  do.call("c", lapply(quantile_bool_list, function(x) {
-    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
-  }))
-}
-row_order <- combineRowOrders(quantile_bool_list =
-  lapply(seq_along(1:quantiles), function(k) { 
-    km$quantile == paste0("Cluster ", k)
-  })
-)
-# Order feature IDs in each quantile by decreasing log2ChIPmatRegion levels
-# for use in GO term enrichment analysis
-listCombineRowOrders <- function(quantile_bool_list) {
-  do.call(list, lapply(quantile_bool_list, function(x) {
-    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
-  }))
-}
-featureIndicesList <- listCombineRowOrders(quantile_bool_list =
-  lapply(seq_along(1:quantiles), function(k) {
-    km$quantile == paste0("Cluster ", k)
-  })
-)
-# Alternatively, with original ordering:
-## Get feature indices for each quantile
-#featureIndicesList <- lapply(seq_along(1:quantiles), function(k) {
-#  which(km$quantile == paste0("Cluster ", k))
-#})
-
 # Load features 
 features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
                               substring(featureName, first = 10), ".gff3"),
                        header = F)
 # Separate into quantiles
-featuresClusterList <- lapply(seq_along(1:quantiles), function(k) {
+featuresQuantileList <- lapply(seq_along(1:quantiles), function(k) {
   features[featureIndicesList[[k]],]
 })
-featureIDsClusterList <- lapply(seq_along(1:quantiles), function(k) {
+featureIDsQuantileList <- lapply(seq_along(1:quantiles), function(k) {
   sub(pattern = "\\.\\d+", replacement = "",
       x = as.vector(features[featureIndicesList[[k]],]$V9))
 })
-sapply(seq_along(featureIDsClusterList), function(k) {
-  write.table(featureIDsClusterList[[k]],
+sapply(seq_along(featureIDsQuantileList), function(k) {
+  write.table(featureIDsQuantileList[[k]],
               file = paste0(outDir, "quantile", as.character(k), "_of_", as.character(quantiles),
                             "_by_log2_", libName, "_control_in_",
                             region, "_of_", featureName, ".txt"),
@@ -586,9 +610,9 @@ rich8to6equal <- c("#0000CB", "#0081FF", "#87CEFA", "#FDEE02", "#FFAB00", "#FF33
 quantileColours <- c("darkorange1", "green2", "purple3", "deepskyblue")
 
 # Create quantile colour block "heatmap"
-quantileBlockhtmp <-   Heatmap(km$quantile,
+quantileBlockhtmp <-   Heatmap(featuresDF$quantile,
                               col = structure(quantileColours,
-                                              names = paste0("Cluster ", 1:quantiles)),
+                                              names = paste0("Quantile ", 1:quantiles)),
                               show_row_names = FALSE, show_heatmap_legend = FALSE,
                               width = unit(3, "mm"), name = "") 
 # Plot together
@@ -637,7 +661,7 @@ pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
     width = 3*length(htmpList),
     height = 8)
 draw(htmps,
-     split = km$quantile,
+     split = featuresDF$quantile,
      row_order = row_order,
      heatmap_legend_side = "bottom",
      gap = unit(c(1, rep(14, length(htmpList)-1)), "mm")
@@ -653,13 +677,13 @@ dev.off()
 #                               col_fun = ChIP_col_fun,
 #                               colour = c("darkorange1", "green2", "purple3", "deepskyblue"),
 #                               datName = "ASY1",
-#                               rowSplit = km$quantile)
+#                               rowSplit = featuresDF$quantile)
 #pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
 #           "_heatmaps_quantileed_by_log2_", libName, "_control_in_", region, ".pdf"),
 #    width = 3,
 #    height = 8)
 #draw(log2ChIPhtmp,
-#     split = km$quantile,
+#     split = featuresDF$quantile,
 #     row_order = row_order,
 #     heatmap_legend_side = "bottom",
 #     gap = unit(c(2, 14), "mm")
