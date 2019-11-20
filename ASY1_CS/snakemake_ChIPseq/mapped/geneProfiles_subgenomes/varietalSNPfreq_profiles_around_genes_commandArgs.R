@@ -1,9 +1,9 @@
 #!/applications/R/R-3.4.0/bin/Rscript
 
-# Profile TE density around genes and random loci
+# Profile SNP frequency around genes and random loci
 
 # Usage via Condor submission system on node7:
-# csmit -m 100G -c 15 "/applications/R/R-3.4.0/bin/Rscript ./TE_superfamily_profiles_around_genes_commandArgs.R genes_in_Agenome genomewide 3500 2000 2kb 20"
+# csmit -m 100G -c 13 "/applications/R/R-3.4.0/bin/Rscript ./varietalSNPfreq_profiles_around_genes_commandArgs.R genes_in_Agenome genomewide 3500 2000 2kb 20"
 
 #featureName <- "genes_in_Agenome"
 #region <- "genomewide"
@@ -146,86 +146,107 @@ if(length(mask_ranLoc_overlap) > 0) {
   ranLocGR <- ranLocGR[-subjectHits(mask_ranLoc_overlap)]
 }
 
-# Load TE superfamily BED files
-inDirSuperfams <- "/home/ajt200/analysis/wheat/featureProfiles/TEs/superfamilies/"
-superfamCode <- c("RLG",
-                  "RLC",
-                  "RLX",
-                  "RIX",
-                  "SIX",
-                  "DTC",
-                  "DTM",
-                  "DTX",
-                  "DTH",
-                  "DMI",
-                  "DTT",
-                  "DXX",
-                  "DTA",
-                  "DHH",
-                  "XXX")
-superfamName <- c("Gypsy_LTR",
-                  "Copia_LTR",
-                  "Unclassified_LTR",
-                  "LINE",
-                  "SINE",
-                  "CACTA",
-                  "Mutator",
-                  "Unclassified_with_TIRs",
-                  "Harbinger",
-                  "MITE",
-                  "Mariner",
-                  "Unclassified_class_2",
-                  "hAT",
-                  "Helitrons",
-                  "Unclassified_repeats")
+# Load SNPs
+SNPs <- read.table("/home/ajt200/analysis/wheat/annotation/050719_download/iwgsc_refseqv1.0_varietal_SNP_vcf_v290618/all_filtered_snps_allaccessions_allploidy_snpeff.vcf",
+                   header = F, skip = 6,
+                   colClasses = c(rep(NA, 2),
+                                  "NULL",
+                                  rep(NA, 2),
+                                  rep("NULL", 2),
+                                  NA,
+                                  rep("NULL", 61)))
+colnames(SNPs) <- c("chr", "pos", "ref", "alt", "info")
+## all SNPs
+SNPsGR <- GRanges(seqnames = SNPs$chr,
+                  ranges = IRanges(start = SNPs$pos,
+                                   end = SNPs$pos),
+                  strand = "*",
+                  coverage = rep(1, dim(SNPs)[1]))
 
-superfamListGR <- mclapply(seq_along(superfamName), function(x) {
-  superfam <- read.table(paste0(inDirSuperfams,
-                                "iwgsc_refseqv1.0_TransposableElements_2017Mar13_superfamily_",
-                                superfamName[x], "_", superfamCode[x], ".bed"),
-                         header = F)
-  colnames(superfam) <- c("chr", "start", "end", "name", "score", "strand")
-  superfamGR <- GRanges(seqnames = superfam$chr,
-                        ranges = IRanges(start = superfam$start+1,
-                                         end = superfam$end),
-                        strand = "*",
-                        number = superfam$name,
-                        coverage = rep(1, dim(superfam)[1]))
-  superfamGR <- superfamGR[seqnames(superfamGR) != "chrUn"]
-  # Subset to include only those not overlapping masked region
-  mask_superfam_overlap <- findOverlaps(query = maskGR,
-                                        subject = superfamGR,
-                                        type = "any",
-                                        select = "all",
-                                        ignore.strand = TRUE)
-  if(length(mask_superfam_overlap) > 0) {
-    superfamGR <- superfamGR[-subjectHits(mask_superfam_overlap)]
-  }
-  superfamGR
-}, mc.cores = length(superfamName))
+# Subset SNPs by class (grep-ing for "A" within VCF "info" field returns all SNPs)
+SNPclass <- c(
+              "A",
+              "upstream_gene_variant",
+              "downstream_gene_variant",
+              "missense_variant",
+              "synonymous_variant",
+              "HIGH",
+              "MODERATE",
+              "LOW",
+              "MODIFIER",
+              "intron_variant",
+              "intergenic"
+             )
+SNPsListGR <- mclapply(seq_along(SNPclass), function(x) {
+  classSNPs <- SNPs[grep(SNPclass[x], SNPs$info),]
+  GRanges(seqnames = classSNPs$chr,
+          ranges = IRanges(start = classSNPs$pos,
+                           end = classSNPs$pos),
+          strand = "*",
+          coverage = rep(1, dim(classSNPs)[1]))
+}, mc.cores = length(SNPclass))
+## transition
+SNPs_transition <- SNPs[(SNPs$ref == "A" | SNPs$ref == "G") & (SNPs$alt == "G" | SNPs$alt == "A") |
+                        (SNPs$ref == "C" | SNPs$ref == "T") & (SNPs$alt == "T" | SNPs$alt == "C"),]
+SNPs_transition_GR <- GRanges(seqnames = SNPs_transition$chr,
+                              ranges = IRanges(start = SNPs_transition$pos,
+                                               end = SNPs_transition$pos),
+                              strand = "*",
+                              coverage = rep(1, dim(SNPs_transition)[1]))
+## transversion
+SNPs_transversion <- SNPs[(SNPs$ref == "A" | SNPs$ref == "G") & (SNPs$alt == "C" | SNPs$alt == "T") |
+                          (SNPs$ref == "C" | SNPs$ref == "T") & (SNPs$alt == "A" | SNPs$alt == "G"),]
+stopifnot((dim(SNPs_transition)[1] +
+           dim(SNPs_transversion)[1]) ==
+           dim(SNPs)[1])
+SNPs_transversion_GR <- GRanges(seqnames = SNPs_transversion$chr,
+                                ranges = IRanges(start = SNPs_transversion$pos,
+                                                 end = SNPs_transversion$pos),
+                                strand = "*",
+                                coverage = rep(1, dim(SNPs_transversion)[1]))
+
+# Add transitions and transversions GRanges to SNPsListGR
+SNPsListGR <- c(SNPsListGR,
+                SNPs_transition_GR,
+                SNPs_transversion_GR)
+SNPclassNames <- c(
+                   "all",
+                   "upstream_gene_variant",
+                   "downstream_gene_variant",
+                   "missense_variant",
+                   "synonymous_variant",
+                   "HIGH",
+                   "MODERATE",
+                   "LOW",
+                   "MODIFIER",
+                   "intron_variant",
+                   "intergenic",
+                   "transition",
+                   "transversion"
+                  )
 
 # Define matrix and column mean outfiles
-outDF <- lapply(seq_along(superfamName), function(x) {
-  list(paste0(matDir, superfamName[x], "_", superfamCode[x],
-              "_around_", featureName, "_", region,
+outDF <- lapply(seq_along(SNPclassNames), function(x) {
+  list(paste0(matDir, SNPclassNames[x],
+              "_SNPs_around_", featureName, "_", region,
               "_matrix_bin", winSize, "bp_flank", flankName, ".tab"),
-       paste0(matDir, superfamName[x], "_", superfamCode[x],
-              "_around_", featureName, "_", region,
+       paste0(matDir, SNPclassNames[x],
+              "_SNPs_around_", featureName, "_", region,
               "_ranLoc_matrix_bin", winSize, "bp_flank", flankName, ".tab"))
 })
-outDFcolMeans <- lapply(seq_along(superfamName), function(x) {
-  list(paste0(matDir, superfamName[x], "_", superfamCode[x],
-              "_around_", featureName, "_", region,
+outDFcolMeans <- lapply(seq_along(SNPclassNames), function(x) {
+  list(paste0(matDir, SNPclassNames[x],
+              "_SNPs_around_", featureName, "_", region,
               "_matrix_bin", winSize, "bp_flank", flankName, "_colMeans.tab"),
-       paste0(matDir, superfamName[x], "_", superfamCode[x],
-              "_around_", featureName, "_", region,
+       paste0(matDir, SNPclassNames[x],
+              "_SNPs_around_", featureName, "_", region,
               "_ranLoc_matrix_bin", winSize, "bp_flank", flankName, "_colMeans.tab"))
 })
 
 # Run covMatrix() function on each feature GRanges object to obtain matrices
 # containing normalised feature density values around target and random loci
-mclapply(seq_along(superfamName), function(x) {
-  covMatrix(signal = superfamListGR[[x]],
+mclapply(seq_along(SNPclassNames), function(x) {
+  covMatrix(signal = SNPsListGR[[x]],
             feature = genesGR,
             ranLoc = ranLocGR,
             featureSize = bodyLength,
@@ -233,7 +254,7 @@ mclapply(seq_along(superfamName), function(x) {
             winSize = winSize,
             outDF = outDF[[x]],
             outDFcolMeans = outDFcolMeans[[x]])
-  print(paste0(superfamName[x], "_", superfamCode[x],
+  print(paste0(SNPclassNames[x],
                "_around_", featureName, "_", region,
                " profile calculation complete"))
-}, mc.cores = length(superfamName))
+}, mc.cores = length(SNPclassNames))
