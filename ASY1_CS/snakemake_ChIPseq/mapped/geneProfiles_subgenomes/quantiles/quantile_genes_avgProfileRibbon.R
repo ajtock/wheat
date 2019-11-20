@@ -33,11 +33,285 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-outDir <- paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_",
-                 region, "/")
+outDir <- paste0("quantiles_by_log2_", libName,
+                 "_control_in_", region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+
+featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
+                                "_by_log2_", libName, "_control_in_",
+                                region, "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                paste0(substring(featureName, first = 10, last = 16),
+                                       collapse = "_"), "_",
+                                substring(featureName[1][1], first = 18), ".txt"),
+                         quote = FALSE, sep = "\t", row.names = FALSE)
+
+# Load control matrices
+controlNames <- c(
+                  "H3_input_SRR6350669",
+                  "MNase_Rep1"
+                 )
+controlNamesDir <- c(
+                     "input",
+                     "MNase"
+                    )
+controlNamesPlot <- c(
+                      "Input",
+                      "MNase"
+                     )
+controlDirs <- sapply(seq_along(controlNames), function(x) {
+  if(controlNames[x] == "H3_input_SRR6350669") {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(controlNames[x] == "MNase_Rep1") {
+    paste0("/home/ajt200/analysis/wheat/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
+      stop(paste0("controlNames[", x, "] is neither H3_input_SRR6350669 nor MNase_Rep1"))
+    }
+  }
+})
+controlmats <- mclapply(seq_along(controlNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(controlNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+controlmats <- mclapply(seq_along(controlmats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, controlmats[[x]])
+  } else {
+    controlmats[[x]][[1]]
+  }
+}, mc.cores = length(controlmats))
+
+# Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
+# and sort by decreasing log2mat1RegionRowMeans
+ChIPNames <- c(
+               "ASY1_CS_Rep1_ChIP",
+               "DMC1_Rep1_ChIP",
+               "H2AZ_Rep1_ChIP",
+               "H3K4me3_Rep1_ChIP",
+               "H3K4me1_Rep1_ChIP_SRR8126618",
+               "H3K27ac_Rep1_ChIP_SRR8126621",
+               "H3K27me3_ChIP_SRR6350666",
+               "H3K9me2_Rep1_ChIP",
+               "H3K27me1_Rep1_ChIP"
+              )
+ChIPNamesDir <- c(
+                  "ASY1_CS",
+                  "DMC1",
+                  "H2AZ",
+                  "H3K4me3",
+                  "H3K4me1",
+                  "H3K27ac",
+                  "H3K27me3",
+                  "H3K9me2",
+                  "H3K27me1"
+                 )
+ChIPNamesPlot <- c(
+                   "ASY1",
+                   "DMC1",
+                   "H2A.Z",
+                   "H3K4me3",
+                   "H3K4me1",
+                   "H3K27ac",
+                   "H3K27me3",
+                   "H3K9me2",
+                   "H3K27me1"
+                  )
+ChIPColours <- c(
+                 "purple4",
+                 "green2",
+                 "dodgerblue",
+                 "forestgreen",
+                 "goldenrod1",
+                 "orange",
+                 "navy",
+                 "magenta3",
+                 "firebrick1"
+                )
+otherNames <- c(
+                "MNase_Rep1",
+                "DNaseI_Rep1_SRR8447247",
+                "WT_RNAseq_Rep1_ERR2402974",
+                "WT_RNAseq_Rep2_ERR2402973",
+                "WT_RNAseq_Rep3_ERR2402972"
+               )
+otherNamesDir <- c(
+                   "MNase",
+                   "DNaseI",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci"
+                  )
+otherNamesPlot <- c(
+                    "MNase",
+                    "DNaseI",
+                    "RNA-seq Rep1",
+                    "RNA-seq Rep2",
+                    "RNA-seq Rep3"
+                   )
+otherColours <- c(
+                  "darkcyan",
+                  "purple",
+                  "red4",
+                  "red4",
+                  "red4"
+                 )
+sRNANames <- c(
+               "CS+_2_LIB18613_LDI16228"
+              )
+sRNANamesDir <- c(
+                  "sRNAseq_meiocyte_Martin_Moore"
+                 )
+sRNANamesPlot <- c(
+                   "20-nt sRNAs",
+                   "21-nt sRNAs",
+                   "22-nt sRNAs",
+                   "23-nt sRNAs",
+                   "24-nt sRNAs",
+                   "34-nt sRNAs"
+                  )
+sRNAsizes <- c(
+               "20nt",
+               "21nt",
+               "22nt",
+               "23nt",
+               "24nt",
+               "33nt",
+               "34nt"
+              )
+sRNAColours <- c(
+                 "red",
+                 "blue",
+                 "green2",
+                 "darkorange2",
+                 "purple3",
+                 "darkgreen",
+                 "deeppink"
+                )
+DNAmethNames <- c(
+                  "BSseq_Rep8a_SRR6792678"
+                 )
+DNAmethNamesDir <- c(
+                     "BSseq"
+                    )
+DNAmethContexts <- c(
+                     "CpG",
+                     "CHG",
+                     "CHH"
+                    )
+DNAmethNamesPlot <- c(
+                      "mCG",
+                      "mCHG",
+                      "mCHH"
+                     )
+DNAmethColours <- c(
+                    "navy",
+                    "blue",
+                    "deepskyblue1"
+                   )
+
+ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
+  if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "CENH3_ChIP_SRR1686799")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(ChIPNames[x] %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
+                                "H3K27ac_Rep1_ChIP_SRR8126621")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    paste0("/home/ajt200/analysis/wheat/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  }
+})
+otherDirs <- sapply(seq_along(otherNames), function(x) {
+  if(otherNames[x] %in% c("MNase_Rep1")) {
+    paste0("/home/ajt200/analysis/wheat/",
+           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(otherNames[x] %in% c("DNaseI_Rep1_SRR8447247")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(grepl("RNAseq", otherNames[x])) {
+    paste0("/home/ajt200/analysis/wheat/",
+           otherNamesDir[x], "/snakemake_RNAseq_HISAT2/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    stop(paste0("otherNames[", x, "] is not compatible with the specified coverage matrix paths"))
+  }
+})
+sRNADirs <- sapply(seq_along(sRNANames), function(x) {
+  if(sRNANames[x] %in% c("CS+_2_LIB18613_LDI16228")) {
+    paste0("/home/ajt200/analysis/wheat/",
+           sRNANamesDir[x], "/snakemake_sRNAseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    stop(paste0("sRNANames[", x, "] is not compatible with the specified coverage matrix paths"))
+  }
+})
+DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
+  if(DNAmethNames[x] %in% c("BSseq_Rep8a_SRR6792678")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           DNAmethNamesDir[x],
+           "/snakemake_BSseq/coverage/geneProfiles_subgenomes/matrices/")
+  } else {
+    stop(paste0("DNAmethNames[", x, "] is not compatible with the specified coverage matrix paths"))
+  }
+})
+
+# ChIP
+ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(ChIPDirs[x],
+                                ChIPNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(ChIPNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, ChIPmats[[x]])
+  } else {
+    ChIPmats[[x]][[1]]
+  }
+}, mc.cores = length(ChIPmats))
+
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
+log2ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
+  if(ChIPNames[x] %in% c(
+                         "ASY1_CS_Rep1_ChIP",
+                         "DMC1_Rep1_ChIP",
+                         "H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "H3K4me1_Rep1_ChIP_SRR8126618",
+                         "H3K27ac_Rep1_ChIP_SRR8126621"
+                        )) {
+    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIPmats[[x]]+1)/(controlmats[[1]]+1))
+  } else {
+    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIPmats[[x]]+1)/(controlmats[[2]]+1))
+  }
+}, mc.cores = length(ChIPmats))
 
 IDs <- as.character(read.table(paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
                                       "/cluster", clusterNo, "_of_", clusterLast,

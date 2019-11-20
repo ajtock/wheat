@@ -52,7 +52,7 @@ minMarkerDist <-  as.numeric(args[14])
 
 library(EnrichedHeatmap)
 library(png)
-library(Cairo)
+#library(Cairo)
 library(RColorBrewer)
 library(circlize)
 library(GenomicRanges)
@@ -158,9 +158,9 @@ log2ChIPmat <- if(libName %in% c(
 
 # Extract region for ordering of features (adjust promoter/terminator size as necessary)
 if( region == "promoters" ) {
-  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-500)/binSize)+1):(upstream/binSize)]
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-1000)/binSize)+1):(upstream/binSize)]
 } else if ( region == "terminators" ) {
-  log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(500/binSize))]
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 } else if ( region == "bodies" ) {
   log2ChIPmatRegion <- log2ChIPmat[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
 } else {
@@ -793,7 +793,7 @@ quantilecMMbrowAnno <- rowAnnotation(cMMb = anno_points(featuresDF$cMMb,
                                                         axis_param = list(at = c(0, 1.5), labels = c("0", "1.5")),
                                                         width = unit(3, "cm")))
 # Plot together
-log2ChIPhtmpList <- mclapply(seq_along(ChIPNames[1]), function(x) {
+log2ChIPhtmpList <- mclapply(seq_along(ChIPNames), function(x) {
   ChIP_col_fun <- colorRamp2(quantile(log2ChIPmats[[x]],
                                       c(0.5, 0.6, 0.7, 0.8, 0.9, 0.95),
                                       na.rm = T),
@@ -823,19 +823,19 @@ controlhtmpList <- mclapply(seq_along(controlNames), function(x) {
                  colour = quantileColours,
                  datName = controlNamesPlot[x])
 }, mc.cores = length(controlmats))
-sRNAhtmpList <- mclapply(seq_along(sRNANamesPlot), function(x) {
-  ChIP_col_fun <- colorRamp2(quantile(sRNAmats[[x]],
-                                      c(0.998, 0.9982, 0.9984, 0.9986, 0.9988, 0.999),
-                                      na.rm = T),
-                             rich8to6equal)
-  featureHeatmap(mat = sRNAmats[[x]],
-                 col_fun = ChIP_col_fun,
-                 colour = quantileColours,
-                 datName = sRNANamesPlot[x])
-}, mc.cores = length(sRNAmats))
+#sRNAhtmpList <- mclapply(seq_along(sRNANamesPlot), function(x) {
+#  ChIP_col_fun <- colorRamp2(quantile(sRNAmats[[x]],
+#                                      c(0.998, 0.9982, 0.9984, 0.9986, 0.9988, 0.999),
+#                                      na.rm = T),
+#                             rich8to6equal)
+#  featureHeatmap(mat = sRNAmats[[x]],
+#                 col_fun = ChIP_col_fun,
+#                 colour = quantileColours,
+#                 datName = sRNANamesPlot[x])
+#}, mc.cores = length(sRNAmats))
 DNAmethhtmpList <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
   ChIP_col_fun <- colorRamp2(quantile(DNAmethmats[[x]],
-                                      c(0.50, 0.52, 0.54, 0.56, 0.58, 0.60),
+                                      c(0.50, 0.60, 0.70, 0.80, 0.90, 0.95),
                                       na.rm = T),
                              rich8to6equal)
   featureHeatmap(mat = DNAmethmats[[x]],
@@ -846,16 +846,20 @@ DNAmethhtmpList <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
 
 htmpList <- c(quantileBlockhtmp,
               quantilecMMbheatmap,
-              log2ChIPhtmpList)
+              log2ChIPhtmpList,
               controlhtmpList[[1]],
               otherhtmpList,
-              sRNAhtmpList,
+#              sRNAhtmpList,
               DNAmethhtmpList)
 htmps <- NULL
 for(x in 1:length(htmpList)) {
   htmps <- htmps + htmpList[[x]]
 }
-pdf(paste0(plotDir, "log2ChIPcontrol_around_", featureName,
+pdf(paste0(plotDir, "log2ChIPcontrol_around_",
+           substring(featureName[1][1], first = 1, last = 5), "_in_",
+           paste0(substring(featureName, first = 10, last = 16),
+                  collapse = "_"), "_",
+           substring(featureName[1][1], first = 18),
            "_heatmaps_quantiled_by_log2_", libName, "_control_in_", region, ".pdf"),
     width = 3*length(htmpList),
     height = 10)
