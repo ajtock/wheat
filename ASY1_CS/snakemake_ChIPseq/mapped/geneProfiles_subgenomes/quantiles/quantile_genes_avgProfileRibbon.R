@@ -39,6 +39,12 @@ plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
+# Genomic definitions
+chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
+chrs <- chrs[-length(chrs)]
+
+# Load table of features grouped into quantiles
+# by decreasing log2(libName/control)
 featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                 "_by_log2_", libName, "_control_in_",
                                 region, "_of_",
@@ -46,9 +52,67 @@ featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                 paste0(substring(featureName, first = 10, last = 16),
                                        collapse = "_"), "_",
                                 substring(featureName[1][1], first = 18), ".txt"),
-                         quote = FALSE, sep = "\t", row.names = FALSE)
+                         header = T, sep = "\t")
 
-# Load control matrices
+# Load features to confirm feature (row) ordering in "featuresDF" is the same
+# as in "features" (which was used for generating the coverage matrices)
+features <- lapply(seq_along(featureName), function(x) {
+  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                    paste0(substring(featureName[x], first = 10, last = 16),
+                           collapse = "_"), "_",
+                    substring(featureName[1][1], first = 18), ".gff3"),
+             header = F)
+})
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature data.frames
+if(length(featureName) == 3) {
+ features <- do.call(rbind, features)
+} else {
+ features <- features[[1]]
+}
+stopifnot(identical(as.character(featuresDF$featureID),
+                    as.character(features$V9)))
+
+# Get row indices for each feature quantile
+quantileIndices <- lapply(1:quantiles, function(k) {
+  which(featuresDF$quantile == paste0("Quantile ", k))
+})
+
+## Random feature quantiles
+# Define function to randomly select n rows from
+# a data.frame
+selectRandomFeatures <- function(features, n) {
+  return(features[sample(x = dim(features)[1],
+                         size = n,
+                         replace = FALSE),])
+}
+
+# Define seed so that random selections are reproducible
+set.seed(93750174)
+
+# Divide features into random sets of equal number,
+# with the same number of genes per chromosome as
+# above-defined libName-defined feature quantiles
+randomPCIndices <- lapply(1:quantiles, function(k) {
+  randomPCIndicesk <- NULL
+  for(i in 1:length(chrs)) {
+    randomPCfeatureskChr <- selectRandomFeatures(features = featuresDF[featuresDF$seqnames == chrs[i],],
+                                                 n = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+                                                                    featuresDF$seqnames == chrs[i],])[1])
+    randomPCIndicesk <- c(randomPCIndicesk, as.integer(rownames(randomPCfeatureskChr)))
+  }
+  randomPCIndicesk
+})
+# Confirm per-chromosome feature numbers are the same for quantiles and random groupings
+sapply(seq_along(chrs), function(x) {
+  if(!identical(dim(featuresDF[randomPCIndices[[1]],][featuresDF$seqnames == chrs[1],]),
+                dim(featuresDF[quantileIndices[[1]],][featuresDF$seqnames == chrs[1],]))) {
+    stop("Quantile features and random features do not consist of the same number of features per chromosome")
+  }
+})
+
+
+## Load feature matrices (featureMats) for each control library
 controlNames <- c(
                   "H3_input_SRR6350669",
                   "MNase_Rep1"
@@ -74,7 +138,9 @@ controlDirs <- sapply(seq_along(controlNames), function(x) {
     }
   }
 })
-controlmats <- mclapply(seq_along(controlNames), function(x) {
+
+# feature
+control_featureMats <- mclapply(seq_along(controlNames), function(x) {
   lapply(seq_along(featureName), function(y) {
     as.matrix(read.table(paste0(controlDirs[x],
                                 controlNames[x],
@@ -86,13 +152,35 @@ controlmats <- mclapply(seq_along(controlNames), function(x) {
 }, mc.cores = length(controlNames))
 # If features from all 3 subgenomes are to be analysed,
 # concatenate the 3 corresponding feature coverage matrices
-controlmats <- mclapply(seq_along(controlmats), function(x) {
+control_featureMats <- mclapply(seq_along(control_featureMats), function(x) {
   if(length(featureName) == 3) {
-    do.call(rbind, controlmats[[x]])
+    do.call(rbind, control_featureMats[[x]])
   } else {
-    controlmats[[x]][[1]]
+    control_featureMats[[x]][[1]]
   }
-}, mc.cores = length(controlmats))
+}, mc.cores = length(control_featureMats))
+
+# ranLoc
+control_ranLocMats <- mclapply(seq_along(controlNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(controlNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+control_ranLocMats <- mclapply(seq_along(control_ranLocMats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, control_ranLocMats[[x]])
+  } else {
+    control_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(control_ranLocMats))
+
 
 # Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
 # and sort by decreasing log2mat1RegionRowMeans
@@ -271,8 +359,9 @@ DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
   }
 })
 
-# ChIP
-ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
+## ChIP
+# feature
+ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
   lapply(seq_along(featureName), function(y) {
     as.matrix(read.table(paste0(ChIPDirs[x],
                                 ChIPNames[x],
@@ -284,395 +373,16 @@ ChIPmats <- mclapply(seq_along(ChIPNames), function(x) {
 }, mc.cores = length(ChIPNames))
 # If features from all 3 subgenomes are to be analysed,
 # concatenate the 3 corresponding feature coverage matrices
-ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
+ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
   if(length(featureName) == 3) {
-    do.call(rbind, ChIPmats[[x]])
+    do.call(rbind, ChIP_featureMats[[x]])
   } else {
-    ChIPmats[[x]][[1]]
+    ChIP_featureMats[[x]][[1]]
   }
-}, mc.cores = length(ChIPmats))
+}, mc.cores = length(ChIP_featureMats))
 
 # Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
 # for each matrix depending on library
-log2ChIPmats <- mclapply(seq_along(ChIPmats), function(x) {
-  if(ChIPNames[x] %in% c(
-                         "ASY1_CS_Rep1_ChIP",
-                         "DMC1_Rep1_ChIP",
-                         "H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667",
-                         "H3K4me1_Rep1_ChIP_SRR8126618",
-                         "H3K27ac_Rep1_ChIP_SRR8126621"
-                        )) {
-    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIPmats[[x]]+1)/(controlmats[[1]]+1))
-  } else {
-    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIPmats[[x]]+1)/(controlmats[[2]]+1))
-  }
-}, mc.cores = length(ChIPmats))
-
-IDs <- as.character(read.table(paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
-                                      "/cluster", clusterNo, "_of_", clusterLast,
-                                      "_by_log2_ASY1_CS_Rep1_ChIP_control_in_",
-                                      region,"_of_", featureName, ".txt"),
-                               header = F)$V1)
-nonIDs <- as.character(read.table(paste0("clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
-                                         "/cluster", clusterLast, "_of_", clusterLast,
-                                         "_by_log2_ASY1_CS_Rep1_ChIP_control_in_",
-                                         region,"_of_", featureName, ".txt"),
-                                  header = F)$V1)
-
-# Load features
-features <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
-                              substring(featureName, first = 10), ".gff3"),
-                       header = F)
-featureIDs <- sub(pattern = "\\.\\d+", replacement = "",
-                  features$V9)
-ID_indices <- which(featureIDs %in% IDs)
-#nonIDs <- featureIDs[!(featureIDs %in% IDs)]
-## Function to randomly select feature IDs not present in IDs
-#ran_nonIDs_select <- function(nonIDsChr, n) {
-#  sample(x = nonIDsChr,
-#         size = n,
-#         replace = FALSE)
-#}
-## Apply ran_nonIDs_select() function on a per-chromosome basis
-## and create growing vector of feature IDs called ran_nonIDs
-#set.seed(9237452)
-#ran_nonIDs <- NULL
-#for(i in 1:length(levels(features$V1))) {
-#  IDsChr <- IDs[grepl(paste0("TraesCS", i), IDs)]
-#  nonIDsChr <- nonIDs[grepl(paste0("TraesCS", i), nonIDs)] 
-#  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-#                                     n = length(IDsChr))
-#  ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
-#}
-#ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
-nonID_indices <- which(featureIDs %in% nonIDs)
-
-# Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
-# and sort by decreasing log2mat1RegionRowMeans
-ChIPNames <- c(
-               "ASY1_CS_Rep1_ChIP",
-               "DMC1_Rep1_ChIP",
-               "H2AZ_Rep1_ChIP",
-               "H3K27me3_ChIP_SRR6350666",
-               "H3K4me3_Rep1_ChIP",
-               "H3K4me1_Rep1_ChIP_SRR8126618",
-               "H3K27ac_Rep1_ChIP_SRR8126621",
-               "H3K9me2_Rep1_ChIP",
-               "H3K27me1_Rep1_ChIP"
-              )
-ChIPNamesDir <- c(
-                  "ASY1_CS",
-                  "DMC1",
-                  "H2AZ",
-                  "H3K27me3",
-                  "H3K4me3",
-                  "H3K4me1",
-                  "H3K27ac",
-                  "H3K9me2",
-                  "H3K27me1"
-                 )
-ChIPNamesPlot <- c(
-                   "ASY1",
-                   "DMC1",
-                   "H2A.Z",
-                   "H3K27me3",
-                   "H3K4me3",
-                   "H3K4me1",
-                   "H3K27ac",
-                   "H3K9me2",
-                   "H3K27me1"
-                  )
-ChIPColours <- c(
-                 "purple4",
-                 "green2",
-                 "dodgerblue",
-                 "navy",
-                 "forestgreen",
-                 "goldenrod1",
-                 "orange",
-                 "magenta3",
-                 "firebrick1"
-                )
-otherNames <- c(
-                "MNase_Rep1",
-                "DNaseI_Rep1_SRR8447247",
-                "WT_RNAseq_Rep1_ERR2402974",
-                "WT_RNAseq_Rep2_ERR2402973",
-                "WT_RNAseq_Rep3_ERR2402972"
-               )
-otherNamesDir <- c(
-                   "MNase",
-                   "DNaseI",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci"
-                  )
-otherNamesPlot <- c(
-                    "MNase",
-                    "DNaseI",
-                    "RNA-seq Rep1",
-                    "RNA-seq Rep2",
-                    "RNA-seq Rep3"
-                   )
-otherColours <- c(
-                  "darkcyan",
-                  "purple",
-                  "red4",
-                  "red4",
-                  "red4"
-                 )
-sRNANames <- c(
-               "CS+_2_LIB18613_LDI16228"
-              )
-sRNANamesDir <- c(
-                  "sRNAseq_meiocyte_Martin_Moore"
-                 )
-sRNANamesPlot <- c(
-                   "20-nt sRNAs",
-                   "21-nt sRNAs",
-                   "22-nt sRNAs",
-                   "23-nt sRNAs",
-                   "24-nt sRNAs",
-                   "33-nt sRNAs",
-                   "34-nt sRNAs"
-                  )
-sRNAsizes <- c(
-               "20nt",
-               "21nt",
-               "22nt",
-               "23nt",
-               "24nt",
-               "33nt",
-               "34nt"
-              )
-sRNAColours <- c(
-                 "red",
-                 "blue",
-                 "green2",
-                 "darkorange2",
-                 "purple3",
-                 "darkgreen",
-                 "deeppink"
-                )
-DNAmethNames <- c(
-                  "BSseq_Rep8a_SRR6792678"
-                 )
-DNAmethNamesDir <- c(
-                     "BSseq"
-                    )
-DNAmethNamesPlot <- c(
-                      "mCG",
-                      "mCHG",
-                      "mCHH"
-                     )
-DNAmethColours <- c(
-                    "navy",
-                    "blue",
-                    "deepskyblue1"
-                   )
-
-ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
-  if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667",
-                         "CENH3_ChIP_SRR1686799")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(ChIPNames[x] %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
-                                "H3K27ac_Rep1_ChIP_SRR8126621")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    paste0("/home/ajt200/analysis/wheat/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  }
-})
-otherDirs <- sapply(seq_along(otherNames), function(x) {
-  if(otherNames[x] %in% c("MNase_Rep1")) {
-    paste0("/home/ajt200/analysis/wheat/",
-           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(otherNames[x] %in% c("DNaseI_Rep1_SRR8447247")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(grepl("RNAseq", otherNames[x])) {
-    paste0("/home/ajt200/analysis/wheat/",
-           otherNamesDir[x], "/snakemake_RNAseq_HISAT2/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("otherNames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
-sRNADirs <- sapply(seq_along(sRNANames), function(x) {
-  if(sRNANames[x] %in% c("CS+_2_LIB18613_LDI16228")) {
-    paste0("/home/ajt200/analysis/wheat/",
-           sRNANamesDir[x], "/snakemake_sRNAseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("sRNANames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
-DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
-  if(DNAmethNames[x] %in% c("BSseq_Rep8a_SRR6792678")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           DNAmethNamesDir[x],
-           "/snakemake_BSseq/coverage/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("DNAmethNames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
-
-# feature
-ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
-  as.matrix(read.table(paste0(ChIPDirs[x],
-                              ChIPNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(ChIPNames))
-other_featureMats <- mclapply(seq_along(otherNames), function(x) {
-  otherFile <- system(paste0("ls ", otherDirs[x],
-                             otherNames[x],
-                             "_MappedOn_wheat_v1.0*", align, "_sort_norm_",
-                             featureName, "_matrix_bin", binName,
-                             "_flank", flankName, ".tab"),
-                      intern = T)
-  as.matrix(read.table(otherFile,
-                       header = F, skip = 3))
-}, mc.cores = length(otherNames))
-sRNA_featureMats <- mclapply(seq_along(sRNAsizes), function(x) {
-  as.matrix(read.table(paste0(sRNADirs,
-                              sRNANames,
-                              "_MappedOn_wheat_v1.0_", align, "_", sRNAsizes[x], "_sort_norm_",
-                               featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(sRNAsizes))
-DNAmeth_featureMats <- list(
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CpG_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3)),
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHG_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3)),
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHH_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-)
-
-# ranLoc
-ChIP_ranLocMats <- mclapply(seq_along(ChIPNames), function(x) {
-  as.matrix(read.table(paste0(ChIPDirs[x],
-                              ChIPNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(ChIPNames))
-other_ranLocMats <- mclapply(seq_along(otherNames), function(x) {
-  otherFile <- system(paste0("ls ", otherDirs[x],
-                             otherNames[x],
-                             "_MappedOn_wheat_v1.0*", align, "_sort_norm_",
-                             featureName, "_ranLoc_matrix_bin", binName,
-                             "_flank", flankName, ".tab"),
-                      intern = T)
-  as.matrix(read.table(otherFile,
-                       header = F, skip = 3))
-}, mc.cores = length(otherNames))
-sRNA_ranLocMats <- mclapply(seq_along(sRNAsizes), function(x) {
-  as.matrix(read.table(paste0(sRNADirs,
-                              sRNANames,
-                              "_MappedOn_wheat_v1.0_", align, "_", sRNAsizes[x], "_sort_norm_",
-                               featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(sRNAsizes))
-DNAmeth_ranLocMats <- list(
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CpG_",
-                              featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3)),
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHG_",
-                              featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3)),
-  as.matrix(read.table(paste0(DNAmethDirs,
-                              DNAmethNames,
-                              "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_CHH_",
-                              featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-)
-
-# Load control matrices
-controlNames <- c(
-                  "H3_input_SRR6350669",
-                  "MNase_Rep1"
-                 )
-controlNamesDir <- c(
-                     "input",
-                     "MNase"
-                    )
-controlNamesPlot <- c(
-                      "Input",
-                      "MNase"
-                     )
-controlColours <- c(
-                    "grey40",
-                    "darkcyan"
-                   )
-controlDirs <- sapply(seq_along(controlNames), function(x) {
-  if(controlNames[x] == "H3_input_SRR6350669") {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(controlNames[x] == "MNase_Rep1") {
-    paste0("/home/ajt200/analysis/wheat/",
-           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
-      stop("controlNames[x] is neither H3_input_SRR6350669 nor MNase_Rep1")
-    }
-  }
-})
-# feature
-control_featureMats <- mclapply(seq_along(controlNames), function(x) {
-  as.matrix(read.table(paste0(controlDirs[x],
-                              controlNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(controlNames))
-# ranLoc
-control_ranLocMats <- mclapply(seq_along(controlNames), function(x) {
-  as.matrix(read.table(paste0(controlDirs[x],
-                              controlNames[x],
-                              "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                              featureName, "_ranLoc_matrix_bin", binName,
-                              "_flank", flankName, ".tab"),
-                       header = F, skip = 3))
-}, mc.cores = length(controlNames))
-
-# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
-# for each matrix depending on library
-# feature
 log2ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
   if(ChIPNames[x] %in% c(
                          "ASY1_CS_Rep1_ChIP",
@@ -693,6 +403,28 @@ log2ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
 }, mc.cores = length(ChIP_featureMats))
 
 # ranLoc
+ChIP_ranLocMats <- mclapply(seq_along(ChIPNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(ChIPDirs[x],
+                                ChIPNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_ranLoc_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(ChIPNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, ChIP_ranLocMats[[x]])
+  } else {
+    ChIP_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(ChIP_ranLocMats))
+
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
 log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
   if(ChIPNames[x] %in% c(
                          "ASY1_CS_Rep1_ChIP",
@@ -712,8 +444,8 @@ log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
   }
 }, mc.cores = length(ChIP_ranLocMats))
 
-# Add column names, and
-# extract only row numbers (features and ranLoc) in ID_indices and nonID_indices
+
+# Add column names
 for(x in seq_along(log2ChIP_featureMats)) {
   colnames(log2ChIP_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
                                            paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
@@ -722,173 +454,58 @@ for(x in seq_along(log2ChIP_featureMats)) {
                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
 }
-log2ChIP_ranFeatMats <- lapply(seq_along(log2ChIP_featureMats), function(x) {
-  log2ChIP_featureMats[[x]][nonID_indices,]
-})
-log2ChIP_featureMats <- lapply(seq_along(log2ChIP_featureMats), function(x) {
-  log2ChIP_featureMats[[x]][ID_indices,]
-})
-log2ChIP_ranLocMats <- lapply(seq_along(log2ChIP_ranLocMats), function(x) {
-  log2ChIP_ranLocMats[[x]][ID_indices,]
-})
-for(x in seq_along(other_featureMats)) {
-  colnames(other_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                        paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                        paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-  colnames(other_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                       paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                       paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-}
-other_ranFeatMats <- lapply(seq_along(other_featureMats), function(x) {
-  other_featureMats[[x]][nonID_indices,]
-})
-other_featureMats <- lapply(seq_along(other_featureMats), function(x) {
-  other_featureMats[[x]][ID_indices,]
-})
-other_ranLocMats <- lapply(seq_along(other_ranLocMats), function(x) {
-  other_ranLocMats[[x]][ID_indices,]
-})
-for(x in seq_along(sRNA_featureMats)) {
-  colnames(sRNA_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                       paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                       paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-  colnames(sRNA_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                      paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                      paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-}
-sRNA_ranFeatMats <- lapply(seq_along(sRNA_featureMats), function(x) {
-  sRNA_featureMats[[x]][nonID_indices,]
-})
-sRNA_featureMats <- lapply(seq_along(sRNA_featureMats), function(x) {
-  sRNA_featureMats[[x]][ID_indices,]
-})
-sRNA_ranLocMats <- lapply(seq_along(sRNA_ranLocMats), function(x) {
-  sRNA_ranLocMats[[x]][ID_indices,]
-})
-for(x in seq_along(control_featureMats)) {
-  colnames(control_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-  colnames(control_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                         paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                         paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-}
-control_ranFeatMats <- lapply(seq_along(control_featureMats), function(x) {
-  control_featureMats[[x]][nonID_indices,]
-})
-control_featureMats <- lapply(seq_along(control_featureMats), function(x) {
-  control_featureMats[[x]][ID_indices,]
-})
-control_ranLocMats <- lapply(seq_along(control_ranLocMats), function(x) {
-  control_ranLocMats[[x]][ID_indices,]
-})
-for(x in seq_along(DNAmeth_featureMats)) {
-  colnames(DNAmeth_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-  colnames(DNAmeth_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                         paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                         paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-}
-DNAmeth_ranFeatMats <- lapply(seq_along(DNAmeth_featureMats), function(x) {
-  DNAmeth_featureMats[[x]][nonID_indices,]
-})
-DNAmeth_featureMats <- lapply(seq_along(DNAmeth_featureMats), function(x) {
-  DNAmeth_featureMats[[x]][ID_indices,]
-})
-DNAmeth_ranLocMats <- lapply(seq_along(DNAmeth_ranLocMats), function(x) {
-  DNAmeth_ranLocMats[[x]][ID_indices,]
-})
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+log2ChIP_mats_quantiles <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
+  list(
+       # feature
+       lapply(1:quantiles, function(k) {
+         log2ChIP_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # ranFeat
+       lapply(1:quantiles, function(k) {
+         log2ChIP_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # ranLoc
+       lapply(1:quantiles, function(k) {
+         log2ChIP_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(log2ChIP_featureMats))
 
 ## feature
 # Transpose matrix and convert into dataframe
 # in which first column is window name
-wideDFfeature_list_log2ChIP <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
-  data.frame(window = colnames(log2ChIP_featureMats[[x]]),
-             t(log2ChIP_featureMats[[x]]))
-}, mc.cores = length(log2ChIP_featureMats))
-
-wideDFfeature_list_other <- mclapply(seq_along(other_featureMats), function(x) {
-  data.frame(window = colnames(other_featureMats[[x]]),
-             t(other_featureMats[[x]]))
-}, mc.cores = length(other_featureMats))
-
-wideDFfeature_list_sRNA <- mclapply(seq_along(sRNA_featureMats), function(x) {
-  data.frame(window = colnames(sRNA_featureMats[[x]]),
-             t(sRNA_featureMats[[x]]))
-}, mc.cores = length(sRNA_featureMats))
-
-wideDFfeature_list_control <- mclapply(seq_along(control_featureMats), function(x) {
-  data.frame(window = colnames(control_featureMats[[x]]),
-             t(control_featureMats[[x]]))
-}, mc.cores = length(control_featureMats))
-
-wideDFfeature_list_DNAmeth <- mclapply(seq_along(DNAmeth_featureMats), function(x) {
-  data.frame(window = colnames(DNAmeth_featureMats[[x]]),
-             t(DNAmeth_featureMats[[x]]))
-}, mc.cores = length(DNAmeth_featureMats))
+wideDFfeature_list_log2ChIP <- mclapply(seq_along(log2ChIP_mats_quantiles), function(x) {
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(log2ChIP_mats_quantiles[[x]][[y]][[k]]),
+                 t(log2ChIP_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(log2ChIP_mats_quantiles))
 
 # Convert into tidy data.frame (long format)
 tidyDFfeature_list_log2ChIP  <- mclapply(seq_along(wideDFfeature_list_log2ChIP), function(x) {
-  gather(data  = wideDFfeature_list_log2ChIP[[x]],
-         key   = feature,
-         value = coverage,
-         -window)
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_log2ChIP[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
 }, mc.cores = length(wideDFfeature_list_log2ChIP))
-
-tidyDFfeature_list_other  <- mclapply(seq_along(wideDFfeature_list_other), function(x) {
-  gather(data  = wideDFfeature_list_other[[x]],
-         key   = feature,
-         value = coverage,
-         -window)
-}, mc.cores = length(wideDFfeature_list_other))
-
-tidyDFfeature_list_sRNA  <- mclapply(seq_along(wideDFfeature_list_sRNA), function(x) {
-  gather(data  = wideDFfeature_list_sRNA[[x]],
-         key   = feature,
-         value = coverage,
-         -window)
-}, mc.cores = length(wideDFfeature_list_sRNA))
-
-tidyDFfeature_list_control  <- mclapply(seq_along(wideDFfeature_list_control), function(x) {
-  gather(data  = wideDFfeature_list_control[[x]],
-         key   = feature,
-         value = coverage,
-         -window)
-}, mc.cores = length(wideDFfeature_list_control))
-
-tidyDFfeature_list_DNAmeth  <- mclapply(seq_along(wideDFfeature_list_DNAmeth), function(x) {
-  gather(data  = wideDFfeature_list_DNAmeth[[x]],
-         key   = feature,
-         value = coverage,
-         -window)
-}, mc.cores = length(wideDFfeature_list_DNAmeth))
 
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
 for(x in seq_along(tidyDFfeature_list_log2ChIP)) {
-  tidyDFfeature_list_log2ChIP[[x]]$window <- factor(tidyDFfeature_list_log2ChIP[[x]]$window,
-                                                    levels = as.character(wideDFfeature_list_log2ChIP[[x]]$window))
-}
-
-for(x in seq_along(tidyDFfeature_list_other)) {
-  tidyDFfeature_list_other[[x]]$window <- factor(tidyDFfeature_list_other[[x]]$window,
-                                                 levels = as.character(wideDFfeature_list_other[[x]]$window))
-}
-
-for(x in seq_along(tidyDFfeature_list_sRNA)) {
-  tidyDFfeature_list_sRNA[[x]]$window <- factor(tidyDFfeature_list_sRNA[[x]]$window,
-                                                levels = as.character(wideDFfeature_list_sRNA[[x]]$window))
-}
-
-for(x in seq_along(tidyDFfeature_list_control)) {
-  tidyDFfeature_list_control[[x]]$window <- factor(tidyDFfeature_list_control[[x]]$window,
-                                                   levels = as.character(wideDFfeature_list_control[[x]]$window))
-}
-
-for(x in seq_along(tidyDFfeature_list_DNAmeth)) {
-  tidyDFfeature_list_DNAmeth[[x]]$window <- factor(tidyDFfeature_list_DNAmeth[[x]]$window,
-                                                   levels = as.character(wideDFfeature_list_DNAmeth[[x]]$window))
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window))
+    })
+  })
 }
 
 # Create summary data.frame in which each row corresponds to a window (Column 1),
@@ -899,144 +516,40 @@ for(x in seq_along(tidyDFfeature_list_DNAmeth)) {
 # Column6 is the lower bound of the 95% confidence interval, and
 # Column7 is the upper bound of the 95% confidence interval
 summaryDFfeature_list_log2ChIP  <- mclapply(seq_along(tidyDFfeature_list_log2ChIP), function(x) {
-  data.frame(window = as.character(wideDFfeature_list_log2ChIP[[x]]$window),
-             n      = tapply(X     = tidyDFfeature_list_log2ChIP[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_log2ChIP[[x]]$window,
-                             FUN   = length),
-             mean   = tapply(X     = tidyDFfeature_list_log2ChIP[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_log2ChIP[[x]]$window,
-                             FUN   = mean,
-                             na.rm = TRUE),
-             sd     = tapply(X     = tidyDFfeature_list_log2ChIP[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_log2ChIP[[x]]$window,
-                             FUN   = sd,
-                             na.rm = TRUE))
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
 }, mc.cores = length(tidyDFfeature_list_log2ChIP))
 
 for(x in seq_along(summaryDFfeature_list_log2ChIP)) {
-  summaryDFfeature_list_log2ChIP[[x]]$window <- factor(summaryDFfeature_list_log2ChIP[[x]]$window,
-                                                       levels = as.character(wideDFfeature_list_log2ChIP[[x]]$window))
-  summaryDFfeature_list_log2ChIP[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_log2ChIP[[x]])[1])
-  summaryDFfeature_list_log2ChIP[[x]]$sem <- summaryDFfeature_list_log2ChIP[[x]]$sd/sqrt(summaryDFfeature_list_log2ChIP[[x]]$n-1)
-  summaryDFfeature_list_log2ChIP[[x]]$CI_lower <- summaryDFfeature_list_log2ChIP[[x]]$mean -
-    qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]]$n-1)*summaryDFfeature_list_log2ChIP[[x]]$sem
-  summaryDFfeature_list_log2ChIP[[x]]$CI_upper <- summaryDFfeature_list_log2ChIP[[x]]$mean +
-    qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]]$n-1)*summaryDFfeature_list_log2ChIP[[x]]$sem
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem
+    })
+  })
 }
 
 names(summaryDFfeature_list_log2ChIP) <- ChIPNamesPlot
-
-summaryDFfeature_list_other  <- mclapply(seq_along(tidyDFfeature_list_other), function(x) {
-  data.frame(window = as.character(wideDFfeature_list_other[[x]]$window),
-             n      = tapply(X     = tidyDFfeature_list_other[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_other[[x]]$window,
-                             FUN   = length),
-             mean   = tapply(X     = tidyDFfeature_list_other[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_other[[x]]$window,
-                             FUN   = mean,
-                             na.rm = TRUE),
-             sd     = tapply(X     = tidyDFfeature_list_other[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_other[[x]]$window,
-                             FUN   = sd,
-                             na.rm = TRUE))
-}, mc.cores = length(tidyDFfeature_list_other))
-
-for(x in seq_along(summaryDFfeature_list_other)) {
-  summaryDFfeature_list_other[[x]]$window <- factor(summaryDFfeature_list_other[[x]]$window,
-                                                    levels = as.character(wideDFfeature_list_other[[x]]$window))
-  summaryDFfeature_list_other[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_other[[x]])[1])
-  summaryDFfeature_list_other[[x]]$sem <- summaryDFfeature_list_other[[x]]$sd/sqrt(summaryDFfeature_list_other[[x]]$n-1)
-  summaryDFfeature_list_other[[x]]$CI_lower <- summaryDFfeature_list_other[[x]]$mean -
-    qt(0.975, df = summaryDFfeature_list_other[[x]]$n-1)*summaryDFfeature_list_other[[x]]$sem
-  summaryDFfeature_list_other[[x]]$CI_upper <- summaryDFfeature_list_other[[x]]$mean +
-    qt(0.975, df = summaryDFfeature_list_other[[x]]$n-1)*summaryDFfeature_list_other[[x]]$sem
-}
-
-names(summaryDFfeature_list_other) <- otherNamesPlot
-
-summaryDFfeature_list_sRNA  <- mclapply(seq_along(tidyDFfeature_list_sRNA), function(x) {
-  data.frame(window = as.character(wideDFfeature_list_sRNA[[x]]$window),
-             n      = tapply(X     = tidyDFfeature_list_sRNA[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_sRNA[[x]]$window,
-                             FUN   = length),
-             mean   = tapply(X     = tidyDFfeature_list_sRNA[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_sRNA[[x]]$window,
-                             FUN   = mean,
-                             na.rm = TRUE),
-             sd     = tapply(X     = tidyDFfeature_list_sRNA[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_sRNA[[x]]$window,
-                             FUN   = sd,
-                             na.rm = TRUE))
-}, mc.cores = length(tidyDFfeature_list_sRNA))
-
-for(x in seq_along(summaryDFfeature_list_sRNA)) {
-  summaryDFfeature_list_sRNA[[x]]$window <- factor(summaryDFfeature_list_sRNA[[x]]$window,
-                                                    levels = as.character(wideDFfeature_list_sRNA[[x]]$window))
-  summaryDFfeature_list_sRNA[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_sRNA[[x]])[1])
-  summaryDFfeature_list_sRNA[[x]]$sem <- summaryDFfeature_list_sRNA[[x]]$sd/sqrt(summaryDFfeature_list_sRNA[[x]]$n-1)
-  summaryDFfeature_list_sRNA[[x]]$CI_lower <- summaryDFfeature_list_sRNA[[x]]$mean -
-    qt(0.975, df = summaryDFfeature_list_sRNA[[x]]$n-1)*summaryDFfeature_list_sRNA[[x]]$sem
-  summaryDFfeature_list_sRNA[[x]]$CI_upper <- summaryDFfeature_list_sRNA[[x]]$mean +
-    qt(0.975, df = summaryDFfeature_list_sRNA[[x]]$n-1)*summaryDFfeature_list_sRNA[[x]]$sem
-}
-
-names(summaryDFfeature_list_sRNA) <- sRNANamesPlot
-
-summaryDFfeature_list_control  <- mclapply(seq_along(tidyDFfeature_list_control), function(x) {
-  data.frame(window = as.character(wideDFfeature_list_control[[x]]$window),
-             n      = tapply(X     = tidyDFfeature_list_control[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_control[[x]]$window,
-                             FUN   = length),
-             mean   = tapply(X     = tidyDFfeature_list_control[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_control[[x]]$window,
-                             FUN   = mean,
-                             na.rm = TRUE),
-             sd     = tapply(X     = tidyDFfeature_list_control[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_control[[x]]$window,
-                             FUN   = sd,
-                             na.rm = TRUE))
-}, mc.cores = length(tidyDFfeature_list_control))
-
-for(x in seq_along(summaryDFfeature_list_control)) {
-  summaryDFfeature_list_control[[x]]$window <- factor(summaryDFfeature_list_control[[x]]$window,
-                                                      levels = as.character(wideDFfeature_list_control[[x]]$window))
-  summaryDFfeature_list_control[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_control[[x]])[1])
-  summaryDFfeature_list_control[[x]]$sem <- summaryDFfeature_list_control[[x]]$sd/sqrt(summaryDFfeature_list_control[[x]]$n-1)
-  summaryDFfeature_list_control[[x]]$CI_lower <- summaryDFfeature_list_control[[x]]$mean -
-    qt(0.975, df = summaryDFfeature_list_control[[x]]$n-1)*summaryDFfeature_list_control[[x]]$sem
-  summaryDFfeature_list_control[[x]]$CI_upper <- summaryDFfeature_list_control[[x]]$mean +
-    qt(0.975, df = summaryDFfeature_list_control[[x]]$n-1)*summaryDFfeature_list_control[[x]]$sem
-}
-
-names(summaryDFfeature_list_control) <- controlNamesPlot
-
-summaryDFfeature_list_DNAmeth  <- mclapply(seq_along(tidyDFfeature_list_DNAmeth), function(x) {
-  data.frame(window = as.character(wideDFfeature_list_DNAmeth[[x]]$window),
-             n      = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
-                             FUN   = length),
-             mean   = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
-                             FUN   = mean,
-                             na.rm = TRUE),
-             sd     = tapply(X     = tidyDFfeature_list_DNAmeth[[x]]$coverage,
-                             INDEX = tidyDFfeature_list_DNAmeth[[x]]$window,
-                             FUN   = sd,
-                             na.rm = TRUE))
-}, mc.cores = length(tidyDFfeature_list_DNAmeth))
-
-for(x in seq_along(summaryDFfeature_list_DNAmeth)) {
-  summaryDFfeature_list_DNAmeth[[x]]$window <- factor(summaryDFfeature_list_DNAmeth[[x]]$window,
-                                                      levels = as.character(wideDFfeature_list_DNAmeth[[x]]$window))
-  summaryDFfeature_list_DNAmeth[[x]]$winNo <- factor(1:dim(summaryDFfeature_list_DNAmeth[[x]])[1])
-  summaryDFfeature_list_DNAmeth[[x]]$sem <- summaryDFfeature_list_DNAmeth[[x]]$sd/sqrt(summaryDFfeature_list_DNAmeth[[x]]$n-1)
-  summaryDFfeature_list_DNAmeth[[x]]$CI_lower <- summaryDFfeature_list_DNAmeth[[x]]$mean -
-    qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]]$n-1)*summaryDFfeature_list_DNAmeth[[x]]$sem
-  summaryDFfeature_list_DNAmeth[[x]]$CI_upper <- summaryDFfeature_list_DNAmeth[[x]]$mean +
-    qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]]$n-1)*summaryDFfeature_list_DNAmeth[[x]]$sem
-}
-
-names(summaryDFfeature_list_DNAmeth) <- DNAmethNamesPlot
 
 # Convert list summaryDFfeature_list_log2ChIP into a single data.frame for plotting
 summaryDFfeature_log2ChIP <- bind_rows(summaryDFfeature_list_log2ChIP, .id = "libName")
