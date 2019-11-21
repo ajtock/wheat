@@ -841,7 +841,7 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(superfamNamesPlot))*2)+1):(length(c(superfamNamesPlot))*3)
                                                       ))
 ggsave(paste0(plotDir,
-              "avgProfiles_around_", quantiles, "quantiles",
+              "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
               "_by_log2_", libName, "_control_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
