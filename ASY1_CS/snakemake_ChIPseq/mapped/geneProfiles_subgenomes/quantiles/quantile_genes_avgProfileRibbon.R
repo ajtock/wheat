@@ -2171,7 +2171,7 @@ wideDFfeature_list_SNPclass <- mclapply(seq_along(SNPclass_mats_quantiles), func
                  t(SNPclass_mats_quantiles[[x]][[y]][[k]]))
     })
   })
-}, mc.cores = length(SNPclass_mats_quantiles))
+}, mc.cores = length(SNPclass_mats_quantiles)/2)
 
 # Convert into tidy data.frame (long format)
 tidyDFfeature_list_SNPclass  <- mclapply(seq_along(wideDFfeature_list_SNPclass), function(x) {
@@ -2183,7 +2183,7 @@ tidyDFfeature_list_SNPclass  <- mclapply(seq_along(wideDFfeature_list_SNPclass),
              -window)
     })
   }) 
-}, mc.cores = length(wideDFfeature_list_SNPclass))
+}, mc.cores = length(wideDFfeature_list_SNPclass)/2)
 
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
@@ -2220,7 +2220,7 @@ summaryDFfeature_list_SNPclass  <- mclapply(seq_along(tidyDFfeature_list_SNPclas
                                  na.rm = TRUE))
     })
   })
-}, mc.cores = length(tidyDFfeature_list_SNPclass))
+}, mc.cores = length(tidyDFfeature_list_SNPclass)/2)
 
 for(x in seq_along(summaryDFfeature_list_SNPclass)) {
   for(y in seq_along(SNPclass_mats_quantiles[[x]])) {
@@ -2614,7 +2614,7 @@ wideDFfeature_list_superfam <- mclapply(seq_along(superfam_mats_quantiles), func
                  t(superfam_mats_quantiles[[x]][[y]][[k]]))
     })
   })
-}, mc.cores = length(superfam_mats_quantiles))
+}, mc.cores = length(superfam_mats_quantiles)/3)
 
 # Convert into tidy data.frame (long format)
 tidyDFfeature_list_superfam  <- mclapply(seq_along(wideDFfeature_list_superfam), function(x) {
@@ -2626,7 +2626,7 @@ tidyDFfeature_list_superfam  <- mclapply(seq_along(wideDFfeature_list_superfam),
              -window)
     })
   }) 
-}, mc.cores = length(wideDFfeature_list_superfam))
+}, mc.cores = length(wideDFfeature_list_superfam)/3)
 
 # Order levels of factor "window" so that sequential levels
 # correspond to sequential windows
@@ -2663,7 +2663,7 @@ summaryDFfeature_list_superfam  <- mclapply(seq_along(tidyDFfeature_list_superfa
                                  na.rm = TRUE))
     })
   })
-}, mc.cores = length(tidyDFfeature_list_superfam))
+}, mc.cores = length(tidyDFfeature_list_superfam)/3)
 
 for(x in seq_along(summaryDFfeature_list_superfam)) {
   for(y in seq_along(superfam_mats_quantiles[[x]])) {
