@@ -1,57 +1,25 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Plot average coverage profiles with 95% CIs around
-# gene quantiles; e.g.,
-# clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
+# Plot boxplots and violin plots of recombination rate for each gene quantile; e.g.,
+# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/quantile_1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp promoters 4 100kb 1 '0.75,0.96'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_boxplot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
-#align <- "both"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#bodyLength <- 3500
-#upstream <- 2000
-#downstream <- 2000
-#flankName <- "2kb"
-#flankNamePlot <- "2 kb"
-#binSize <- 20
-#binName <- "20bp"
 #region <- "promoters"
 #quantiles <- 4
-#winName <- "100kb"
-#minMarkerDist <- 1
-## top centre
-#legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
-#                                        split = ",")))
-## top right
-#legendPos <- as.numeric(unlist(strsplit("0.75,0.96",
-#                                        split = ",")))
-## bottom left
-#legendPos <- as.numeric(unlist(strsplit("0.02,0.30",
-#                                        split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
 dirName <- args[2]
-align <- args[3]
 featureName <- unlist(strsplit(args[4],
                                split = ","))
-bodyLength <- as.numeric(args[5])
-upstream <- as.numeric(args[6])
-downstream <- as.numeric(args[6])
-flankName <- args[7]
-flankNamePlot <- args[8]
-binSize <- as.numeric(args[9])
-binName <- args[10]
 region <- args[11]
 quantiles <- as.numeric(args[12])
-winName <- args[13]
-minMarkerDist <-  as.numeric(args[14])
-legendPos <- as.numeric(unlist(strsplit(args[15],
-                                        split = ",")))
 
 library(parallel)
 library(tidyr)
