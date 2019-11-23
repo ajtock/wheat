@@ -1,7 +1,7 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Plot boxplots and violin plots of recombination rate for each gene quantile; e.g.,
-# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/quantile_1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
+# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript quantile_genes_boxplot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4
@@ -25,6 +25,7 @@ library(parallel)
 library(tidyr)
 library(dplyr)
 library(ggplot2)
+library(ggbeeswarm)
 library(ggthemes)
 library(grid)
 library(gridExtra)
@@ -47,15 +48,6 @@ ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-
-# Define feature start and end labels for plotting
-if(grepl("genes", featureName)) {
-  featureStartLab <- "TSS"
-  featureEndLab <- "TTS"
-} else {
-  featureStartLab <- "Start"
-  featureEndLab <- "End"
-}
 
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
@@ -122,364 +114,91 @@ randomPCIndices <- lapply(1:quantiles, function(k) {
   randomPCIndicesk
 })
 # Confirm per-chromosome feature numbers are the same for quantiles and random groupings
-sapply(seq_along(chrs), function(x) {
-  if(!identical(dim(featuresDF[randomPCIndices[[1]],][featuresDF$seqnames == chrs[1],]),
-                dim(featuresDF[quantileIndices[[1]],][featuresDF$seqnames == chrs[1],]))) {
-    stop("Quantile features and random features do not consist of the same number of features per chromosome")
-  }
-})
-
-
-# Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
-# and sort by decreasing log2mat1RegionRowMeans
-ChIPNames <- c(
-               "ASY1_CS_Rep1_ChIP",
-               "DMC1_Rep1_ChIP",
-               "H2AZ_Rep1_ChIP",
-               "H3K4me3_Rep1_ChIP",
-               "H3K4me1_Rep1_ChIP_SRR8126618",
-               "H3K27ac_Rep1_ChIP_SRR8126621",
-               "H3K27me3_ChIP_SRR6350666",
-               "H3K9me2_Rep1_ChIP",
-               "H3K27me1_Rep1_ChIP"
-              )
-ChIPNamesDir <- c(
-                  "ASY1_CS",
-                  "DMC1",
-                  "H2AZ",
-                  "H3K4me3",
-                  "H3K4me1",
-                  "H3K27ac",
-                  "H3K27me3",
-                  "H3K9me2",
-                  "H3K27me1"
-                 )
-log2ChIPNamesPlot <- c(
-                       "ASY1",
-                       "DMC1",
-                       "H2A.Z",
-                       "H3K4me3",
-                       "H3K4me1",
-                       "H3K27ac",
-                       "H3K27me3",
-                       "H3K9me2",
-                       "H3K27me1"
-                      )
-log2ChIPColours <- c(
-                     "purple4",
-                     "green2",
-                     "dodgerblue",
-                     "forestgreen",
-                     "goldenrod1",
-                     "orange",
-                     "navy",
-                     "magenta3",
-                     "firebrick1"
-                    )
-ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
-  if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667",
-                         "CENH3_ChIP_SRR1686799")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(ChIPNames[x] %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
-                                "H3K27ac_Rep1_ChIP_SRR8126621")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    paste0("/home/ajt200/analysis/wheat/",
-           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  }
-})
-
-controlNames <- c(
-                  "H3_input_SRR6350669",
-                  "MNase_Rep1"
-                 )
-controlNamesDir <- c(
-                     "input",
-                     "MNase"
-                    )
-controlNamesPlot <- c(
-                      "Input",
-                      "MNase"
-                     )
-controlColours <- c(
-                    "grey40",
-                    "darkcyan"
-                   )
-controlDirs <- sapply(seq_along(controlNames), function(x) {
-  if(controlNames[x] == "H3_input_SRR6350669") {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(controlNames[x] == "MNase_Rep1") {
-    paste0("/home/ajt200/analysis/wheat/",
-           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
-      stop(paste0("controlNames[", x, "] is neither H3_input_SRR6350669 nor MNase_Rep1"))
+lapply(seq_along(1:quantiles), function(k) {
+  sapply(seq_along(chrs), function(x) {
+    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
+                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))     {
+      stop("Quantile features and random features do not consist of the same number of features per chromosome")
     }
-  }
+  })
 })
 
-otherNames <- c(
-                "MNase_Rep1",
-                "DNaseI_Rep1_SRR8447247",
-                "WT_RNAseq_Rep1_ERR2402974",
-                "WT_RNAseq_Rep2_ERR2402973",
-                "WT_RNAseq_Rep3_ERR2402972"
-               )
-otherNamesDir <- c(
-                   "MNase",
-                   "DNaseI",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
-                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci"
-                  )
-otherNamesPlot <- c(
-                    "MNase",
-                    "DNaseI",
-                    "RNA-seq Rep1",
-                    "RNA-seq Rep2",
-                    "RNA-seq Rep3"
-                   )
-otherColours <- c(
-                  "darkcyan",
-                  "purple",
-                  "red4",
-                  "red4",
-                  "red4"
-                 )
-otherDirs <- sapply(seq_along(otherNames), function(x) {
-  if(otherNames[x] %in% c("MNase_Rep1")) {
-    paste0("/home/ajt200/analysis/wheat/",
-           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(otherNames[x] %in% c("DNaseI_Rep1_SRR8447247")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-           otherNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else if(grepl("RNAseq", otherNames[x])) {
-    paste0("/home/ajt200/analysis/wheat/",
-           otherNamesDir[x], "/snakemake_RNAseq_HISAT2/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("otherNames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
+ymin <- min(c(
+              featuresDF[unlist(quantileIndices),]$cMMb,
+              featuresDF[unlist(randomPCIndices),]$cMMb
+             ), na.rm = T)
+ymax <- max(c(
+              featuresDF[unlist(quantileIndices),]$cMMb,
+              featuresDF[unlist(randomPCIndices),]$cMMb
+             ), na.rm = T)
 
-sRNANames <- c(
-               "CS+_2_LIB18613_LDI16228"
-              )
-sRNANamesDir <- c(
-                  "sRNAseq_meiocyte_Martin_Moore"
-                 )
-sRNANamesPlot <- c(
-                   "20-nt sRNAs",
-                   "21-nt sRNAs",
-                   "22-nt sRNAs",
-                   "23-nt sRNAs",
-                   "24-nt sRNAs",
-                   "33-nt sRNAs",
-                   "34-nt sRNAs"
-                  )
-sRNAsizes <- c(
-               "20nt",
-               "21nt",
-               "22nt",
-               "23nt",
-               "24nt",
-               "33nt",
-               "34nt"
-              )
-sRNAColours <- c(
-                 "red",
-                 "blue",
-                 "green2",
-                 "darkorange2",
-                 "purple3",
-                 "darkgreen",
-                 "deeppink"
-                )
-sRNADirs <- sapply(seq_along(sRNANames), function(x) {
-  if(sRNANames[x] %in% c("CS+_2_LIB18613_LDI16228")) {
-    paste0("/home/ajt200/analysis/wheat/",
-           sRNANamesDir[x], "/snakemake_sRNAseq/mapped/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("sRNANames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
-
-DNAmethNames <- c(
-                  "BSseq_Rep8a_SRR6792678"
-                 )
-DNAmethNamesDir <- c(
-                     "BSseq"
-                    )
-DNAmethContexts <- c(
-                     "CpG",
-                     "CHG",
-                     "CHH"
-                    )
-DNAmethNamesPlot <- c(
-                      "mCG",
-                      "mCHG",
-                      "mCHH"
-                     )
-DNAmethColours <- c(
-                    "navy",
-                    "blue",
-                    "deepskyblue1"
-                   )
-DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
-  if(DNAmethNames[x] %in% c("BSseq_Rep8a_SRR6792678")) {
-    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-           DNAmethNamesDir[x],
-           "/snakemake_BSseq/coverage/geneProfiles_subgenomes/matrices/")
-  } else {
-    stop(paste0("DNAmethNames[", x, "] is not compatible with the specified coverage matrix paths"))
-  }
-})
-
-
-## control
-# feature
-control_featureMats <- mclapply(seq_along(controlNames), function(x) {
-  lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0(controlDirs[x],
-                                controlNames[x],
-                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                                featureName[y], "_matrix_bin", binName,
-                                "_flank", flankName, ".tab"),
-                         header = F, skip = 3))
-  })
-}, mc.cores = length(controlNames))
-# If features from all 3 subgenomes are to be analysed,
-# concatenate the 3 corresponding feature coverage matrices
-control_featureMats <- mclapply(seq_along(control_featureMats), function(x) {
-  if(length(featureName) == 3) {
-    do.call(rbind, control_featureMats[[x]])
-  } else {
-    control_featureMats[[x]][[1]]
-  }
-}, mc.cores = length(control_featureMats))
-
-# ranLoc
-control_ranLocMats <- mclapply(seq_along(controlNames), function(x) {
-  lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0(controlDirs[x],
-                                controlNames[x],
-                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                                featureName[y], "_ranLoc_matrix_bin", binName,
-                                "_flank", flankName, ".tab"),
-                         header = F, skip = 3))
-  })
-}, mc.cores = length(controlNames))
-# If features from all 3 subgenomes are to be analysed,
-# concatenate the 3 corresponding feature coverage matrices
-control_ranLocMats <- mclapply(seq_along(control_ranLocMats), function(x) {
-  if(length(featureName) == 3) {
-    do.call(rbind, control_ranLocMats[[x]])
-  } else {
-    control_ranLocMats[[x]][[1]]
-  }
-}, mc.cores = length(control_ranLocMats))
-
-## ChIP
-# feature
-ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
-  lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0(ChIPDirs[x],
-                                ChIPNames[x],
-                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                                featureName[y], "_matrix_bin", binName,
-                                "_flank", flankName, ".tab"),
-                         header = F, skip = 3))
-  })
-}, mc.cores = length(ChIPNames))
-# If features from all 3 subgenomes are to be analysed,
-# concatenate the 3 corresponding feature coverage matrices
-ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
-  if(length(featureName) == 3) {
-    do.call(rbind, ChIP_featureMats[[x]])
-  } else {
-    ChIP_featureMats[[x]][[1]]
-  }
-}, mc.cores = length(ChIP_featureMats))
-
-# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
-# for each matrix depending on library
-log2ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
-  if(ChIPNames[x] %in% c(
-                         "ASY1_CS_Rep1_ChIP",
-                         "DMC1_Rep1_ChIP",
-                         "H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667",
-                         "H3K4me1_Rep1_ChIP_SRR8126618",
-                         "H3K27ac_Rep1_ChIP_SRR8126621"
-                        )) {
-    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[1]]+1))
-  } else {
-    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[2]]+1))
-  }
-}, mc.cores = length(ChIP_featureMats))
-
-# ranLoc
-ChIP_ranLocMats <- mclapply(seq_along(ChIPNames), function(x) {
-  lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0(ChIPDirs[x],
-                                ChIPNames[x],
-                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
-                                featureName[y], "_ranLoc_matrix_bin", binName,
-                                "_flank", flankName, ".tab"),
-                         header = F, skip = 3))
-  })
-}, mc.cores = length(ChIPNames))
-# If features from all 3 subgenomes are to be analysed,
-# concatenate the 3 corresponding feature coverage matrices
-ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
-  if(length(featureName) == 3) {
-    do.call(rbind, ChIP_ranLocMats[[x]])
-  } else {
-    ChIP_ranLocMats[[x]][[1]]
-  }
-}, mc.cores = length(ChIP_ranLocMats))
-
-# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
-# for each matrix depending on library
-log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
-  if(ChIPNames[x] %in% c(
-                         "ASY1_CS_Rep1_ChIP",
-                         "DMC1_Rep1_ChIP",
-                         "H3K4me3_ChIP_SRR6350668",
-                         "H3K27me3_ChIP_SRR6350666",
-                         "H3K36me3_ChIP_SRR6350670",
-                         "H3K9ac_ChIP_SRR6350667",
-                         "H3K4me1_Rep1_ChIP_SRR8126618",
-                         "H3K27ac_Rep1_ChIP_SRR8126621"
-                        )) {
-    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIP_ranLocMats[[x]]+1)/(control_ranLocMats[[1]]+1))
-  } else {
-    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
-    log2((ChIP_ranLocMats[[x]]+1)/(control_ranLocMats[[2]]+1))
-  }
-}, mc.cores = length(ChIP_ranLocMats))
-
-
-# Add column names
-for(x in seq_along(log2ChIP_featureMats)) {
-  colnames(log2ChIP_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
-  colnames(log2ChIP_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
-                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
-                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+# Recombination rate (cM/Mb) boxplot or violin plot function
+cMMb_plotFun <- function(featuresDF, featureIndices, quantileColours, featureNamePlot) {
+  ggplot(data = featuresDF[featureIndices,],
+         mapping = aes(x = quantile,
+                       y = cMMb,
+                       colour = quantile)) +
+  scale_colour_manual(values = quantileColours) +
+  geom_boxplot(mapping = aes(colour = quantile),
+               notch = TRUE,
+               varwidth = TRUE) +
+#  geom_violin(scale = "count",
+#              trim = FALSE,
+#              draw_quantiles = c(0.25, 0.50, 0.75)) +
+#  geom_beeswarm(cex = 6,
+#                size = 4) +
+  scale_y_continuous(limits = c(ymin, ymax),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  labs(x = "",
+       y = "Recombination rate (cM/Mb)") +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 1.0, colour = "black"),
+        axis.ticks.y = element_line(size = 1.0, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.y = element_text(size = 18, colour = "black"),
+        axis.text.x = element_text(size = 18, colour = quantileColours),
+        axis.title = element_text(size = 20, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,0.9,0.0,0.3),"cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot)))
 }
 
+ggObjGA_feature <- cMMb_plotFun(featuresDF = featuresDF,
+                                featureIndices = unlist(quantileIndices),
+                                quantileColours = quantileColours,
+                                featureNamePlot = featureNamePlot)
+ggObjGA_ranFeat <- cMMb_plotFun(featuresDF = featuresDF,
+                                featureIndices = unlist(randomPCIndices),
+                                quantileColours = quantileColours,
+                                featureNamePlot = ranFeatNamePlot)
+ggObjGA_combined <- grid.arrange(
+                                 ggObjGA_feature,
+                                 ggObjGA_ranFeat
+                                )
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObjGA_feature,
+                                           ggObjGA_ranFeat
+                                          ),
+                                 layout_matrix = cbind(1, 2))
+ggsave(paste0(plotDir,
+              "cMMb_around_", quantiles, "quantiles",
+              "_by_log2_", libName, "_control_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5, width = 14)
+
+     ggsave(RFplot,
+            file = paste0("./", intervalName, "_",
+                          geno1Name, "_vs_", geno2Name,
+                          "_RF_Utest_and_plot.pdf"),
+            width = 18, height = 18, units = "cm")
 # Subdivide coverage matrices into above-defined quantiles and random groupings
 log2ChIP_mats_quantiles <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
   list(
@@ -2925,13 +2644,4 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        (length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2),
                                                        ((length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*3)
                                                       ))
-ggsave(paste0(plotDir,
-              "combined_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
 
