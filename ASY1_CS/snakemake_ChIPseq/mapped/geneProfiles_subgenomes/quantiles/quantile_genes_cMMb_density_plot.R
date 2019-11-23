@@ -145,17 +145,18 @@ xmax <- 2
 cMMb_plotFun <- function(featuresDF,
 #                         quantileIndices,
 #                         randomPCIndices,
+                         featureGroup,
                          featureNamePlot,
-                         ranFeatNamePlot,
+#                         ranFeatNamePlot,
                          quantileColours) {
-ggObj_feature <- ggplot(data = featuresDF,
-         mapping = aes(x = cMMb,
-                       colour = quantile)) +
+  ggplot(data = featuresDF,
+                        mapping = aes(x = cMMb,
+                                      colour = get(featureGroup),
+                                      group = get(featureGroup))) +
   scale_colour_manual(values = quantileColours) +
   geom_density() +
   scale_x_continuous(limits = c(xmin, xmax)) +
-  labs(fill = "",
-       x = "Recombination rate (cM/Mb)",
+  labs(x = "Recombination rate (cM/Mb)",
        y = "Density") +
   theme_bw() +
   theme(axis.line.y = element_line(size = 1.0, colour = "black"),
@@ -172,53 +173,57 @@ ggObj_feature <- ggplot(data = featuresDF,
         plot.margin = unit(c(0.3,0.9,0.0,0.3),"cm"),
         plot.title = element_text(hjust = 0.5, size = 30)) +
   ggtitle(bquote(.(featureNamePlot)))
-ggObj_ranFeat <- ggplot(data = featuresDF,
-         mapping = aes(x = cMMb,
-                       colour = random)) +
-  scale_colour_manual(values = quantileColours) +
-  geom_density() +
-  scale_x_continuous(limits = c(xmin, xmax)) +
-  labs(fill = "",
-       x = "Recombination rate (cM/Mb)",
-       y = "Density") +
-  theme_bw() +
-  theme(axis.line.y = element_line(size = 1.0, colour = "black"),
-        axis.ticks.y = element_line(size = 1.0, colour = "black"),
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_text(size = 18, colour = "black"),
-        axis.text.x = element_text(size = 18, colour = "black"),
-        axis.title = element_text(size = 20, colour = "black"),
-        legend.position = c(0.8, 0.8),
-#        legend.position = "none",
-        panel.grid = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        plot.margin = unit(c(0.3,0.9,0.0,0.3),"cm"),
-        plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote(.(ranFeatNamePlot)))
-  grid.arrange(ggObj_feature, ggObj_ranFeat)
+#ggObj_ranFeat <- ggplot(data = featuresDF,
+#                        mapping = aes(x = cMMb,
+#                                      colour = random)) +
+#  scale_colour_manual(values = quantileColours) +
+#  geom_density() +
+#  scale_x_continuous(limits = c(xmin, xmax)) +
+#  labs(x = "Recombination rate (cM/Mb)",
+#       y = "Density") +
+#  theme_bw() +
+#  theme(axis.line.y = element_line(size = 1.0, colour = "black"),
+#        axis.ticks.y = element_line(size = 1.0, colour = "black"),
+#        axis.ticks.x = element_blank(),
+#        axis.text.y = element_text(size = 18, colour = "black"),
+#        axis.text.x = element_text(size = 18, colour = "black"),
+#        axis.title = element_text(size = 20, colour = "black"),
+#        legend.position = c(0.8, 0.8),
+##        legend.position = "none",
+#        panel.grid = element_blank(),
+#        panel.border = element_blank(),
+#        panel.background = element_blank(),
+#        plot.margin = unit(c(0.3,0.9,0.0,0.3),"cm"),
+#        plot.title = element_text(hjust = 0.5, size = 30)) +
+#  ggtitle(bquote(.(ranFeatNamePlot)))
+#  grid.arrange(ggObj_feature, ggObj_ranFeat)
 }
 
-ggObjGA_combined <- cMMb_plotFun(featuresDF = featuresDF,
+ggObjGA_feature <- cMMb_plotFun(featuresDF = featuresDF,
 #                                 quantileIndices = unlist(quantileIndices),
 #                                 randomPCIndices = unlist(randomPCIndices),
-                                 featureNamePlot = featureNamePlot,
-                                 ranFeatNamePlot = ranFeatNamePlot,
+                                featureGroup = "quantile", 
+                                featureNamePlot = featureNamePlot,
+#                                 ranFeatNamePlot = ranFeatNamePlot,
                                  quantileColours = quantileColours
                                 )
-ggObjGA_ranFeat <- cMMb_plotFun(featuresDF = featuresDF,
-                                featureIndices = unlist(randomPCIndices),
-                                quantileColours = quantileColours,
-                                featureNamePlot = ranFeatNamePlot)
+ggObjGA_ranFeat <- cMMb_plotFun(featuresDF = featuresDF[unlist(randomPCIndices),],
+#                                 quantileIndices = unlist(quantileIndices),
+#                                 randomPCIndices = unlist(randomPCIndices),
+                                featureGroup = "random", 
+                                featureNamePlot = ranFeatNamePlot,
+#                                 ranFeatNamePlot = ranFeatNamePlot,
+                                 quantileColours = quantileColours
+                                )
 ggObjGA_combined <- grid.arrange(
                                  ggObjGA_feature,
                                  ggObjGA_ranFeat
                                 )
-ggObjGA_combined <- grid.arrange(grobs = c(
-                                           ggObjGA_feature,
-                                           ggObjGA_ranFeat
-                                          ),
-                                 layout_matrix = cbind(1, 2))
+#ggObjGA_combined <- grid.arrange(grobs = c(
+#                                           ggObjGA_feature,
+#                                           ggObjGA_ranFeat
+#                                          ),
+#                                 layout_matrix = cbind(1, 2))
 ggsave(paste0(plotDir,
               "cMMb_around_", quantiles, "quantiles",
               "_by_log2_", libName, "_control_in_", region, "_of_",
@@ -227,7 +232,7 @@ ggsave(paste0(plotDir,
                      collapse = "_"), "_",
               substring(featureName[1][1], first = 18), "_v231119.pdf"),
        plot = ggObjGA_combined,
-       height = 6.5, width = 14)
+       height = 13, width = 7)
 
      ggsave(RFplot,
             file = paste0("./", intervalName, "_",
