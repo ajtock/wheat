@@ -501,7 +501,6 @@ log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
   }
 }, mc.cores = length(ChIP_ranLocMats))
 
-
 # Add column names
 for(x in seq_along(log2ChIP_featureMats)) {
   colnames(log2ChIP_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
@@ -529,7 +528,6 @@ log2ChIP_mats_quantiles <- mclapply(seq_along(log2ChIP_featureMats), function(x)
        })
       ) 
 }, mc.cores = length(log2ChIP_featureMats))
-
 
 # Transpose matrix and convert into dataframe
 # in which first column is window name
@@ -853,9 +851,23 @@ ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   ChIP_featureMats, ChIP_ranLocMats,
+   control_featureMats, control_ranLocMats,
+   log2ChIP_featureMats, log2ChIP_ranLocMats,
+   log2ChIP_mats_quantiles,
+   wideDFfeature_list_log2ChIP,
+   tidyDFfeature_list_log2ChIP,
+   summaryDFfeature_list_log2ChIP,
+   summaryDFfeature_log2ChIP
+  ) 
+gc()
+#####
 
 
 
@@ -1257,9 +1269,21 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   other_featureMats, other_ranLocMats,
+   other_mats_quantiles,
+   wideDFfeature_list_other,
+   tidyDFfeature_list_other,
+   summaryDFfeature_list_other,
+   summaryDFfeature_other
+  ) 
+gc()
+#####
 
 
 
@@ -1657,9 +1681,21 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   sRNA_featureMats, sRNA_ranLocMats,
+   sRNA_mats_quantiles,
+   wideDFfeature_list_sRNA,
+   tidyDFfeature_list_sRNA,
+   summaryDFfeature_list_sRNA,
+   summaryDFfeature_sRNA
+  ) 
+gc()
+#####
 
 
 
@@ -2057,9 +2093,21 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   DNAmeth_featureMats, DNAmeth_ranLocMats,
+   DNAmeth_mats_quantiles,
+   wideDFfeature_list_DNAmeth,
+   tidyDFfeature_list_DNAmeth,
+   summaryDFfeature_list_DNAmeth,
+   summaryDFfeature_DNAmeth
+  ) 
+gc()
+#####
 
 
 # varietal SNPclasses
@@ -2485,9 +2533,21 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   SNPclass_featureMats, SNPclass_ranLocMats,
+   SNPclass_mats_quantiles,
+   wideDFfeature_list_SNPclass,
+   tidyDFfeature_list_SNPclass,
+   summaryDFfeature_list_SNPclass,
+   summaryDFfeature_SNPclass
+  ) 
+gc()
+#####
 
 
 # TE superfams
@@ -2928,9 +2988,21 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v221119.pdf"),
+#              substring(featureName[1][1], first = 18), "_v231119.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   superfam_featureMats, superfam_ranLocMats,
+   superfam_mats_quantiles,
+   wideDFfeature_list_superfam,
+   tidyDFfeature_list_superfam,
+   summaryDFfeature_list_superfam,
+   summaryDFfeature_superfam
+  ) 
+gc()
+#####
 
 ggObjGA_combined <- grid.arrange(grobs = c(
                                            ggObj1_combined_log2ChIP,
