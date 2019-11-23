@@ -23,6 +23,9 @@
 #quantiles <- 4
 #winName <- "100kb"
 #minMarkerDist <- 1
+## top left
+#legendPos <- as.numeric(unlist(strsplit("0.02,0.96",
+#                                        split = ",")))
 ## top centre
 #legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
 #                                        split = ",")))
@@ -154,11 +157,13 @@ randomPCIndices <- lapply(1:quantiles, function(k) {
   randomPCIndicesk
 })
 # Confirm per-chromosome feature numbers are the same for quantiles and random groupings
-sapply(seq_along(chrs), function(x) {
-  if(!identical(dim(featuresDF[randomPCIndices[[1]],][featuresDF$seqnames == chrs[1],]),
-                dim(featuresDF[quantileIndices[[1]],][featuresDF$seqnames == chrs[1],]))) {
-    stop("Quantile features and random features do not consist of the same number of features per chromosome")
-  }
+lapply(seq_along(1:quantiles), function(k) {
+  sapply(seq_along(chrs), function(x) {
+    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
+                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))    {
+      stop("Quantile features and random features do not consist of the same number of features per chromosome")
+    }
+  })
 })
 
 
