@@ -651,16 +651,17 @@ ggObj1_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
   summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[1]]
   ggplot(data = summaryDFfeature,
          mapping = aes(x = winNo,
-                       y = mean)
+                       y = mean,
+                       group = 1)
         ) +
   geom_line(data = summaryDFfeature,
+            colour = log2ChIPColours[x],
             size = 1) +
-  scale_colour_manual(values = log2ChIPColours[x]) +
   geom_ribbon(data = summaryDFfeature,
               mapping = aes(ymin = CI_lower,
                             ymax = CI_upper),
+              fill = log2ChIPColours[x],
               alpha = 0.4) +
-  scale_fill_manual(values = log2ChIPColours[x]) +
   scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
                      labels = function(x) sprintf("%6.3f", x)) +
   scale_x_discrete(breaks = c(1,
@@ -689,8 +690,8 @@ ggObj1_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
         panel.border = element_rect(size = 3.5, colour = "black"),
         panel.background = element_blank(),
         plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
-        plot.title = element_text(hjust = 1.0, size = 30)) +
-  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+        plot.title = element_text(hjust = 0.9, size = 30)) +
+  ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~ "(" * italic("n") ~ "=" ~
                  .(prettyNum(summaryDFfeature$n[1],
                              big.mark = ",", trim = T)) *
                  ")"))
@@ -701,14 +702,16 @@ ggObj2_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
   summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[2]]
   ggplot(data = summaryDFfeature,
          mapping = aes(x = winNo,
-                       y = mean)
+                       y = mean,
+                       group = 1)
         ) +
   geom_line(data = summaryDFfeature,
+            colour = log2ChIPColours[x],
             size = 1) +
-  scale_colour_manual(values = log2ChIPColours[x]) +
   geom_ribbon(data = summaryDFfeature,
               mapping = aes(ymin = CI_lower,
                             ymax = CI_upper),
+              fill = log2ChIPColours[x],
               alpha = 0.4) +
   scale_fill_manual(values = log2ChIPColours[x]) +
   scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
@@ -751,16 +754,17 @@ ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
   summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[3]]
   ggplot(data = summaryDFfeature,
          mapping = aes(x = winNo,
-                       y = mean)
+                       y = mean,
+                       group = 1)
         ) +
   geom_line(data = summaryDFfeature,
+            colour = log2ChIPColours[x],
             size = 1) +
-  scale_colour_manual(values = log2ChIPColours[x]) +
   geom_ribbon(data = summaryDFfeature,
               mapping = aes(ymin = CI_lower,
                             ymax = CI_upper),
+              fill = log2ChIPColours[x],
               alpha = 0.4) +
-  scale_fill_manual(values = log2ChIPColours[x]) +
   scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
                      labels = function(x) sprintf("%6.3f", x)) +
   scale_x_discrete(breaks = c(1,
