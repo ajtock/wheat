@@ -16,10 +16,10 @@
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
 dirName <- args[2]
-featureName <- unlist(strsplit(args[4],
+featureName <- unlist(strsplit(args[3],
                                split = ","))
-region <- args[11]
-quantiles <- as.numeric(args[12])
+region <- args[4]
+quantiles <- as.numeric(args[5])
 
 library(parallel)
 library(tidyr)
@@ -161,8 +161,8 @@ xmax <- max(c(
               featuresDF[unlist(randomPCIndices),]$cMMb,
               ranLocsDF[unlist(quantileIndices),]$cMMb
              ), na.rm = T)
-xmin <- 1.2
-xmax <- 2
+xmin <- 0
+xmax <- 3
 minDensity <- 0
 maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",]$cMMb,
                           na.rm = T)$y)+2
