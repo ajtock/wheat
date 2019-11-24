@@ -48,7 +48,7 @@ ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-makeTransparent <- function(thisColour, alpha = 210)
+makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -72,6 +72,15 @@ featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                        collapse = "_"), "_",
                                 substring(featureName[1][1], first = 18), ".txt"),
                          header = T, sep = "\t")
+# Load table of ranLocs grouped according to feature quantiles
+ranLocsDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
+                               "_by_log2_", libName, "_control_in_",
+                               region, "_of_",
+                               substring(featureName[1][1], first = 1, last = 5), "_in_",
+                               paste0(substring(featureName, first = 10, last = 16),
+                                      collapse = "_"), "_",
+                               substring(featureName[1][1], first = 18), "_ranLocs.txt"),
+                        header = T, sep = "\t")
 
 # Load features to confirm feature (row) ordering in "featuresDF" is the same
 # as in "features" (which was used for generating the coverage matrices)
@@ -144,17 +153,31 @@ for(k in 1:quantiles) {
 
 xmin <- min(c(
               featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb
+              featuresDF[unlist(randomPCIndices),]$cMMb,
+              ranLocsDF[unlist(quantileIndices),]$cMMb
              ), na.rm = T)
 xmax <- max(c(
               featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb
+              featuresDF[unlist(randomPCIndices),]$cMMb,
+              ranLocsDF[unlist(quantileIndices),]$cMMb
              ), na.rm = T)
-xmin <- -0.1
+xmin <- 1.2
 xmax <- 2
 minDensity <- 0
 maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",]$cMMb,
-                          na.rm = T)$y)+1
+                          na.rm = T)$y)+2
+maxDensity <- max(
+  c(
+    sapply(1:quantiles, function(k) {
+#      max(c(max(density(ranLocsDF[ranLocsDF$random == paste0("Random ", k),]$cMMb,
+#                        na.rm = T)$y),
+      max(c(max(density(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$cMMb,
+                        na.rm = T)$y),
+            max(density(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cMMb,
+                        na.rm = T)$y)))
+     })
+   )
+)+2
 
 # Recombination rate (cM/Mb) boxplot or violin plot function
 cMMb_plotFun <- function(featuresDF,
@@ -201,16 +224,24 @@ ggObjGA_feature <- cMMb_plotFun(featuresDF = featuresDF,
                                 featureGroup = "quantile", 
                                 featureNamePlot = featureNamePlot,
                                 quantileColours = quantileColours
-                                )
+                               )
 ggObjGA_ranFeat <- cMMb_plotFun(featuresDF = ranFeatsDF,
                                 parameter = "cMMb",
                                 parameterLab = "Recombination rate (cM/Mb)",
                                 featureGroup = "random", 
                                 featureNamePlot = ranFeatNamePlot,
                                 quantileColours = quantileColours
-                                )
+                               )
+ggObjGA_ranLocs <- cMMb_plotFun(featuresDF = ranLocsDF,
+                                parameter = "cMMb",
+                                parameterLab = "Recombination rate (cM/Mb)",
+                                featureGroup = "random", 
+                                featureNamePlot = ranLocNamePlot,
+                                quantileColours = quantileColours
+                               )
 ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
+#                                 ggObjGA_ranLocs,
                                  ncol = 2, as.table = F)
 ggsave(paste0(plotDir,
               "cMMb_around_", quantiles, "quantiles",

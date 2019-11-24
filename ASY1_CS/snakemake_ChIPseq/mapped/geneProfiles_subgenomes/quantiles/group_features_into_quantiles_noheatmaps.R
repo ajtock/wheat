@@ -2,7 +2,7 @@
 
 #
 # Divide features into quantiles based on mean log2(libName ChIP/control)
-# in a given feature region (e.g., terminators).
+# in a given feature region (e.g., promoters).
 # Extract and save feature IDs for each quantile for further analyses
 # (e.g., GO enrichment and average + 95% CI profile plotting).
 # Calculate mean winName-scaled recombination rate (cM/Mb) from
@@ -13,7 +13,7 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_features_into_quantiles_noheatmaps.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp terminators 4 100kb 1
+# /applications/R/R-3.4.0/bin/Rscript group_features_into_quantiles_noheatmaps.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp promoters 4 100kb 200
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -27,10 +27,10 @@
 #flankNamePlot <- "2 kb"
 #binSize <- 20
 #binName <- "20bp"
-#region <- "terminators"
+#region <- "promoters"
 #quantiles <- 4
 #winName <- "100kb"
-#minMarkerDist <- 1
+#minMarkerDist <- 200
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -212,6 +212,33 @@ featuresGR_ext <- GRanges(seqnames = seqnames(featuresGR),
                           featureID = featuresGR$featureID)
 print(featuresGR_ext)
 
+# Load ranLocs 
+ranLocs <- lapply(seq_along(featureName), function(y) {
+  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                    substring(featureName[y], first = 10), "_randomLoci.bed"),
+             colClasses = c(rep(NA, 4), "NULL", NA),
+             header = F)
+})
+if(length(featureName) == 3) {
+  ranLocs <- do.call(rbind, ranLocs)
+} else {
+  ranLocs <- ranLocs[[1]]
+}
+colnames(ranLocs) <- c("chr", "start", "end", "ranLocID", "strand")
+ranLocsGR <- GRanges(seqnames = ranLocs$chr,
+                     ranges = IRanges(start = ranLocs$start+1,
+                                      end = ranLocs$end),
+                     strand = ranLocs$strand,
+                     ranLocID = ranLocs$ranLocID)
+# Extend feature boundaries to include promoters and terminators for calculation of
+# winName-scaled recombination rate
+ranLocsGR_ext <- GRanges(seqnames = seqnames(ranLocsGR),
+                         ranges = IRanges(start = start(ranLocsGR)-1000,
+                                          end = end(ranLocsGR)+1000),
+                         strand = strand(ranLocsGR),
+                         ranLocID = ranLocsGR$ranLocID)
+print(ranLocsGR_ext)
+
 # Convert windowed recombination rate into GRanges
 cMMb <- read.table(paste0(
                    "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/",
@@ -245,6 +272,28 @@ featuresGR <- GRanges(featuresGR,
                       featureID = featuresGR$featureID,
                       log2ChIPmatRegionRowMeans = log2ChIPmatRegionRowMeans,
                       cMMb = feature_cMMb)
+
+# Obtain winName-scaled cMMb values for each ranLoc between promoter and terminator
+# Where ranLocs overlap more than one winName window, calculate mean cMMb
+ranLoc_cMMb_overlaps <- findOverlaps(query = ranLocsGR_ext,
+                                     subject = cMMbGR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = TRUE)
+ranLoc_cMMb_overlapsList <- lapply(seq_along(ranLocsGR_ext), function(x) {
+  subjectHits(ranLoc_cMMb_overlaps)[queryHits(ranLoc_cMMb_overlaps) == x]
+})
+## OR using segmentSeq::getOverlaps()
+#ranLoc_cMMb_overlapsList <- getOverlaps(coordinates = ranLocsGR_ext,
+#                                        segments = cMMbGR,
+#                                        overlapType = "overlapping",
+#                                        whichOverlaps = TRUE,
+#                                        ignoreStrand = TRUE)
+ranLoc_cMMb <- sapply(ranLoc_cMMb_overlapsList,
+                      function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
+ranLocsGR <- GRanges(ranLocsGR,
+                     ranLocID = ranLocsGR$ranLocID,
+                     cMMb = ranLoc_cMMb)
 
 # Divide features into quantiles based on decreasing log2ChIPmatRegionRowMeans
 featuresDF <- data.frame(featuresGR,
@@ -297,6 +346,28 @@ write.table(featuresDF,
                           paste0(substring(featureName, first = 10, last = 16),
                                  collapse = "_"), "_",
                           substring(featureName[1][1], first = 18), ".txt"),
+            quote = FALSE, sep = "\t", row.names = FALSE)
+
+# Divide ranLocs into quantiles based on feature quantile indices
+ranLocsDF <- data.frame(ranLocsGR,
+                        random = as.character(""),
+                        stringsAsFactors = F)
+# Get row indices for each feature quantile
+quantileIndices <- lapply(1:quantiles, function(k) {
+  which(featuresDF$quantile == paste0("Quantile ", k))
+})
+for(k in 1:quantiles) {
+  ranLocsDF[quantileIndices[[k]],]$random <- paste0("Random ", k)
+}
+write.table(ranLocsDF,
+            file = paste0(outDir,
+                          "features_", quantiles, "quantiles",
+                          "_by_log2_", libName, "_control_in_",
+                          region, "_of_",
+                          substring(featureName[1][1], first = 1, last = 5), "_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), "_ranLocs.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE)
 
 # Order features in each quantile by decreasing log2ChIPmatRegion levels
