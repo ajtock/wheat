@@ -77,11 +77,11 @@ print(paste0("Number of markers with inter-marker genetic distances >= 0
               and physical distances >= ", minMarkerDist, " bp"))
 print(dim(map_cMMb)[1])
 
-## Remove second marker for three marker pairs with negative genetic distances
-#map_cMMb <- map_cMMb[is.na(map_cMMb$geneticDelta) | map_cMMb$geneticDelta >= 0,]
-#print("Number of markers with positive inter-marker genetic distances")
-#print(dim(map_cMMb)[1])
-##[1] 47151
+# Remove second marker for three marker pairs with negative genetic distances
+map_cMMb <- map_cMMb[is.na(map_cMMb$geneticDelta) | map_cMMb$geneticDelta >= 0,]
+print("Number of markers with positive inter-marker genetic distances")
+print(dim(map_cMMb)[1])
+#[1] 41435
 ## Remove second marker for pairs of markers with physical distances < minMarkerDist bp
 #map_cMMb <- map_cMMb[is.na(map_cMMb$physicalDelta) | map_cMMb$physicalDelta >= minMarkerDist,]
 
