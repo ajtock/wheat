@@ -133,7 +133,8 @@ chrProfiles <- mclapply(seq_along(chrs), function(i) {
   win_cMMb <- sapply(overlaps,
                      function(x) mean(markerIntervalsGR$cMMb[x]))
   data.frame(chr = as.character(seqnames(chrWindowsGR)),
-             window = as.integer(start(chrWindowsGR)),
+             windowStart = as.integer(start(chrWindowsGR)),
+             windowEnd = as.integer(end(chrWindowsGR)),
              cMMb = win_cMMb)
 }, mc.cores = length(chrs))
 
