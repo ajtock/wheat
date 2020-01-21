@@ -1,18 +1,16 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Plot average coverage profiles with 95% CIs around
-# gene quantiles; e.g.,
-# clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
+# Plot average coverage profiles with 95% CIs around WAK-encoding genes
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' 3500 2000 2kb '2 kb' 20 20bp promoters 1 4 '0006952'
+# /applications/R/R-3.5.0/bin/Rscript WAK_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'WAK-encoding_genes' 3500 2000 2kb '2 kb' 20 20bp promoters
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #align <- "both"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#featureNamePlot <- "Defense_response_genes"
+#featureNamePlot <- "WAK-encoding_genes"
 #bodyLength <- 3500
 #upstream <- 2000
 #downstream <- 2000
@@ -21,9 +19,6 @@
 #binSize <- 20
 #binName <- "20bp"
 #region <- "promoters"
-#quantileNo <- 1
-#quantiles <- 4
-#GO_ID <- "0006952"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -40,9 +35,6 @@ flankNamePlot <- args[9]
 binSize <- as.numeric(args[10])
 binName <- args[11]
 region <- args[12]
-quantileNo <- as.numeric(args[13])
-quantiles <- as.numeric(args[14])
-GO_ID <- as.character(args[15])
 
 library(parallel)
 library(tidyr)
@@ -73,47 +65,10 @@ if(grepl("genes", featureName)) {
   featureEndLab <- "End"
 }
 
-IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_in_", region,
-                                      "/GO/featureIDs_quantile", quantileNo, "_of_", quantiles,
-                                      "_by_log2_", libName, "_control_in_", region, "_of_",
-                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                      paste0(substring(featureName, first = 10, last = 16),
-                                             collapse = "_"), "_",
-                                      substring(featureName[1][1], first = 18),
-                                      "_GO_BP/featureIDs_quantile", quantileNo, "_of_", quantiles,
-                                      "_by_log2_", libName, "_control_in_", region, "_of_",
-                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                      paste0(substring(featureName, first = 10, last = 16),
-                                             collapse = "_"), "_",
-                                      substring(featureName[1][1], first = 18),
-                                      "_GO_BP_enrichment_GO:", GO_ID, ".txt"),
-                               colClasses = c("NULL", NA), header = F)$V2)
-IDs <- unlist(strsplit(x = IDs,
-                       split = ","))
-
-# Load table of functional annotations
-# (note this is old v1.0 and not new v1.1 gene annotation)
-library(data.table)
-anno <- fread("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_FunctionalAnnotation_v1/iwgsc_refseqv1.0_FunctionalAnnotation_v1__HCgenes_v1.0-repr.TEcleaned.TAB",
-              sep = "\t", data.table = F)
-# Replace gene model ID decimal suffix (e.g., ".1")
-anno$`Gene-ID` <- sub(pattern = "\\.\\d+", replacement = "",
-                      x = anno$`Gene-ID`)
-# Replace "1G" with "2G" in gene IDs for consistency with v1.1
-anno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
-                      x = anno$`Gene-ID`)
-# Get subset corresponding to genes annotated with enriched GO_ID
-anno_IDs <- anno[anno$`Gene-ID` %in% IDs,]
-write.table(anno_IDs,
-            paste0(outDir,
-                   featureNamePlot, "_GO_ID_", GO_ID, "_in_quantile", quantileNo, "_of_", quantiles,
-                   "_by_log2_", libName, "_control_in_", region, "_of_",
-                   substring(featureName[1][1], first = 1, last = 5), "_in_",
-                   paste0(substring(featureName, first = 10, last = 16),
-                          collapse = "_"), "_",
-                   substring(featureName[1][1], first = 18), ".tsv"),
-            row.names = F, col.names = T, quote = F, sep = "\t")
-
+# Load WAKs
+WAKs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_manually_curated_gene_families/IWGSC_v1.1_wak_representative_mRNA.gff3",
+                   header = F)
+ 
 # Load features
 features <- lapply(seq_along(featureName), function(x) {
   read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
@@ -131,6 +86,15 @@ if(length(featureName) == 3) {
 }
 featureIDs <- sub(pattern = "\\.\\d+", replacement = "",
                   features$V9)
+
+# Subset features to only those corresponding to WAKs
+features_WAKs <- features[features$V1 %in% WAKs$V1 &
+                          (features$V4 %in% WAKs$V4 |
+                           features$V5 %in% WAKs$V5 ) &
+                          features$V7 %in% WAKs$V7,]
+# Get WAK IDs and their row indices in features
+IDs <- sub(pattern = "\\.\\d+", replacement = "",
+           features_WAKs$V9)
 ID_indices <- which(featureIDs %in% IDs)
 nonIDs <- featureIDs[!(featureIDs %in% IDs)]
 # Function to randomly select feature IDs not present in IDs
@@ -155,77 +119,6 @@ ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
 chrs <- chrs[-length(chrs)]
-
-## Load table of features grouped into quantiles
-## by decreasing log2(libName/control)
-#featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
-#                                "_by_log2_", libName, "_control_in_",
-#                                region, "_of_",
-#                                substring(featureName[1][1], first = 1, last = 5), "_in_",
-#                                paste0(substring(featureName, first = 10, last = 16),
-#                                       collapse = "_"), "_",
-#                                substring(featureName[1][1], first = 18), ".txt"),
-#                         header = T, sep = "\t")
-#
-## Load features to confirm feature (row) ordering in "featuresDF" is the same
-## as in "features" (which was used for generating the coverage matrices)
-#features <- lapply(seq_along(featureName), function(x) {
-#  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
-#                    paste0(substring(featureName[x], first = 10, last = 16),
-#                           collapse = "_"), "_",
-#                    substring(featureName[1][1], first = 18), ".gff3"),
-#             header = F)
-#})
-## If features from all 3 subgenomes are to be analysed,
-## concatenate the 3 corresponding feature data.frames
-#if(length(featureName) == 3) {
-# features <- do.call(rbind, features)
-#} else {
-# features <- features[[1]]
-#}
-#stopifnot(identical(as.character(featuresDF$featureID),
-#                    as.character(features$V9)))
-#
-## Get row indices for each feature quantile
-#quantileIndices <- lapply(1:quantiles, function(k) {
-#  which(featuresDF$quantile == paste0("Quantile ", k))
-#})
-#
-### Random feature quantiles
-## Define function to randomly select n rows from
-## a data.frame
-#selectRandomFeatures <- function(features, n) {
-#  return(features[sample(x = dim(features)[1],
-#                         size = n,
-#                         replace = FALSE),])
-#}
-#
-## Define seed so that random selections are reproducible
-#set.seed(93750174)
-#
-## Divide features into random sets of equal number,
-## with the same number of genes per chromosome as
-## above-defined libName-defined feature quantiles
-#randomPCIndices <- lapply(1:quantiles, function(k) {
-#  randomPCIndicesk <- NULL
-#  for(i in 1:length(chrs)) {
-#    randomPCfeatureskChr <- selectRandomFeatures(features = featuresDF[featuresDF$seqnames == chrs[i],],
-#                                                 n = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
-#                                                                    featuresDF$seqnames == chrs[i],])[1])
-#    randomPCIndicesk <- c(randomPCIndicesk, as.integer(rownames(randomPCfeatureskChr)))
-#  }
-#  randomPCIndicesk
-#})
-## Confirm per-chromosome feature numbers are the same for quantiles and random groupings
-#lapply(seq_along(1:quantiles), function(k) {
-#  sapply(seq_along(chrs), function(x) {
-#    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
-#                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))    {
-#      stop("Quantile features and random features do not consist of the same number of features per chromosome")
-#    }
-#  })
-#})
-
 
 # Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
 # and sort by decreasing log2mat1RegionRowMeans
@@ -835,12 +728,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "log2ChIPcontrol_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1176,12 +1067,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "other_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1510,12 +1399,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "sRNA_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1844,12 +1731,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "DNAmeth_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2208,12 +2093,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "SNPclass_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2587,12 +2470,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "superfam_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2635,12 +2516,10 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "combined_avgProfiles_around_",
-              featureNamePlot, "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v200120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
 

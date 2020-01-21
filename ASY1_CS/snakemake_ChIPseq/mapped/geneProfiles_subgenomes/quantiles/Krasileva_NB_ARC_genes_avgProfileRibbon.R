@@ -66,7 +66,7 @@ if(grepl("genes", featureName)) {
 }
 
 # Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_gene_IDs_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3", header = F)
+NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3", header = F)
  
 # Load features
 features <- lapply(seq_along(featureName), function(x) {
@@ -476,6 +476,22 @@ log2ChIP_mats <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
        log2ChIP_ranLocMats[[x]][ID_indices,]
       ) 
 }, mc.cores = length(log2ChIP_featureMats))
+
+for(x in 1:2) {
+  log2DF <- data.frame(gene_model = as.character(features[ID_indices,]$V9),
+                       promoter_mean = rowMeans(log2ChIP_mats[[x]][[1]][,51:100], na.rm = T),
+                       body_mean = rowMeans(log2ChIP_mats[[x]][[1]][,101:275], na.rm = T),
+                       terminator_mean = rowMeans(log2ChIP_mats[[x]][[1]][,276:325], na.rm = T),
+                       log2ChIP_mats[[x]][[1]],
+                       stringsAsFactors = F)
+  write.table(log2DF,
+              file = paste0("log2_", ChIPNames[x], "_control_around_",
+                            featureNamePlot, "_in_",
+                            paste0(substring(featureName, first = 10, last = 16),
+                                   collapse = "_"), "_",
+                            substring(featureName[1][1], first = 18), "_v200120.tsv"),
+              quote = F, sep = "\t", row.names = F, col.names = T)
+}
 
 # Transpose matrix and convert into dataframe
 # in which first column is window name
