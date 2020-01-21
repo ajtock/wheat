@@ -5,7 +5,7 @@
 # clusters_by_log2_DMC1_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_DMC1_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_avgProfileRibbon.R DMC1_Rep1_ChIP DMC1 both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' 3500 2000 2kb '2 kb' 20 20bp promoters 1 4 '0006952'
+# /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_avgProfileRibbon.R DMC1_Rep1_ChIP DMC1 both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' 3500 2000 2kb '2 kb' 20 20bp promoters 1 4 '0006952'
 
 #libName <- "DMC1_Rep1_ChIP"
 #dirName <- "DMC1"
@@ -90,6 +90,29 @@ IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_i
                                colClasses = c("NULL", NA), header = F)$V2)
 IDs <- unlist(strsplit(x = IDs,
                        split = ","))
+
+# Load table of functional annotations
+# (note this is old v1.0 and not new v1.1 gene annotation)
+library(data.table)
+anno <- fread("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_FunctionalAnnotation_v1/iwgsc_refseqv1.0_FunctionalAnnotation_v1__HCgenes_v1.0-repr.TEcleaned.TAB",
+              sep = "\t", data.table = F)
+# Replace gene model ID decimal suffix (e.g., ".1")
+anno$`Gene-ID` <- sub(pattern = "\\.\\d+", replacement = "",
+                      x = anno$`Gene-ID`)
+# Replace "1G" with "2G" in gene IDs for consistency with v1.1
+anno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
+                      x = anno$`Gene-ID`)
+# Get subset corresponding to genes annotated with enriched GO_ID
+anno_IDs <- anno[anno$`Gene-ID` %in% IDs,]
+write.table(anno_IDs,
+            paste0(outDir,
+                   featureNamePlot, "_GO_ID_", GO_ID, "_in_quantile", quantileNo, "_of_", quantiles,
+                   "_by_log2_", libName, "_control_in_", region, "_of_",
+                   substring(featureName[1][1], first = 1, last = 5), "_in_",
+                   paste0(substring(featureName, first = 10, last = 16),
+                          collapse = "_"), "_",
+                   substring(featureName[1][1], first = 18), ".tsv"),
+            row.names = F, col.names = T, quote = F, sep = "\t")
 
 # Load features
 features <- lapply(seq_along(featureName), function(x) {
