@@ -57,6 +57,7 @@ library(RColorBrewer)
 library(circlize)
 library(GenomicRanges)
 library(dplyr)
+library(rtracklayer)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -198,6 +199,37 @@ if(length(featureName) == 3) {
   features <- features[[1]]
 }
 colnames(features) <- c("chr", "start", "end", "strand", "featureID")
+
+# Get intron number for each representative gene model
+genes <- readGFF(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3"))
+exons <- genes[genes$type == "exon",]
+exons <- exons[as.character(exons$Parent) %in% features$featureID,]
+## Confirm that "first" exon start coordinate and last "exon" end coordinate
+## equal mRNA start and end coordinates
+#mclapply(seq_along(features$featureID), function(x) {
+#  exonParent <- exons[as.character(exons$Parent) == as.character(features$featureID[x]),]
+#  if( exonParent[1,]$start != features[features$featureID == features$featureID[x],]$start ) {
+#    stop(paste0(as.character(features$featureID[x]),
+#                ": first exon start coordinate does not equal mRNA start coordinate"))
+#  }
+#  if( exonParent[dim(exonParent)[1],]$end != features[features$featureID == features$featureID[x],]$end ) {
+#    stop(paste0(as.character(features$featureID[x]),
+#                ": last exon start coordinate does not equal mRNA end coordinate"))
+#  }
+#}, mc.cores = detectCores())
+introns <- mclapply(seq_along(features$featureID), function(x) {
+  exonParent <- exons[as.character(exons$Parent) == as.character(features$featureID[x]),]
+  intronParent <- data.frame()
+  for(i in 1:(dim(exonParent)[1]-1)) {
+    exonParent[i,]$end
+
+# Replace gene model ID decimal suffix (e.g., ".1")
+anno$geneID <- sub(pattern = "\\.\\d+", replacement = "",
+                   x = anno$geneID)
+
+mRNA <- genes[genes$type == "mRNA",]
+print(dim(mRNA))
+
 featuresGR <- GRanges(seqnames = features$chr,
                       ranges = IRanges(start = features$start,
                                        end = features$end),
