@@ -1,7 +1,8 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Create tables of exons within representative genes for each wheat subgenome
-# and generate random loci of the same number and width distribution
+# Create tables of exons and introns within representative genes
+# for each wheat subgenome and generate random loci of the same
+# number and width distribution
 # Write as GFF3 and BED files
 
 # Usage:
@@ -131,35 +132,8 @@ genes <- genes[grep(genomeName, genes$seqid),]
 exons <- genes[genes$type == "exon",]
 exons_rep <- exons[as.character(exons$Parent) %in% mRNA_rep$group,]
 
-#mclapply(seq_along(mRNA_rep$group), function(x) {
-#  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$group)[x],]
-#}, mc.cores = detectCores())
-#
-#mRNA <- genes[genes$type == "mRNA",]
-#print(dim(mRNA))
-##[1] 43697    24
-#
-#
-#genes <- readGFF(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3"))
-### Confirm that "first" exon start coordinate and last "exon" end coordinate
-### equal mRNA start and end coordinates
-##mclapply(seq_along(mRNA_rep$featureID), function(x) {
-##  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$featureID[x]),]
-##  if( exonParent[1,]$start != mRNA_rep[mRNA_rep$featureID == mRNA_rep$featureID[x],]$start ) {
-##    stop(paste0(as.character(mRNA_rep$featureID[x]),
-##                ": first exon start coordinate does not equal mRNA start coordinate"))
-##  }
-##  if( exonParent[dim(exonParent)[1],]$end != mRNA_rep[mRNA_rep$featureID == mRNA_rep$featureID[x],]$end ) {
-##    stop(paste0(as.character(mRNA_rep$featureID[x]),
-##                ": last exon start coordinate does not equal mRNA end coordinate"))
-##  }
-##}, mc.cores = detectCores())
-#introns <- mclapply(seq_along(mRNA_rep$featureID), function(x) {
-#  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$featureID[x]),]
-#  intronParent <- data.frame()
-#  for(i in 1:(dim(exonParent)[1]-1)) {
-#    exonParent[i,]$end
-
+# NOTE: when analysis region-specific mRNAs, must remove those in masked regions
+# as done below for exons
 # Remove exons in masked regions
 exons_repGR <- GRanges(seqnames = exons_rep$seqid,
                        ranges = IRanges(start = exons_rep$start,
@@ -189,39 +163,27 @@ exons_rep_gff <- data.frame(seqid = as.character(seqnames(exons_repGR)),
                             ID = as.character(exons_repGR$ID),
                             Parent = as.character(exons_repGR$Parent),
                             stringsAsFactors = F)
-exons_rep_gff3 <- exons_rep_gff[order(exons_rep_gff$seqid,
-                                     exons_rep_gff$start,
-                                     exons_rep_gff$end),]
-
-# and output in GFF3 and BED formats
-mRNA_rep <- rbind(mRNA_unique, mRNA_multi_rep)
-mRNA_rep <- mRNA_rep[ order(mRNA_rep$seqid,
-                            mRNA_rep$start,
-                            mRNA_rep$end), ]
-write.table(mRNA_rep[,1:9],
+write.table(exons_rep_gff,
             file = paste0(inDir,
-                          "IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                          "IWGSC_v1.1_HC_20170706_representative_exons_in_",
                           genomeName, "genome_", region, ".gff3"),
             quote = F, sep = "\t", row.names = F, col.names = F)
-mRNA_rep_bed <- data.frame(chr = as.character(mRNA_rep[,1]),
-                           start = as.integer(mRNA_rep[,4]-1),
-                           end = as.integer(mRNA_rep[,5]),
-                           name = as.integer(1:length(mRNA_rep[,1])),
-                           score = as.numeric(mRNA_rep[,6]),
-                           strand = as.character(mRNA_rep[,7]))
-write.table(mRNA_rep_bed,
+                       
+exons_rep_bed <- data.frame(chr = as.character(exons_rep_gff[,1]),
+                            start = as.integer(exons_rep_gff[,4]-1),
+                            end = as.integer(exons_rep_gff[,5]),
+                            name = as.integer(1:length(exons_rep_gff[,1])),
+                            score = as.numeric(exons_rep_gff[,6]),
+                            strand = as.character(exons_rep_gff[,7]),
+                            stringsAsFactors = F)
+write.table(exons_rep_bed,
             file = paste0(inDir,
-                          "IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                          "IWGSC_v1.1_HC_20170706_representative_exons_in_",
                           genomeName, "genome_", region, ".bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
 
-mRNA_repGR <- GRanges(seqnames = mRNA_rep$seqid,
-                      ranges = IRanges(start = mRNA_rep$start,
-                                       end = mRNA_rep$end),
-                      strand = mRNA_rep$strand)
-
 # Define function to select randomly positioned loci of the same
-# width distribution as mRNA_repGR
+# width distribution as exons_repGR
 ranLocStartSelect <- function(coordinates, n) {
   sample(x = coordinates,
          size = n,
@@ -235,21 +197,21 @@ options(scipen = 100)
 set.seed(93750174)
 
 # Apply ranLocStartSelect() on a per-chromosome basis so that
-# ranLocGR contains the same number of loci per chromosome as mRNA_repGR
+# ranLocGR contains the same number of loci per chromosome as exons_repGR
 chrs <- chrs[grep(genomeName, chrs)]
 ranLocGR <- GRanges()
 for(i in 1:length(chrs)) {
-  mRNA_repChrGR <- mRNA_repGR[seqnames(mRNA_repGR) == chrs[i]]
+  exons_repChrGR <- exons_repGR[seqnames(exons_repGR) == chrs[i]]
   regionChrGR <- regionGR[seqnames(regionGR) == chrs[i]]
   # Contract regionChrGR so that random loci do not overlap masked region
   # and do not extend beyond chromosome ends
-  end(regionChrGR) <- end(regionChrGR)-max(width(mRNA_repChrGR))
+  end(regionChrGR) <- end(regionChrGR)-max(width(exons_repChrGR))
   ranLocChrStart <- ranLocStartSelect(coordinates = (start(regionChrGR):end(regionChrGR)),
-                                      n = length(mRNA_repChrGR))
+                                      n = length(exons_repChrGR))
   ranLocChrGR <- GRanges(seqnames = chrs[i],
                          ranges = IRanges(start = ranLocChrStart,
-                                          width = width(mRNA_repChrGR)),
-                         strand = strand(mRNA_repChrGR))
+                                          width = width(exons_repChrGR)),
+                         strand = strand(exons_repChrGR))
   ranLocGR <- append(ranLocGR, ranLocChrGR)
 }
 
@@ -258,9 +220,119 @@ ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
                          end = as.integer(end(ranLocGR)),
                          name = as.integer(1:length(ranLocGR)),
                          score = rep("NA", length(ranLocGR)),
-                         strand = as.character(strand(ranLocGR)))
+                         strand = as.character(strand(ranLocGR)),
+                         stringsAsFactors = F)
 write.table(ranLoc_bed,
             file = paste0(inDir,
-                          "IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                          "IWGSC_v1.1_HC_20170706_representative_exons_in_",
                           genomeName, "genome_", region, "_randomLoci.bed"),
             quote = F, sep = "\t", row.names = F, col.names = F)
+
+
+# Get introns
+introns_rep_gff_list <- mclapply(seq_along(as.character(mRNA_rep$group)), function(x) {
+#introns_rep_gff <- data.frame()
+#for(x in seq_along(as.character(mRNA_rep$group))) {
+#  print(x)
+  exonParent <- exons_rep_gff[as.character(exons_rep_gff$Parent) == as.character(mRNA_rep$group)[x],]
+  if(dim(exonParent)[1] > 1) {
+    intronParent <- data.frame()
+    for(i in 1:(dim(exonParent)[1]-1)) {
+#      print(i)
+      intron_i_start <- exonParent[i,]$end+1
+      intron_i_end <- exonParent[i+1,]$start-1
+      intron_i <- exonParent[i,]
+      intron_i$type <- "intron"
+      intron_i$ID <- gsub(pattern = "exon", replacement = "intron",
+                          x = intron_i$ID)
+      intron_i$start <- intron_i_start
+      intron_i$end <- intron_i_end
+      intronParent <- rbind(intronParent, intron_i)
+    }
+#    introns_rep_gff <- rbind(introns_rep_gff, intronParent)
+    intronParent
+  }
+#}
+}, mc.cores = detectCores())
+introns_rep_gff <- do.call(rbind, introns_rep_gff_list)
+write.table(introns_rep_gff,
+            file = paste0(inDir,
+                          "IWGSC_v1.1_HC_20170706_representative_introns_in_",
+                          genomeName, "genome_", region, ".gff3"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+                       
+introns_rep_bed <- data.frame(chr = as.character(introns_rep_gff[,1]),
+                              start = as.integer(introns_rep_gff[,4]-1),
+                              end = as.integer(introns_rep_gff[,5]),
+                              name = as.integer(1:length(introns_rep_gff[,1])),
+                              score = as.numeric(introns_rep_gff[,6]),
+                              strand = as.character(introns_rep_gff[,7]),
+                              stringsAsFactors = F)
+write.table(introns_rep_bed,
+            file = paste0(inDir,
+                          "IWGSC_v1.1_HC_20170706_representative_introns_in_",
+                          genomeName, "genome_", region, ".bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
+introns_repGR <- GRanges(seqnames = introns_rep_gff$seqid,
+                         ranges = IRanges(start = introns_rep_gff$start,
+                                          end = introns_rep_gff$end),
+                         strand = introns_rep_gff$strand,
+                         source = introns_rep_gff$source,
+                         type = introns_rep_gff$type,
+                         score = introns_rep_gff$score,
+                         phase = introns_rep_gff$phase,
+                         ID = introns_rep_gff$ID,
+                         Parent = introns_rep_gff$Parent)
+
+# Disable scientific notation (e.g., 59000000 rather than 5.9e+07)
+options(scipen = 100)
+
+# Define seed so that random selections are reproducible
+set.seed(93750174)
+
+# Apply ranLocStartSelect() on a per-chromosome basis so that
+# ranLocGR contains the same number of loci per chromosome as introns_repGR
+chrs <- chrs[grep(genomeName, chrs)]
+ranLocGR <- GRanges()
+for(i in 1:length(chrs)) {
+  introns_repChrGR <- introns_repGR[seqnames(introns_repGR) == chrs[i]]
+  regionChrGR <- regionGR[seqnames(regionGR) == chrs[i]]
+  # Contract regionChrGR so that random loci do not overlap masked region
+  # and do not extend beyond chromosome ends
+  end(regionChrGR) <- end(regionChrGR)-max(width(introns_repChrGR))
+  ranLocChrStart <- ranLocStartSelect(coordinates = (start(regionChrGR):end(regionChrGR)),
+                                      n = length(introns_repChrGR))
+  ranLocChrGR <- GRanges(seqnames = chrs[i],
+                         ranges = IRanges(start = ranLocChrStart,
+                                          width = width(introns_repChrGR)),
+                         strand = strand(introns_repChrGR))
+  ranLocGR <- append(ranLocGR, ranLocChrGR)
+}
+
+ranLoc_bed <- data.frame(chr = as.character(seqnames(ranLocGR)),
+                         start = as.integer(start(ranLocGR)-1),
+                         end = as.integer(end(ranLocGR)),
+                         name = as.integer(1:length(ranLocGR)),
+                         score = rep("NA", length(ranLocGR)),
+                         strand = as.character(strand(ranLocGR)),
+                         stringsAsFactors = F)
+write.table(ranLoc_bed,
+            file = paste0(inDir,
+                          "IWGSC_v1.1_HC_20170706_representative_introns_in_",
+                          genomeName, "genome_", region, "_randomLoci.bed"),
+            quote = F, sep = "\t", row.names = F, col.names = F)
+
+### Confirm that "first" exon start coordinate and last "exon" end coordinate
+### equal mRNA start and end coordinates
+##mclapply(seq_along(mRNA_rep$group), function(x) {
+##  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$group[x]),]
+##  if( exonParent[1,]$start != mRNA_rep[mRNA_rep$group == mRNA_rep$group[x],]$start ) {
+##    stop(paste0(as.character(mRNA_rep$group[x]),
+##                ": first exon start coordinate does not equal mRNA start coordinate"))
+##  }
+##  if( exonParent[dim(exonParent)[1],]$end != mRNA_rep[mRNA_rep$group == mRNA_rep$group[x],]$end ) {
+##    stop(paste0(as.character(mRNA_rep$group[x]),
+##                ": last exon start coordinate does not equal mRNA end coordinate"))
+##  }
+##}, mc.cores = detectCores())
