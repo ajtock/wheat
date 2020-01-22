@@ -1,11 +1,11 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Create tables of representative genes for each wheat subgenome
+# Create tables of exons within representative genes for each wheat subgenome
 # and generate random loci of the same number and width distribution
-# Write as gff and bed files 
+# Write as GFF3 and BED files
 
 # Usage:
-# ./extract_mRNA_coords_subgenomes.R 'genomewide' 'A'
+# ./extract_exon_intron_coords_subgenomes.R 'genomewide' 'A'
 
 args <- commandArgs(trailingOnly = T)
 region <- args[1]
@@ -119,48 +119,80 @@ if(region == "euchromatin") {
 wide")
 }
 
+# Load representative genes
 inDir <- "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/"
-
+mRNA_rep <- readGFF(paste0(inDir,
+                           "IWGSC_v1.1_HC_20170706_representative_mRNA_in_",
+                           genomeName, "genome_", region, ".gff3"))
+# Load genes including exons
+# and get exons and introns for each representative gene model
 genes <- readGFF(paste0(inDir, "IWGSC_v1.1_HC_20170706.gff3"))
 genes <- genes[grep(genomeName, genes$seqid),]
-mRNA <- genes[genes$type == "mRNA",]
-print(dim(mRNA))
-#[1] 43697    24
+exons <- genes[genes$type == "exon",]
+exons_rep <- exons[as.character(exons$Parent) %in% mRNA_rep$group,]
 
-# Obtain frequency of occurrence of each gene parent ID
-n_occur <- data.frame(table(unlist(mRNA$Parent)))
+#mclapply(seq_along(mRNA_rep$group), function(x) {
+#  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$group)[x],]
+#}, mc.cores = detectCores())
+#
+#mRNA <- genes[genes$type == "mRNA",]
+#print(dim(mRNA))
+##[1] 43697    24
+#
+#
+#genes <- readGFF(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3"))
+### Confirm that "first" exon start coordinate and last "exon" end coordinate
+### equal mRNA start and end coordinates
+##mclapply(seq_along(mRNA_rep$featureID), function(x) {
+##  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$featureID[x]),]
+##  if( exonParent[1,]$start != mRNA_rep[mRNA_rep$featureID == mRNA_rep$featureID[x],]$start ) {
+##    stop(paste0(as.character(mRNA_rep$featureID[x]),
+##                ": first exon start coordinate does not equal mRNA start coordinate"))
+##  }
+##  if( exonParent[dim(exonParent)[1],]$end != mRNA_rep[mRNA_rep$featureID == mRNA_rep$featureID[x],]$end ) {
+##    stop(paste0(as.character(mRNA_rep$featureID[x]),
+##                ": last exon start coordinate does not equal mRNA end coordinate"))
+##  }
+##}, mc.cores = detectCores())
+#introns <- mclapply(seq_along(mRNA_rep$featureID), function(x) {
+#  exonParent <- exons[as.character(exons$Parent) == as.character(mRNA_rep$featureID[x]),]
+#  intronParent <- data.frame()
+#  for(i in 1:(dim(exonParent)[1]-1)) {
+#    exonParent[i,]$end
 
-# Obtain mRNA records for which the gene parent ID occurs only once
-mRNA_unique <-  as.data.frame(
-  mRNA[ unlist(mRNA$Parent)
-    %in% n_occur$Var1[n_occur$Freq == 1],
-  ]
-)
-# Obtain mRNA records for which the gene parent ID occurs more than once
-mRNA_multi <- as.data.frame(
-  mRNA[ unlist(mRNA$Parent)
-    %in% n_occur$Var1[n_occur$Freq > 1],
-  ]
-)
+# Remove exons in masked regions
+exons_repGR <- GRanges(seqnames = exons_rep$seqid,
+                       ranges = IRanges(start = exons_rep$start,
+                                        end = exons_rep$end),
+                       strand = exons_rep$strand,
+                       source = exons_rep$source,
+                       type = exons_rep$type,
+                       score = exons_rep$score,
+                       phase = exons_rep$phase,
+                       ID = exons_rep$ID,
+                       Parent = exons_rep$Parent)
+exons_mask_overlaps <- findOverlaps(query = maskGR,
+                                    subject = exons_repGR,
+                                    ignore.strand = T,
+                                    select = "all")
+if(length(exons_mask_overlaps) > 0) {
+  exons_repGR <- exons_repGR[-subjectHits(exons_mask_overlaps)]
+}
+exons_rep_gff <- data.frame(seqid = as.character(seqnames(exons_repGR)),
+                            source = as.character(exons_repGR$source),
+                            type = as.character(exons_repGR$type),
+                            start = as.integer(start(exons_repGR)),
+                            end = as.integer(end(exons_repGR)),
+                            score = as.numeric(exons_repGR$score),
+                            strand = as.character(strand(exons_repGR)),
+                            phase = as.integer(exons_repGR$phase),
+                            ID = as.character(exons_repGR$ID),
+                            Parent = as.character(exons_repGR$Parent),
+                            stringsAsFactors = F)
+exons_rep_gff3 <- exons_rep_gff[order(exons_rep_gff$seqid,
+                                     exons_rep_gff$start,
+                                     exons_rep_gff$end),]
 
-# For each gene parent ID in mRNA_multi, obtain the mRNA record with the
-# longest transcript
-# If multiple mRNA records have the longest transcript,
-# keep the first reported one only
-mRNA_multi_list <- mclapply(seq_along(mRNA_multi[,1]), function(h) {
-  mRNA_multi_ID_all <- mRNA_multi[ unlist(mRNA_multi$Parent)
-                         == unlist(mRNA_multi[h,]$Parent),
-                       ]
-  mRNA_multi_ID_all[ mRNA_multi_ID_all$end-mRNA_multi_ID_all$start
-    == max(mRNA_multi_ID_all$end-mRNA_multi_ID_all$start),
-  ][1,]
-}, mc.cores = detectCores())
-
-# Collapse mRNA_multi_list into single data.frame and remove duplicates
-mRNA_multi_dup <- rbindlist(mRNA_multi_list)
-mRNA_multi_rep <- unique(as.data.frame(mRNA_multi_dup))
-
-# Combine into one representative set of mRNA entries, order,
 # and output in GFF3 and BED formats
 mRNA_rep <- rbind(mRNA_unique, mRNA_multi_rep)
 mRNA_rep <- mRNA_rep[ order(mRNA_rep$seqid,
