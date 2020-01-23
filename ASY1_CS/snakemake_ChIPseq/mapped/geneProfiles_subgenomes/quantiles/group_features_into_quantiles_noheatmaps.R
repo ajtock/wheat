@@ -57,7 +57,6 @@ library(RColorBrewer)
 library(circlize)
 library(GenomicRanges)
 library(dplyr)
-library(rtracklayer)
 library(parallel)
 library(doParallel)
 registerDoParallel(cores = detectCores())
@@ -199,37 +198,6 @@ if(length(featureName) == 3) {
   features <- features[[1]]
 }
 colnames(features) <- c("chr", "start", "end", "strand", "featureID")
-
-# Get intron number for each representative gene model
-genes <- readGFF(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3"))
-exons <- genes[genes$type == "exon",]
-exons <- exons[as.character(exons$Parent) %in% features$featureID,]
-## Confirm that "first" exon start coordinate and last "exon" end coordinate
-## equal mRNA start and end coordinates
-#mclapply(seq_along(features$featureID), function(x) {
-#  exonParent <- exons[as.character(exons$Parent) == as.character(features$featureID[x]),]
-#  if( exonParent[1,]$start != features[features$featureID == features$featureID[x],]$start ) {
-#    stop(paste0(as.character(features$featureID[x]),
-#                ": first exon start coordinate does not equal mRNA start coordinate"))
-#  }
-#  if( exonParent[dim(exonParent)[1],]$end != features[features$featureID == features$featureID[x],]$end ) {
-#    stop(paste0(as.character(features$featureID[x]),
-#                ": last exon start coordinate does not equal mRNA end coordinate"))
-#  }
-#}, mc.cores = detectCores())
-introns <- mclapply(seq_along(features$featureID), function(x) {
-  exonParent <- exons[as.character(exons$Parent) == as.character(features$featureID[x]),]
-  intronParent <- data.frame()
-  for(i in 1:(dim(exonParent)[1]-1)) {
-    exonParent[i,]$end
-
-# Replace gene model ID decimal suffix (e.g., ".1")
-anno$geneID <- sub(pattern = "\\.\\d+", replacement = "",
-                   x = anno$geneID)
-
-mRNA <- genes[genes$type == "mRNA",]
-print(dim(mRNA))
-
 featuresGR <- GRanges(seqnames = features$chr,
                       ranges = IRanges(start = features$start,
                                        end = features$end),
@@ -300,10 +268,61 @@ feature_cMMb_overlapsList <- lapply(seq_along(featuresGR_ext), function(x) {
 #                                         ignoreStrand = TRUE)
 feature_cMMb <- sapply(feature_cMMb_overlapsList,
                        function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
+
+# Get intron number per gene
+introns <- lapply(seq_along(featureName), function(x) {
+  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+                    "IWGSC_v1.1_HC_20170706_representative_introns_in_",
+                    paste0(substring(featureName[x], first = 10, last = 16),
+                           collapse = "_"), "_",
+                    substring(featureName[1][1], first = 18), ".gff3"),
+             header = F,
+             stringsAsFactors = F)
+})
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature data.frames
+if(length(featureName) == 3) {
+  introns <- do.call(rbind, introns)
+} else {
+  introns <- introns[[1]]
+}
+colnames(introns) <- c("seqid", "source", "type", "start", "end",
+                       "score", "strand", "phase", "ID", "Parent")
+intronNoPerGene <- unlist(mclapply(seq_along(as.character(features$featureID)), function(x) {
+  dim(introns[as.character(introns$Parent) == as.character(features$featureID)[x],])[1]
+}, mc.cores = detectCores()))
+
+# Get exon number per gene
+exons <- lapply(seq_along(featureName), function(x) {
+  read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+                    "IWGSC_v1.1_HC_20170706_representative_exons_in_",
+                    paste0(substring(featureName[x], first = 10, last = 16),
+                           collapse = "_"), "_",
+                    substring(featureName[1][1], first = 18), ".gff3"),
+             header = F,
+             stringsAsFactors = F)
+})
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature data.frames
+if(length(featureName) == 3) {
+  exons <- do.call(rbind, exons)
+} else {
+  exons <- exons[[1]]
+}
+colnames(exons) <- c("seqid", "source", "type", "start", "end",
+                     "score", "strand", "phase", "ID", "Parent")
+exonNoPerGene <- unlist(mclapply(seq_along(as.character(features$featureID)), function(x) {
+  dim(exons[as.character(exons$Parent) == as.character(features$featureID)[x],])[1]
+}, mc.cores = detectCores()))
+
+# Combine feature coordinates and their corresponding mean coverage values,
+# cM/Mb values, and intron and exon numbers
 featuresGR <- GRanges(featuresGR,
                       featureID = featuresGR$featureID,
                       log2ChIPmatRegionRowMeans = log2ChIPmatRegionRowMeans,
-                      cMMb = feature_cMMb)
+                      cMMb = feature_cMMb,
+                      exons = exonNoPerGene,
+                      introns = intronNoPerGene)
 
 # Obtain winName-scaled cMMb values for each ranLoc between promoter and terminator
 # Where ranLocs overlap more than one winName window, calculate mean cMMb

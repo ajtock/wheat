@@ -40,11 +40,10 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 # Define plot titles
 featureNamePlot <- paste0(sub("_\\w+", "", dirName), " ",
                           substr(featureName[1], start = 1, stop = 4),
-                          " quantiles")
+                          " quantiles (", region, ")")
 ranFeatNamePlot <- paste0("Random ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles")
-ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
@@ -72,15 +71,6 @@ featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                        collapse = "_"), "_",
                                 substring(featureName[1][1], first = 18), ".txt"),
                          header = T, sep = "\t")
-# Load table of ranLocs grouped according to feature quantiles
-ranLocsDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
-                               "_by_log2_", libName, "_control_in_",
-                               region, "_of_",
-                               substring(featureName[1][1], first = 1, last = 5), "_in_",
-                               paste0(substring(featureName, first = 10, last = 16),
-                                      collapse = "_"), "_",
-                               substring(featureName[1][1], first = 18), "_ranLocs.txt"),
-                        header = T, sep = "\t")
 
 # Load features to confirm feature (row) ordering in "featuresDF" is the same
 # as in "features" (which was used for generating the coverage matrices)
@@ -152,40 +142,36 @@ for(k in 1:quantiles) {
 }
 
 xmin <- min(c(
-              featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb,
-              ranLocsDF[unlist(quantileIndices),]$cMMb
+              featuresDF[unlist(quantileIndices),]$introns,
+              featuresDF[unlist(randomPCIndices),]$introns,
              ), na.rm = T)
 xmax <- max(c(
-              featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb,
-              ranLocsDF[unlist(quantileIndices),]$cMMb
+              featuresDF[unlist(quantileIndices),]$introns,
+              featuresDF[unlist(randomPCIndices),]$introns,
              ), na.rm = T)
 xmin <- 0
-xmax <- 3
+xmax <- 20
 minDensity <- 0
-maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",]$cMMb,
+maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",]$introns,
                           na.rm = T)$y)+2
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
-#      max(c(max(density(ranLocsDF[ranLocsDF$random == paste0("Random ", k),]$cMMb,
-#                        na.rm = T)$y),
-      max(c(max(density(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$cMMb,
+      max(c(max(density(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$introns,
                         na.rm = T)$y),
-            max(density(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cMMb,
+            max(density(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$introns,
                         na.rm = T)$y)))
      })
    )
-)+2
+)+0.02
 
-# Recombination rate (cM/Mb) boxplot or violin plot function
-cMMb_plotFun <- function(featuresDF,
-                         parameter,
-                         parameterLab,
-                         featureGroup,
-                         featureNamePlot,
-                         quantileColours) {
+# Intron number density plot
+introns_plotFun <- function(featuresDF,
+                            parameter,
+                            parameterLab,
+                            featureGroup,
+                            featureNamePlot,
+                            quantileColours) {
   ggplot(data = featuresDF,
          mapping = aes(x = get(parameter),
                        colour = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
@@ -193,7 +179,7 @@ cMMb_plotFun <- function(featuresDF,
   scale_colour_manual(values = rev(quantileColours)) +
   geom_density(size = 1.5) +
   scale_x_continuous(limits = c(xmin, xmax),
-                     labels = function(x) sprintf("%1.1f", x)) +
+                     labels = function(x) sprintf("%1.0f", x)) +
   scale_y_continuous(limits = c(minDensity, maxDensity),
                      labels = function(x) sprintf("%1.1f", x)) +
   labs(x = parameterLab,
@@ -218,38 +204,97 @@ cMMb_plotFun <- function(featuresDF,
   ggtitle(bquote(.(featureNamePlot)))
 }
 
-ggObjGA_feature <- cMMb_plotFun(featuresDF = featuresDF,
-                                parameter = "cMMb",
-                                parameterLab = "Recombination rate (cM/Mb)",
-                                featureGroup = "quantile", 
-                                featureNamePlot = featureNamePlot,
-                                quantileColours = quantileColours
-                               )
-ggObjGA_ranFeat <- cMMb_plotFun(featuresDF = ranFeatsDF,
-                                parameter = "cMMb",
-                                parameterLab = "Recombination rate (cM/Mb)",
-                                featureGroup = "random", 
-                                featureNamePlot = ranFeatNamePlot,
-                                quantileColours = quantileColours
-                               )
-ggObjGA_ranLocs <- cMMb_plotFun(featuresDF = ranLocsDF,
-                                parameter = "cMMb",
-                                parameterLab = "Recombination rate (cM/Mb)",
-                                featureGroup = "random", 
-                                featureNamePlot = ranLocNamePlot,
-                                quantileColours = quantileColours
-                               )
+ggObjGA_feature <- introns_plotFun(featuresDF = featuresDF,
+                                   parameter = "introns",
+                                   parameterLab = "Intron number",
+                                   featureGroup = "quantile", 
+                                   featureNamePlot = featureNamePlot,
+                                   quantileColours = quantileColours
+                                  )
+ggObjGA_ranFeat <- introns_plotFun(featuresDF = ranFeatsDF,
+                                   parameter = "introns",
+                                   parameterLab = "Intron number",
+                                   featureGroup = "random", 
+                                   featureNamePlot = ranFeatNamePlot,
+                                   quantileColours = quantileColours
+                                  )
 ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
-#                                 ggObjGA_ranLocs,
                                  ncol = 2, as.table = F)
 ggsave(paste0(plotDir,
-              "cMMb_around_", quantiles, "quantiles",
+              "introns_per_gene_in_", quantiles, "quantiles",
               "_by_log2_", libName, "_control_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v231119.pdf"),
+              substring(featureName[1][1], first = 18), "_v230120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5, width = 14)
 
+# Intron number boxplot or violin plot function
+introns_boxplotFun <- function(featuresDF,
+                               parameter,
+                               parameterLab,
+                               featureGroup,
+                               featureNamePlot,
+                               quantileColours) {
+  ggplot(data = featuresDF,
+         mapping = aes(x = get(featureGroup),
+                       y = get(parameter),
+                       colour = get(featureGroup))) +
+  scale_colour_manual(values = quantileColours) +
+  geom_boxplot(mapping = aes(colour = get(featureGroup)),
+               notch = TRUE,
+               varwidth = TRUE) +
+  #geom_violin(scale = "count",
+  #            trim = FALSE,
+  #            draw_quantiles = c(0.25, 0.50, 0.75)) +
+  #geom_beeswarm(cex = 6,
+  #              size = 4) +
+  scale_y_continuous(limits = c(xmin, xmax),
+                     labels = function(x) sprintf("%1.0f", x)) +
+  labs(x = "",
+       y = "Intron number") +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 18, colour = quantileColours),
+        axis.title = element_text(size = 26, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot)))
+}
+
+ggObjGA_feature <- introns_boxplotFun(featuresDF = featuresDF,
+                                   parameter = "introns",
+                                   parameterLab = "Intron number",
+                                   featureGroup = "quantile", 
+                                   featureNamePlot = featureNamePlot,
+                                   quantileColours = quantileColours
+                                  )
+ggObjGA_ranFeat <- introns_boxplotFun(featuresDF = ranFeatsDF,
+                                   parameter = "introns",
+                                   parameterLab = "Intron number",
+                                   featureGroup = "random", 
+                                   featureNamePlot = ranFeatNamePlot,
+                                   quantileColours = quantileColours
+                                  )
+ggObjGA_combined <- grid.arrange(ggObjGA_feature,
+                                 ggObjGA_ranFeat,
+                                 ncol = 2, as.table = F)
+ggsave(paste0(plotDir,
+              "introns_per_gene_in_", quantiles, "quantiles",
+              "_by_log2_", libName, "_control_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18), "_boxplot_v230120.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5, width = 14)
