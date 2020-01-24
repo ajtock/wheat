@@ -74,7 +74,7 @@ features <- lapply(seq_along(featureName), function(x) {
                     paste0(substring(featureName[x], first = 10, last = 16),
                            collapse = "_"), "_",
                     substring(featureName[1][1], first = 18), ".gff3"),
-             header = F)
+             header = F, stringsAsFactors = F)
 })
 # If features from all 3 subgenomes are to be analysed,
 # concatenate the 3 corresponding feature data.frames
@@ -477,19 +477,61 @@ log2ChIP_mats <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
       ) 
 }, mc.cores = length(log2ChIP_featureMats))
 
-for(x in 1:2) {
-  log2DF <- data.frame(gene_model = as.character(features[ID_indices,]$V9),
-                       promoter_mean = rowMeans(log2ChIP_mats[[x]][[1]][,51:100], na.rm = T),
+# Load representative gene model IDs as used for the RAxML phylogeny
+# and replace our representative gene model IDs with these where they differ (106 genes)
+NLR_phylo_IDs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_v170120_newick.txt",
+                            header = F, stringsAsFactors = F)[,1]
+NLR_phylo_IDs <- NLR_phylo_IDs[!grepl(pattern = "TraesCSU", x = NLR_phylo_IDs)]
+NLR_phylo_IDs_alt_gene_models <- NLR_phylo_IDs[!(NLR_phylo_IDs %in% features_NLRs$V9)]
+NLR_phylo_IDs_alt_gene_models <- NLR_phylo_IDs_alt_gene_models[which(substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18) %in%
+                                                                     substring(features$V9[ID_indices], first = 1, last = 18))]
+
+NLR_phylo_IDs_alt_gene_models_indices <- sapply(seq_along(NLR_phylo_IDs_alt_gene_models), function(x) {
+     which(substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18) %in%
+           substring(as.character(features$V9[ID_indices][which(substring(features$V9[ID_indices], first = 1, last = 18) %in%
+                                                                substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18))])[x],
+                     first = 1, last = 18))
+})
+NLR_phylo_IDs_alt_gene_models <- NLR_phylo_IDs_alt_gene_models[NLR_phylo_IDs_alt_gene_models_indices]
+stopifnot(identical(substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18),
+                    substring(features$V9[ID_indices][which(substring(features$V9[ID_indices], first = 1, last = 18) %in%
+                              substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18))], first = 1, last = 18)))
+
+features$V9[ID_indices][which(substring(features$V9[ID_indices], first = 1, last = 18) %in%
+                              substring(NLR_phylo_IDs_alt_gene_models, first = 1, last = 18))] <- NLR_phylo_IDs_alt_gene_models
+
+# Create tables of average values for phylogeny mapping
+log2DF_body_combined <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                                       as.character(features[ID_indices,]$V9)),
+                                   stringsAsFactors = F)
+for(x in seq_along(log2ChIP_mats)) {
+  log2DFx <- data.frame(body_mean = rowMeans(log2ChIP_mats[[x]][[1]][,101:275], na.rm = T),
+                        stringsAsFactors = F)
+  log2DF_body_combined <- cbind(log2DF_body_combined, log2DFx)
+}
+names(log2DF_body_combined) <- c("gene_model", log2ChIPNamesPlot)
+write.table(log2DF_body_combined,
+            file = paste0("combined_log2_ChIP_control_around_",
+                          featureNamePlot, "_bodies_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), "_v240120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+for(x in seq_along(log2ChIP_mats)) {
+  log2DF <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                           as.character(features[ID_indices,]$V9)),
+#                       promoter_mean = rowMeans(log2ChIP_mats[[x]][[1]][,51:100], na.rm = T),
                        body_mean = rowMeans(log2ChIP_mats[[x]][[1]][,101:275], na.rm = T),
-                       terminator_mean = rowMeans(log2ChIP_mats[[x]][[1]][,276:325], na.rm = T),
-                       log2ChIP_mats[[x]][[1]],
+#                       terminator_mean = rowMeans(log2ChIP_mats[[x]][[1]][,276:325], na.rm = T),
+#                       log2ChIP_mats[[x]][[1]],
                        stringsAsFactors = F)
   write.table(log2DF,
               file = paste0("log2_", ChIPNames[x], "_control_around_",
                             featureNamePlot, "_in_",
                             paste0(substring(featureName, first = 10, last = 16),
                                    collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_v200120.tsv"),
+                            substring(featureName[1][1], first = 18), "_v240120.tsv"),
               quote = F, sep = "\t", row.names = F, col.names = T)
 }
 
@@ -831,6 +873,42 @@ other_mats <- mclapply(seq_along(other_featureMats), function(x) {
        other_ranLocMats[[x]][ID_indices,]
       ) 
 }, mc.cores = length(other_featureMats))
+
+# Create tables of average values for phylogeny mapping
+otherDF_body_combined <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                                       as.character(features[ID_indices,]$V9)),
+                                    stringsAsFactors = F)
+for(x in seq_along(other_mats)) {
+  otherDFx <- data.frame(body_mean = rowMeans(other_mats[[x]][[1]][,101:275], na.rm = T),
+                        stringsAsFactors = F)
+  otherDF_body_combined <- cbind(otherDF_body_combined, otherDFx)
+}
+names(otherDF_body_combined) <- c("gene_model", otherNamesPlot)
+write.table(otherDF_body_combined,
+            file = paste0("combined_other_around_",
+                          featureNamePlot, "_bodies_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), "_v240120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+for(x in seq_along(other_mats)) {
+  otherDF <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                            as.character(features[ID_indices,]$V9)),
+#                       promoter_mean = rowMeans(other_mats[[x]][[1]][,51:100], na.rm = T),
+                        body_mean = rowMeans(other_mats[[x]][[1]][,101:275], na.rm = T),
+#                       terminator_mean = rowMeans(other_mats[[x]][[1]][,276:325], na.rm = T),
+#                       other_mats[[x]][[1]],
+                        stringsAsFactors = F)
+  write.table(otherDF,
+              file = paste0("other_", otherNames[x], "_around_",
+                            featureNamePlot, "_in_",
+                            paste0(substring(featureName, first = 10, last = 16),
+                                   collapse = "_"), "_",
+                            substring(featureName[1][1], first = 18), "_v240120.tsv"),
+              quote = F, sep = "\t", row.names = F, col.names = T)
+}
+
 
 # Transpose matrix and convert into dataframe
 # in which first column is window name
