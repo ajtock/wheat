@@ -1972,6 +1972,42 @@ SNPclass_mats <- mclapply(seq_along(SNPclass_featureMats), function(x) {
       ) 
 }, mc.cores = length(SNPclass_featureMats))
 
+# Create tables of average values for phylogeny mapping
+SNPclassDF_body_combined <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                                           as.character(features[ID_indices,]$V9)),
+                                       stringsAsFactors = F)
+for(x in seq_along(SNPclass_mats)) {
+  SNPclassDFx <- data.frame(body_mean = rowMeans(SNPclass_mats[[x]][[1]][,101:275], na.rm = T),
+                            stringsAsFactors = F)
+  SNPclassDF_body_combined <- cbind(SNPclassDF_body_combined, SNPclassDFx)
+}
+names(SNPclassDF_body_combined) <- c("gene_model", SNPclassNamesPlot)
+write.table(SNPclassDF_body_combined,
+            file = paste0("combined_SNPclass_around_",
+                          featureNamePlot, "_bodies_in_",
+                          paste0(substring(featureName, first = 10, last = 16),
+                                 collapse = "_"), "_",
+                          substring(featureName[1][1], first = 18), "_v240120.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
+
+for(x in seq_along(SNPclass_mats)) {
+  SNPclassDF <- data.frame(gene_model = paste0(as.character(featureIDs[ID_indices]), "|",
+                                               as.character(features[ID_indices,]$V9)),
+#                          promoter_mean = rowMeans(SNPclass_mats[[x]][[1]][,51:100], na.rm = T),
+                           body_mean = rowMeans(SNPclass_mats[[x]][[1]][,101:275], na.rm = T),
+#                          terminator_mean = rowMeans(SNPclass_mats[[x]][[1]][,276:325], na.rm = T),
+#                          SNPclass_mats[[x]][[1]],
+                           stringsAsFactors = F)
+  write.table(SNPclassDF,
+              file = paste0("SNPclass_", SNPclassNamesPlot[x], "_around_",
+                            featureNamePlot, "_in_",
+                            paste0(substring(featureName, first = 10, last = 16),
+                                   collapse = "_"), "_",
+                            substring(featureName[1][1], first = 18), "_v240120.tsv"),
+              quote = F, sep = "\t", row.names = F, col.names = T)
+}
+
+
 # Transpose matrix and convert into dataframe
 # in which first column is window name
 wideDFfeature_list_SNPclass <- mclapply(seq_along(SNPclass_mats), function(x) {
