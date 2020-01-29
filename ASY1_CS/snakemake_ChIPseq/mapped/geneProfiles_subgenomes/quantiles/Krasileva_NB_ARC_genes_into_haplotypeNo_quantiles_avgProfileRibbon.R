@@ -5,7 +5,7 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript Krasileva_NB_ARC_genes_into_haplotypeNo_quantiles_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp promoters 4 100kb 1 '0.75,0.96'
+# /applications/R/R-3.5.0/bin/Rscript Krasileva_NB_ARC_genes_into_haplotypeNo_quantiles_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 4 100kb 1 '0.75,0.96'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -65,14 +65,14 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-outDir <- paste0("quantiles_by_log2_", libName,
-                 "_control_in_", region, "/")
+outDir <- paste0("quantiles_by_haplotypeNo_in_",
+                 region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define plot titles
-featureNamePlot <- paste0(sub("_\\w+", "", dirName), " ",
+featureNamePlot <- paste0("HapNo ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles")
 ranFeatNamePlot <- paste0("Random ",
@@ -82,6 +82,7 @@ ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
+quantileColours <- c("red", "navy")
 
 # Define feature start and end labels for plotting
 if(grepl("genes", featureName)) {
@@ -99,7 +100,7 @@ chrs <- chrs[-length(chrs)]
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
 featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
-                                "_by_log2_", libName, "_control_in_",
+                                "_by_haplotypeNo_in_",
                                 region, "_of_",
                                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                                 paste0(substring(featureName, first = 10, last = 16),
@@ -125,6 +126,15 @@ if(length(featureName) == 3) {
 }
 stopifnot(identical(as.character(featuresDF$featureID),
                     as.character(features$V9)))
+
+
+## Subset features to only those corresponding to NLRs
+#features_NLRs <- features[features$V9 %in% NLRs$V9,]
+## Get NLR IDs and their row indices in features
+#IDs <- sub(pattern = "\\.\\d+", replacement = "",
+#           features_NLRs$V9)
+#ID_indices <- which(featureIDs %in% IDs)
+#nonIDs <- featureIDs[!(featureIDs %in% IDs)]
 
 # Get row indices for each feature quantile
 quantileIndices <- lapply(1:quantiles, function(k) {
@@ -852,7 +862,7 @@ ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -1270,7 +1280,7 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "other_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -1682,7 +1692,7 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "sRNA_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -2094,7 +2104,7 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -2534,7 +2544,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "varietalSNPclass_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -2989,7 +2999,7 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              "_by_haplotypeNo_in_", region, "_of_",
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
@@ -3036,7 +3046,7 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "combined_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
+              "_by_haplotypeNo_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
