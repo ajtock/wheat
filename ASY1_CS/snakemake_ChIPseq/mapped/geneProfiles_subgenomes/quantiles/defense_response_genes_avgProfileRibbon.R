@@ -82,8 +82,12 @@ ran_nonIDs_select <- function(nonIDsChr, n) {
 set.seed(9237452)
 ran_nonIDs <- NULL
 for(i in 1:length(levels(features$V1))) {
-  IDsChr <- IDs[grepl(paste0("TraesCS", i), IDs)]
-  nonIDsChr <- nonIDs[grepl(paste0("TraesCS", i), nonIDs)] 
+  IDsChr <- IDs[grepl(paste0("TraesCS",
+                             sub("chr", "", levels(features$V1))[i]),
+                      IDs)]
+  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
+                                   sub("chr", "", levels(features$V1))[i]),
+                      nonIDs)]
   ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
                                      n = length(IDsChr))
   ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
@@ -2068,6 +2072,6 @@ ggsave(paste0(plotDir,
               "avgProfiles_around_",
               featureNamePlot, "_in_cluster", clusterNo,
               "_by_log2_ASY1_CS_Rep1_ChIP_control_in_", region,
-              "_of_", featureName, "_v141119.pdf"),
+              "_of_", featureName, "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(ChIPNames, otherNames, sRNANamesPlot, DNAmethNamesPlot)), width = 21, limitsize = FALSE)

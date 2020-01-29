@@ -74,7 +74,7 @@ features <- lapply(seq_along(featureName), function(x) {
                     paste0(substring(featureName[x], first = 10, last = 16),
                            collapse = "_"), "_",
                     substring(featureName[1][1], first = 18), ".gff3"),
-             header = F, stringsAsFactors = F)
+             header = F)
 })
 # If features from all 3 subgenomes are to be analysed,
 # concatenate the 3 corresponding feature data.frames
@@ -104,13 +104,22 @@ ran_nonIDs_select <- function(nonIDsChr, n) {
 set.seed(9237452)
 ran_nonIDs <- NULL
 for(i in 1:length(levels(features$V1))) {
-  IDsChr <- IDs[grepl(paste0("TraesCS", i), IDs)]
-  nonIDsChr <- nonIDs[grepl(paste0("TraesCS", i), nonIDs)]
+  IDsChr <- IDs[grepl(paste0("TraesCS",
+                             sub("chr", "", levels(features$V1))[i]),
+                      IDs)]
+  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
+                                   sub("chr", "", levels(features$V1))[i]),
+                      nonIDs)]
   ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
                                      n = length(IDsChr))
   ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
 }
 ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
+
+####
+factorColumns <- sapply(features, is.factor)
+features[factorColumns] <- lapply(features[factorColumns], as.character)
+####
 
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
@@ -785,7 +794,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1160,7 +1169,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1492,7 +1501,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1860,7 +1869,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2258,7 +2267,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2635,7 +2644,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2681,7 +2690,7 @@ ggsave(paste0(plotDir,
               featureNamePlot, "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v170120.pdf"),
+              substring(featureName[1][1], first = 18), "_v290120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
 

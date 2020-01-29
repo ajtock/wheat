@@ -143,17 +143,15 @@ for(k in 1:quantiles) {
 
 xmin <- min(c(
               featuresDF[unlist(quantileIndices),]$introns,
-              featuresDF[unlist(randomPCIndices),]$introns,
+              featuresDF[unlist(randomPCIndices),]$introns
              ), na.rm = T)
 xmax <- max(c(
               featuresDF[unlist(quantileIndices),]$introns,
-              featuresDF[unlist(randomPCIndices),]$introns,
+              featuresDF[unlist(randomPCIndices),]$introns
              ), na.rm = T)
 xmin <- 0
 xmax <- 20
 minDensity <- 0
-maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",]$introns,
-                          na.rm = T)$y)+2
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
@@ -164,6 +162,9 @@ maxDensity <- max(
      })
    )
 )+0.02
+
+intronNoPropGenes <- sapply(seq_along(1:quantiles), function(k) {
+  intronN
 
 # Intron number density plot
 introns_plotFun <- function(featuresDF,
@@ -273,19 +274,19 @@ introns_boxplotFun <- function(featuresDF,
 }
 
 ggObjGA_feature <- introns_boxplotFun(featuresDF = featuresDF,
-                                   parameter = "introns",
-                                   parameterLab = "Intron number",
-                                   featureGroup = "quantile", 
-                                   featureNamePlot = featureNamePlot,
-                                   quantileColours = quantileColours
-                                  )
+                                      parameter = "introns",
+                                      parameterLab = "Intron number",
+                                      featureGroup = "quantile", 
+                                      featureNamePlot = featureNamePlot,
+                                      quantileColours = quantileColours
+                                     )
 ggObjGA_ranFeat <- introns_boxplotFun(featuresDF = ranFeatsDF,
-                                   parameter = "introns",
-                                   parameterLab = "Intron number",
-                                   featureGroup = "random", 
-                                   featureNamePlot = ranFeatNamePlot,
-                                   quantileColours = quantileColours
-                                  )
+                                      parameter = "introns",
+                                      parameterLab = "Intron number",
+                                      featureGroup = "random", 
+                                      featureNamePlot = ranFeatNamePlot,
+                                      quantileColours = quantileColours
+                                     )
 ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
                                  ncol = 2, as.table = F)
@@ -298,3 +299,70 @@ ggsave(paste0(plotDir,
               substring(featureName[1][1], first = 18), "_boxplot_v230120.pdf"),
        plot = ggObjGA_combined,
        height = 6.5, width = 14)
+
+# Intron number bar graph
+introns_freqplotFun <- function(featuresDF,
+                                parameter,
+                                parameterLab,
+                                featureGroup,
+                                featureNamePlot,
+                                quantileColours) {
+  ggplot(data = featuresDF,
+         mapping = aes(x = get(parameter),
+                       colour = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
+                       group = reorder(x = get(featureGroup), X = desc(get(featureGroup))))) +
+  scale_colour_manual(values = rev(quantileColours)) +
+  geom_freqpoly(binwidth = 1) +
+  scale_x_continuous(limits = c(xmin, xmax),
+                     labels = function(x) sprintf("%1.0f", x)) +
+#  scale_y_continuous(limits = c(minDensity, maxDensity),
+#                     labels = function(x) sprintf("%1.1f", x)) +
+  labs(x = parameterLab,
+       y = "Frequency") +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 26, colour = "black"),
+        legend.position = c(0.8, 0.8),
+        legend.text = element_text(size = 22, colour = "black"),
+        legend.key.size = unit(1, "cm"),
+        legend.title = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot)))
+}
+
+ggObjGA_feature <- introns_freqplotFun(featuresDF = featuresDF,
+                                       parameter = "introns",
+                                       parameterLab = "Intron number",
+                                       featureGroup = "quantile", 
+                                       featureNamePlot = featureNamePlot,
+                                       quantileColours = quantileColours
+                                      )
+ggObjGA_ranFeat <- introns_freqplotFun(featuresDF = ranFeatsDF,
+                                       parameter = "introns",
+                                       parameterLab = "Intron number",
+                                       featureGroup = "random", 
+                                       featureNamePlot = ranFeatNamePlot,
+                                       quantileColours = quantileColours
+                                      )
+ggObjGA_combined <- grid.arrange(ggObjGA_feature,
+                                 ggObjGA_ranFeat,
+                                 ncol = 2, as.table = F)
+ggsave(paste0(plotDir,
+              "introns_per_gene_in_", quantiles, "quantiles",
+              "_by_log2_", libName, "_control_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18), "_freqplot_v280120.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5, width = 14)
+
