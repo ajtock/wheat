@@ -3,8 +3,8 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 210120 200
-# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 210120 200
+# ./chrProfilePlot_1chr_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 030220 200 chr3B
+# ./chrProfilePlot_1chr_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 030220 200 chr3B
 
 #markChIPA <- "H3K4me3"
 #libNameChIPA <- "H3K4me3_Rep1_ChIP"
@@ -20,8 +20,10 @@
 #N <- 15
 #colourA <- "forestgreen"
 #colourB <- "magenta3"
-#date <- 100619
+#date <- 030220
 #minMarkerDist <- 200
+#chrName <- unlist(strsplit("chr1B",
+#                           split = ","))
 
 args <- commandArgs(trailingOnly = T)
 markChIPA <- args[1]
@@ -40,6 +42,8 @@ colourA <- args[13]
 colourB <- args[14]
 date <- args[15]
 minMarkerDist <- as.numeric(args[16])
+chrName <- unlist(strsplit(args[17],
+                           split = ","))
 
 makeTransparent <- function(thisColour, alpha = 210)
 {
@@ -59,6 +63,7 @@ library(parallel)
 library(plyr)
 library(data.table)
 library(varhandle)
+library(zoo)
 
 plotDir <- "plots/"
 
@@ -73,27 +78,28 @@ chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_ps
                             header = TRUE)
 markers <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_recombination_rate_analysis/iwgsc_refseqv1.0_mapping_data.txt",
                       header = TRUE)
-genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
-                    colClasses = c(NA,
-                                   rep("NULL", 2),
-                                   rep(NA, 2),
-                                   "NULL", NA, "NULL", NA))
-colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
-genes <- genes[genes$chr != "chrUn",]
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3",
-                   colClasses = c(NA,
-                                  rep("NULL", 2),
-                                  rep(NA, 2),
-                                  "NULL", NA, "NULL", NA))
-colnames(NLRs) <- c("chr", "start", "end", "strand", "geneID")
-NLRs <- NLRs[NLRs$chr != "chrUn",]
-WAKs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_manually_curated_gene_families/IWGSC_v1.1_wak_representative_mRNA.gff3",
-                   colClasses = c(NA,
-                                  rep("NULL", 2),
-                                  rep(NA, 2),
-                                  "NULL", NA, "NULL", NA))
-colnames(WAKs) <- c("chr", "start", "end", "strand", "geneID")
-WAKs <- WAKs[WAKs$chr != "chrUn",]
+#genes <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA.gff3",
+#                    colClasses = c(NA,
+#                                   rep("NULL", 2),
+#                                   rep(NA, 2),
+#                                   "NULL", NA, "NULL", NA))
+#colnames(genes) <- c("chr", "start", "end", "strand", "geneID")
+#genes <- genes[genes$chr != "chrUn",]
+#NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3",
+#                   colClasses = c(NA,
+#                                  rep("NULL", 2),
+#                                  rep(NA, 2),
+#                                  "NULL", NA, "NULL", NA))
+#colnames(NLRs) <- c("chr", "start", "end", "strand", "geneID")
+#NLRs <- NLRs[NLRs$chr != "chrUn",]
+#WAKs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_manually_curated_gene_families/IWGSC_v1.1_wak_representative_mRNA.gff3",
+#                   colClasses = c(NA,
+#                                  rep("NULL", 2),
+#                                  rep(NA, 2),
+#                                  "NULL", NA, "NULL", NA))
+#colnames(WAKs) <- c("chr", "start", "end", "strand", "geneID")
+#WAKs <- WAKs[WAKs$chr != "chrUn",]
+HGA3 <- c(9188109,9191062)
 
 ## ChIPA profile
 if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
@@ -404,6 +410,14 @@ maxCPM_ChIPA <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
     max(filt_chrProfilesChIPA[[x]]$filt_log2CPM)
 }, mc.cores = length(filt_chrProfilesChIPA))))
 
+minCPM_ChIPA <- min(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    min(filt_chrProfilesChIPA[[x]]$filt_log2CPM)
+}, mc.cores = length(filt_chrProfilesChIPA))))
+maxCPM_ChIPA <- max(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    max(filt_chrProfilesChIPA[[x]]$filt_log2CPM)
+}, mc.cores = length(filt_chrProfilesChIPA))))
 
 ## ChIPB
 # Calculate log2((ChIP+1)/(Control+1)) coverage within each window
@@ -446,6 +460,16 @@ maxCPM <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
           filt_chrProfilesChIPB[[x]]$filt_log2CPM))
 }, mc.cores = length(filt_chrProfilesChIPB))))
 
+minCPM <- min(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    min(c(filt_chrProfilesChIPA[[x]]$filt_log2CPM,
+          filt_chrProfilesChIPB[[x]]$filt_log2CPM))
+}, mc.cores = length(filt_chrProfilesChIPB))))-0.25
+maxCPM <- max(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    max(c(filt_chrProfilesChIPA[[x]]$filt_log2CPM,
+          filt_chrProfilesChIPB[[x]]$filt_log2CPM))
+}, mc.cores = length(filt_chrProfilesChIPB))))+0.25
 
 # Feature frequency chromosome profiles
 cMMbProfile <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
@@ -476,45 +500,46 @@ maxFeature <- max(unlist(mclapply(seq_along(filt_chrProfilesFeature),
     max(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
 }, mc.cores = length(filt_chrProfilesFeature))))
 
+minFeature <- min(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    min(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
+}, mc.cores = length(filt_chrProfilesFeature))))
+maxFeature <- max(unlist(mclapply(which(chrs %in% chrName),
+  function(x) {
+    max(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
+}, mc.cores = length(filt_chrProfilesFeature))))
 
 # Plot
-pdf(paste0(plotDir, "Wheat_log2_", libNameChIPA, "_", libNameChIPB, "_input_",
+pdf(paste0(plotDir, "Wheat_", chrName, "_log2_", libNameChIPA, "_", libNameControlA, "_",
            align, "_cMMb_chrPlot_winSize", winName, "_smooth", N,
            "_minInterMarkerDist", as.character(minMarkerDist),
            "bp_v", date, ".pdf"),
-    height = 21, width = 30)
-par(mfrow = c(7, 3))
+    height = 4*length(chrName), width = 15)
+par(mfrow = c(1*length(chrName), 1))
 par(mar = c(2.1, 4.5, 2.1, 4.5))
 par(mgp = c(3, 1, 0))
-
-for(x in 1:length(filt_chrProfilesChIPA)) {
-  chrPlotCov2_feature(xplot1 = filt_chrProfilesChIPA[[x]]$window,
-                      xplot2 = filt_chrProfilesFeature[[x]]$window,
-                      title = chrs[x],
-                      cenStart = centromereStart[x],
-                      cenEnd = centromereEnd[x],
-                      R1End = chrPartitions$R1_R2a[x],
-                      R3Start = chrPartitions$R2b_R3[x],
-                      rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
-                      #rug1 = genes[genes$chr == chrs[x],]$start,
-                      rug2 = NLRs[NLRs$chr == chrs[x],]$start,
-                      rug3 = WAKs[WAKs$chr == chrs[x],]$start,
-                      regionCol = "black",
-                      rug1Col = "grey40",
-                      rug2Col = "deeppink",
-                      rug3Col = "dodgerblue",
-                      dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
-                      col1A = colourA,
-                      dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
-                      col1B = colourB,
-                      Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
-                      min1 = -max((minCPM*-1), maxCPM),
-                      max1 = max((minCPM*-1), maxCPM),
-                      legendLoc = "top",
-                      legendLabs = c(markChIPA, markChIPB),
-                      dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
-                      col2 = "cyan",
-                      Ylab2 = "cM/Mb",
-                      min2 = minFeature-maxFeature, max2 = maxFeature)
+for(x in which(chrs %in% chrName)) {
+  chrPartitionPlotCov2_feature(chrx = which(chrs %in% chrName),
+                               title = sub("c", "C", chrs[x]),
+                               cenStart = centromereStart[x],
+                               cenEnd = centromereEnd[x],
+                               rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+                               rug1Col = "grey40",
+                               xplot1 = filt_chrProfilesChIPA[[x]]$window,
+                               dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
+                               col1A = colourA,
+                               dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
+                               col1B = colourB,
+                               Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                               min1 = -max((minCPM*-1), maxCPM),
+                               max1 = max((minCPM*-1), maxCPM),
+                               legendLoc = "top",
+                               legendLabs = c(markChIPA, markChIPB),
+                               xplot2 = filt_chrProfilesFeature[[x]]$window,
+                               dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
+                               col2 = "cyan",
+                               Ylab2 = "cM/Mb",
+                               min2 = minFeature-maxFeature,
+                               max2 = maxFeature)
+  abline(v = HGA3, lty = 3, lwd = 3, col = "black")
 }
-dev.off()

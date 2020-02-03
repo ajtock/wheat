@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_histoneMod_cMMb.R MNase MNase_Rep1 both 1Mb 1000000 15 darkcyan 100619 200
+# ./chrProfilesPlot_histoneMod_cMMb.R DNaseI DNaseI_Rep1_SRR8447247 both 1Mb 1000000 15 cyan 171019 200
 
 #markChIPA <- "MNase"
 #libNameChIPA <- "MNase_Rep1"
@@ -63,6 +63,13 @@ if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
   covDirChIPA <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
                         markChIPA, "/snakemake_ChIPseq/mapped/",
                         align, "/bg/")
+} else if(libNameChIPA %in% c("DNaseI_Rep1_SRR8447247",
+                              "H3K4me1_Rep1_ChIP_SRR8126618",
+                              "H3K27ac_Rep1_ChIP_SRR8126621")) {
+  covDirChIPA <- paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+                        markChIPA, "/snakemake_ChIPseq/mapped/",
+                        align, "/bg/")
+
 } else {
   covDirChIPA <- paste0("/home/ajt200/analysis/wheat/",
                         markChIPA, "/snakemake_ChIPseq/mapped/",

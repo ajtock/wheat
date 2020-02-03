@@ -3,43 +3,39 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 210120 200
-# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x2_cMMb.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 210120 200
+# ./chrProfilesPlot_log2_histoneMod_IWGSCinput_x1_cMMb.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both 1Mb 1000000 15 purple4 210120 200
 
-#markChIPA <- "H3K4me3"
-#libNameChIPA <- "H3K4me3_Rep1_ChIP"
-#markChIPB <- "H3K9me2"
-#libNameChIPB <- "H3K9me2_Rep1_ChIP"
-#markControlA <- "MNase"
-#libNameControlA <- "MNase_Rep1"
-#markControlB <- "MNase"
-#libNameControlB <- "MNase_Rep1"
+#markChIPA <- "ASY1_CS"
+#libNameChIPA <- "ASY1_CS_Rep1_ChIP"
+#markControlA <- "input"
+#libNameControlA <- "H3_input_SRR6350669"
 #align <- "both"
 #winName <- "1Mb"
 #winSize <- 1000000
 #N <- 15
-#colourA <- "forestgreen"
-#colourB <- "magenta3"
-#date <- 100619
+#colourA <- "purple4"
+#date <- 210120
 #minMarkerDist <- 200
 
 args <- commandArgs(trailingOnly = T)
 markChIPA <- args[1]
 libNameChIPA <- args[2]
-markChIPB <- args[3]
-libNameChIPB <- args[4]
-markControlA <- args[5]
-libNameControlA <- args[6]
-markControlB <- args[7]
-libNameControlB <- args[8]
-align <- args[9]
-winName <- args[10]
-winSize <- as.numeric(args[11])
-N <- as.numeric(args[12])
-colourA <- args[13]
-colourB <- args[14]
-date <- args[15]
-minMarkerDist <- as.numeric(args[16])
+markControlA <- args[3]
+libNameControlA <- args[4]
+align <- args[5]
+winName <- args[6]
+winSize <- as.numeric(args[7])
+N <- as.numeric(args[8])
+colourA <- args[9]
+date <- args[10]
+minMarkerDist <- as.numeric(args[11])
+
+# Source functions
+source("/projects/ajt200/Rfunctions/wheatPlotFunctions.R")
+library(parallel)
+library(plyr)
+library(data.table)
+library(varhandle)
 
 makeTransparent <- function(thisColour, alpha = 210)
 {
@@ -50,15 +46,7 @@ makeTransparent <- function(thisColour, alpha = 210)
   })
 }
 
-colourA <- makeTransparent(colourA)
-colourB <- makeTransparent(colourB)
-
-# Source functions
-source("/projects/ajt200/Rfunctions/wheatPlotFunctions.R")
-library(parallel)
-library(plyr)
-library(data.table)
-library(varhandle)
+#colourA <- makeTransparent(colourA)
 
 plotDir <- "plots/"
 
@@ -165,75 +153,6 @@ profileChIPA <- data.frame(chr = as.character(profileChIPA$V1),
                            CPM = as.numeric(profileChIPA$V4),
                            stringsAsFactors = F)
 
-## ChIPB profile
-if(libNameChIPB %in% c("H3K4me3_ChIP_SRR6350668",
-                       "H3K27me3_ChIP_SRR6350666",
-                       "H3K36me3_ChIP_SRR6350670",
-                       "H3K9ac_ChIP_SRR6350667",
-                       "CENH3_ChIP_SRR1686799")) {
-  covDirChIPB <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                        markChIPB, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-} else if(libNameChIPB %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
-                              "H3K27ac_Rep1_ChIP_SRR8126621")) {
-  covDirChIPB <- paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-                        markChIPB, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-} else {
-  covDirChIPB <- paste0("/home/ajt200/analysis/wheat/",
-                        markChIPB, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-}
-profileChIPB <- read.table(paste0(covDirChIPB, libNameChIPB, "_MappedOn_wheat_v1.0_lowXM_",
-                                  align, "_sort_norm_binSize", winName, ".bedgraph"))
-# Rows where the difference between end and start coordinates is > winSize
-profileChIPB_bigWins <- profileChIPB[profileChIPB$V3-profileChIPB$V2 > winSize,]
-# Rows where the difference between end and start coordinates is == winSize
-profileChIPB <- profileChIPB[profileChIPB$V3-profileChIPB$V2 == winSize,]
-
-# Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
-profileChIPB_bigWinsList <- mclapply(seq_along(1:dim(profileChIPB_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = profileChIPB_bigWins[x,]$V2,
-                      to = profileChIPB_bigWins[x,]$V3,
-                      by = winSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < profileChIPB_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileChIPB_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
-                                 profileChIPB_bigWins[x,]$V3)),
-               V4 = as.numeric(profileChIPB_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == profileChIPB_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileChIPB_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
-               V4 = as.numeric(profileChIPB_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores())
-
-profileChIPB_bigWinsDT <- rbindlist(profileChIPB_bigWinsList)
-profileChIPB <- rbind.fill(profileChIPB, profileChIPB_bigWinsDT)
-profileChIPB <- profileChIPB[order(profileChIPB$V1, profileChIPB$V2),]
-
-chrLenValsBList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileChIPB <- profileChIPB[profileChIPB$V1 == chrs[x],]
-  if(chrProfileChIPB[dim(chrProfileChIPB)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileChIPB[dim(chrProfileChIPB)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileChIPB[dim(chrProfileChIPB)[1],]$V4))
-  }
-}, mc.cores = detectCores())
-profileChIPB_chrLenValsBDT <- rbindlist(chrLenValsBList)
-profileChIPB <- rbind.fill(profileChIPB, profileChIPB_chrLenValsBDT)
-profileChIPB <- profileChIPB[order(profileChIPB$V1, profileChIPB$V2),]
-
-profileChIPB <- data.frame(chr = as.character(profileChIPB$V1),
-                           window = as.integer(profileChIPB$V2+1),
-                           CPM = as.numeric(profileChIPB$V4),
-                           stringsAsFactors = F)
 
 ## ControlA profile
 if(libNameControlA == "MNase_Rep1") {
@@ -296,74 +215,9 @@ profileControlA <- rbind.fill(profileControlA, profileControlA_chrLenValsADT)
 profileControlA <- profileControlA[order(profileControlA$V1, profileControlA$V2),]
 
 profileControlA <- data.frame(chr = as.character(profileControlA$V1),
-                           window = as.integer(profileControlA$V2+1),
-                           CPM = as.numeric(profileControlA$V4),
-                           stringsAsFactors = F)
-
-## ControlB profile
-if(libNameControlB == "MNase_Rep1") {
-  covDirControlB <- paste0("/home/ajt200/analysis/wheat/",
-                           "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControlB <- read.table(paste0(covDirControlB, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
-                                       align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else if(libNameControlB == "H3_input_SRR6350669") {
-  covDirControlB <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                           "input/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControlB <- read.table(paste0(covDirControlB, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
-                                       align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else {
-  if(!(libNameControlB %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
-    stop("libNameControlB is neither MNase_Rep1 nor H3_input_SRR6350669")
-  }
-}
-# Rows where the difference between end and start coordinates is > winSize
-profileControlB_bigWins <- profileControlB[profileControlB$V3-profileControlB$V2 > winSize,]
-# Rows where the difference between end and start coordinates is == winSize
-profileControlB <- profileControlB[profileControlB$V3-profileControlB$V2 == winSize,]
-
-# Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
-profileControlB_bigWinsList <- mclapply(seq_along(1:dim(profileControlB_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = profileControlB_bigWins[x,]$V2,
-                      to = profileControlB_bigWins[x,]$V3,
-                      by = winSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < profileControlB_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileControlB_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
-                                 profileControlB_bigWins[x,]$V3)),
-               V4 = as.numeric(profileControlB_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == profileControlB_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileControlB_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
-               V4 = as.numeric(profileControlB_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores())
-
-profileControlB_bigWinsDT <- rbindlist(profileControlB_bigWinsList)
-profileControlB <- rbind.fill(profileControlB, profileControlB_bigWinsDT)
-profileControlB <- profileControlB[order(profileControlB$V1, profileControlB$V2),]
-
-chrLenValsBList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileControl <- profileControlB[profileControlB$V1 == chrs[x],]
-  if(chrProfileControl[dim(chrProfileControl)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileControl[dim(chrProfileControl)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileControl[dim(chrProfileControl)[1],]$V4))
-  }
-}, mc.cores = detectCores())
-profileControlB_chrLenValsBDT <- rbindlist(chrLenValsBList)
-profileControlB <- rbind.fill(profileControlB, profileControlB_chrLenValsBDT)
-profileControlB <- profileControlB[order(profileControlB$V1, profileControlB$V2),]
-
-profileControlB <- data.frame(chr = as.character(profileControlB$V1),
-                           window = as.integer(profileControlB$V2+1),
-                           CPM = as.numeric(profileControlB$V4),
-                           stringsAsFactors = F)
+                              window = as.integer(profileControlA$V2+1),
+                              CPM = as.numeric(profileControlA$V4),
+                              stringsAsFactors = F)
 
 ## ChIPA
 # Calculate log2((ChIP+1)/(Control+1)) coverage within each window
@@ -395,56 +249,14 @@ filt_chrProfilesChIPA <- mclapply(seq_along(chrProfilesChIPA), function(x) {
              stringsAsFactors = F)
 }, mc.cores = length(chrProfilesChIPA))
 
-minCPM_ChIPA <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
+minCPM <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
   function(x) {
     min(filt_chrProfilesChIPA[[x]]$filt_log2CPM)
 }, mc.cores = length(filt_chrProfilesChIPA))))
-maxCPM_ChIPA <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
+maxCPM <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
   function(x) {
     max(filt_chrProfilesChIPA[[x]]$filt_log2CPM)
 }, mc.cores = length(filt_chrProfilesChIPA))))
-
-
-## ChIPB
-# Calculate log2((ChIP+1)/(Control+1)) coverage within each window
-profileChIPBlog2 <- data.frame(chr = as.character(profileChIPB$chr),
-                               window = as.numeric(profileChIPB$window),
-                               log2CPM = as.numeric(log2((profileChIPB$CPM+1)/(profileControlB$CPM+1))),
-                               stringsAsFactors = F)
-                        
-chrProfilesChIPB <- mclapply(seq_along(chrs), function(x) {
-  profileChIPBlog2[profileChIPBlog2$chr == chrs[x],]
-}, mc.cores = length(chrs))
-
-# Calculate moving average of current window, ((N/2)-0.5) previous windows,
-# and ((N/2)-0.5) subsequent windows
-# (the higher N is, the greater the smoothing)
-flank <- (N/2)-0.5
-# Define MA filter coefficients
-f <- rep(1/N, N)
-
-filt_chrProfilesChIPB <- mclapply(seq_along(chrProfilesChIPB), function(x) {
-  filt_chrProfile <- stats::filter(x = chrProfilesChIPB[[x]]$log2CPM,
-                                   filter = f,
-                                   sides = 2)
-  filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
-  filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
-  data.frame(chr = as.character(chrProfilesChIPB[[x]]$chr),
-             window = as.integer(chrProfilesChIPB[[x]]$window),
-             filt_log2CPM = as.numeric(filt_chrProfile),
-             stringsAsFactors = F)
-}, mc.cores = length(chrProfilesChIPB))
-
-minCPM <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
-  function(x) {
-    min(c(filt_chrProfilesChIPA[[x]]$filt_log2CPM,
-          filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))
-maxCPM <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
-  function(x) {
-    max(c(filt_chrProfilesChIPA[[x]]$filt_log2CPM,
-          filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))
 
 
 # Feature frequency chromosome profiles
@@ -476,9 +288,10 @@ maxFeature <- max(unlist(mclapply(seq_along(filt_chrProfilesFeature),
     max(filt_chrProfilesFeature[[x]]$filt_feature, na.rm = T)
 }, mc.cores = length(filt_chrProfilesFeature))))
 
-
+maxCPM <- 0.3638607
+minCPM <- -0.2055448
 # Plot
-pdf(paste0(plotDir, "Wheat_log2_", libNameChIPA, "_", libNameChIPB, "_input_",
+pdf(paste0(plotDir, "Wheat_log2_", libNameChIPA, "_", libNameControlA, "_",
            align, "_cMMb_chrPlot_winSize", winName, "_smooth", N,
            "_minInterMarkerDist", as.character(minMarkerDist),
            "bp_v", date, ".pdf"),
@@ -488,7 +301,7 @@ par(mar = c(2.1, 4.5, 2.1, 4.5))
 par(mgp = c(3, 1, 0))
 
 for(x in 1:length(filt_chrProfilesChIPA)) {
-  chrPlotCov2_feature(xplot1 = filt_chrProfilesChIPA[[x]]$window,
+  chrPlotCov1_feature(xplot1 = filt_chrProfilesChIPA[[x]]$window,
                       xplot2 = filt_chrProfilesFeature[[x]]$window,
                       title = chrs[x],
                       cenStart = centromereStart[x],
@@ -505,15 +318,11 @@ for(x in 1:length(filt_chrProfilesChIPA)) {
                       rug3Col = "dodgerblue",
                       dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
                       col1A = colourA,
-                      dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
-                      col1B = colourB,
-                      Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                      Ylab1 = markChIPA,
                       min1 = -max((minCPM*-1), maxCPM),
                       max1 = max((minCPM*-1), maxCPM),
-                      legendLoc = "top",
-                      legendLabs = c(markChIPA, markChIPB),
                       dat2 = filt_chrProfilesFeature[[x]]$filt_feature,
-                      col2 = "cyan",
+                      col2 = "darkorange1",
                       Ylab2 = "cM/Mb",
                       min2 = minFeature-maxFeature, max2 = maxFeature)
 }
