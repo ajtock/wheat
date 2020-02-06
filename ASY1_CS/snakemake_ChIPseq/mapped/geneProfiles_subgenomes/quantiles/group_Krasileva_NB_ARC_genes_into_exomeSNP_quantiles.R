@@ -105,21 +105,21 @@ if(!(file.exists("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhu
   print("*.vcf.gz.tbi index file exists")
 }
 vcf_handle <- vcf_open("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz")
-genomeClasses <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
-genomeClasses <- readVCF("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz",
-                         numcols = 1e6,
-#                         tid = paste0(rep("chr", 21), rep(1:7, 3),
-#                                      c(rep("A", 7), rep("B", 7), rep("D", 7)))
-                         tid = "chr1A",
-                         frompos = 1,
-                         topos = 1000000000,
-                         samplenames = NA,
-                         gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
-                         include.unknown = T,
-                         approx = F,
-                         out = "",
-                         parallel = F)
-}, mc.cores = detectCores(), mc.preschedule = T)
+#genomeClass <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
+genomeClass <- readVCF("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz",
+                       numcols = 1e7,
+#                       tid = paste0(rep("chr", 21), rep(1:7, 3),
+#                                    c(rep("A", 7), rep("B", 7), rep("D", 7)))
+                       tid = "chr1A",
+                       frompos = 1,
+                       topos = 1000000000,
+                       samplenames = NA,
+                       gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
+                       include.unknown = T,
+                       approx = F,
+                       out = "",
+                       parallel = F)
+#}, mc.cores = detectCores(), mc.preschedule = T)
 
 genomeClassSplit <- splitting.data(genomeClass,
                                    positions = lapply(which(features_NLRs$V1 == "chr1A"), function(x) {
@@ -154,23 +154,43 @@ vcf <- fread("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_
              sep = "\t", data.table = F, skip = 30, header = T)
 colnames(vcf)[1] <- "CHROM"
 # Re-encode missing data ("./.") as NA
-# or vcf <- gsub(pattern = "\\.\\/\\.", replacement = NA, x = vcf)
-for(x in 10:dim(vcf)[2]) {
-  vcf[,x] <- gsub(pattern = "\\.\\/\\.", replacement = NA, x = vcf[,x])
-}
+vcf <- data.frame(mclapply(vcf, function(x) {
+                    gsub(pattern = "\\.\\/\\.", replacement = NA, x = x)
+                  }, mc.cores = detectCores(), mc.preschedule = T),
+                  stringsAsFactors = F)
+vcf$POS <- as.integer(vcf$POS)
+
 # Create list of vcf-format tables in which each element corresponds to one NLR
 vcf_NLRs_list <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
   vcf[vcf$CHROM == features_NLRs[x,]$V1 &
       vcf$POS   >= features_NLRs[x,]$V4 &
       vcf$POS   <= features_NLRs[x,]$V5,]
-}, mc.cores = detectCores())
+}, mc.cores = detectCores(), mc.preschedule = T)
 
-# For each NLR, get the number of differences between each pair of sequences 
-dij_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
-  lapply(10:(dim(vcf_NLRs_list[[x]])[2]-1), function(i) {
-    dij <- NULL
-    for(j in (i+1):dim(vcf_NLRs_list)[2]) {
-      
+# For each NLR, get the number of single-nucleotide differences between each pair of sequences
+# and calculate the mean number of pairwise differences (Pi; π)
+# See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
+mean_ij_diff_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
+  sum_ij_diff_NLRx <- sum(unlist(lapply(10:(dim(vcf_NLRs_list[[x]])[2]-1), function(i) {
+    ij_diff_ipairs <- NULL
+    for(j in (i+1):dim(vcf_NLRs_list[[x]])[2]) {
+      ij_diff <- sum(vcf_NLRs_list[[x]][,i] != vcf_NLRs_list[[x]][,j], na.rm = T)
+      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
+    }
+    return(ij_diff_ipairs)
+  })))
+  # Get the number of sequences to be compared, n
+  n <- dim(vcf_NLRs_list[[x]])[2]-9
+  # Calculate Pi for NLR x
+  Pi_NLRx <- sum_ij_diff_NLRx / ( ( n * (n - 1) ) / 2 )
+  # Get the number of segregating sites within NLR x
+  S <- dim(vcf_NLRs_list[[x]])[1]
+  # Get the expectation of Pi for a neutral population in which
+  # only mutation and drift are occurring (Theta; θ)
+
+  return(mean_ij_diff_NLRx)
+}, mc.cores = detectCores(), mc.preschedule = T)
+
     
 PiList <- mclapply(10:(dim(tmp)[2]-1), function(x) {
   diffx <- NULL
