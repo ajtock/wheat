@@ -167,11 +167,26 @@ vcf_NLRs_list <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
       vcf$POS   <= features_NLRs[x,]$V5,]
 }, mc.cores = detectCores(), mc.preschedule = T)
 
-# For each NLR, get the number of single-nucleotide differences between each pair of sequences
-# and calculate the mean number of pairwise differences (Pi; π)
+# Sanity check to ensure vcf_NLRs_list has of the same number of elements
+# as features_NLRs has rows
+if(length(vcf_NLRs_list) != dim(features_NLRs)[1]) {
+  stop("vcf_NLRs_list does not have the same number of elements as features_NLRs has rows!")
+}
+
+# For each NLR, get the number of single-nucleotide differences between each pair of sequences,
+# calculate the mean number of pairwise differences (Pi; π),
+# get the number of segregating sites (S),
+# calculate the expectation of Pi for a neutral population (theta; θ),
+# and calculate Tajima's D (Pi - theta = tajimaD)
 # See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
-mean_ij_diff_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
-  sum_ij_diff_NLRx <- sum(unlist(lapply(10:(dim(vcf_NLRs_list[[x]])[2]-1), function(i) {
+tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
+  # Get the number of sequences to be compared, n
+  # 9 corresponds to the number of columns that do not contain sequence variant info
+  n <- dim(vcf_NLRs_list[[x]])[2]-9
+  # Get the number of segregating sites within NLR x, S
+  S <- dim(vcf_NLRs_list[[x]])[1]
+  # Calculate the sum of pairwise differences
+  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_NLRs_list[[x]])[2]-1), function(i) {
     ij_diff_ipairs <- NULL
     for(j in (i+1):dim(vcf_NLRs_list[[x]])[2]) {
       ij_diff <- sum(vcf_NLRs_list[[x]][,i] != vcf_NLRs_list[[x]][,j], na.rm = T)
@@ -179,16 +194,25 @@ mean_ij_diff_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
     }
     return(ij_diff_ipairs)
   })))
-  # Get the number of sequences to be compared, n
-  n <- dim(vcf_NLRs_list[[x]])[2]-9
   # Calculate Pi for NLR x
-  Pi_NLRx <- sum_ij_diff_NLRx / ( ( n * (n - 1) ) / 2 )
-  # Get the number of segregating sites within NLR x
-  S <- dim(vcf_NLRs_list[[x]])[1]
-  # Get the expectation of Pi for a neutral population in which
-  # only mutation and drift are occurring (Theta; θ)
-
-  return(mean_ij_diff_NLRx)
+  Pi <- sum_ij_diff / ( ( n * (n - 1) ) / 2 )
+  # Using the number of segregating sites, S,
+  # get the expectation of Pi for a neutral population in which
+  # only mutation and drift are occurring (theta; θ)
+  theta <- S / sum( sapply(1:(n-1), function(i) 1/i) )
+  tajimaD <- Pi - theta
+  tajimaD_df <- data.frame(chr = as.character(features_NLRs[x,]$V1),
+                           start = as.integer(features_NLRs[x,]$V4),
+                           end = as.integer(features_NLRs[x,]$V5),
+                           strand = as.character(features_NLRs[x,]$V7),
+                           ID = as.character(features_NLRs[x,]$V9),
+                           n = as.integer(n),
+                           S = as.integer(S),
+                           Pi = as.numeric(Pi),
+                           theta = as.numeric(theta),
+                           tajimaD  = as.numeric(tajimaD),
+                           stringsAsFactors = F)
+  return(tajimaD_df)
 }, mc.cores = detectCores(), mc.preschedule = T)
 
     
