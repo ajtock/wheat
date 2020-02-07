@@ -105,50 +105,61 @@ if(!(file.exists("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhu
   print("*.vcf.gz.tbi index file exists")
 }
 vcf_handle <- vcf_open("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz")
-#genomeClass <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
-genomeClass <- readVCF("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz",
-                       numcols = 1e7,
-#                       tid = paste0(rep("chr", 21), rep(1:7, 3),
-#                                    c(rep("A", 7), rep("B", 7), rep("D", 7)))
-                       tid = "chr1A",
-                       frompos = 1,
-                       topos = 1000000000,
-                       samplenames = NA,
-                       gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
-                       include.unknown = T,
-                       approx = F,
-                       out = "",
-                       parallel = F)
-#}, mc.cores = detectCores(), mc.preschedule = T)
+#chrs <- unique(as.character(features$V1)
+chrs <- paste0(rep("chr", 21), rep(1:7, 3),
+               c(rep("A", 7), rep("B", 7), rep("D", 7)))
+# This works with lapply, but fails with mclapply for some reason
+genomeClass_list <- lapply(seq_along(chrs), function(x) {
+  print(x)
+  Whop_readVCF(v = vcf_handle,
+        numcols = 1000,
+        tid = chrs[x],
+        frompos = 1,
+        topos = 1000000000,
+        samplenames = NA,
+        gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
+        include.unknown = T)
+})
 
-genomeClassSplit <- splitting.data(genomeClass,
-                                   positions = lapply(which(features_NLRs$V1 == "chr1A"), function(x) {
-                                                 features_NLRs[x,]$V4:features_NLRs[x,]$V5 }),
-                                   type = 2)
-genomeClassSplit <- neutrality.stats(genomeClassSplit, FAST=T)
-get.neutrality(genomeClassSplit)[[1]]
-genomeClassSplit$Tajima.D
+# Extact variants located within NLRs
+genomeClassSplit_list <- lapply(seq_along(genomeClass_list), function(x) {
+  splitting.data(genomeClass_list[[x]],
+                 positions = lapply(which(features_NLRs$V1 == chrs[x]), function(x) {
+                               features_NLRs[x,]$V4:features_NLRs[x,]$V5 }),
+                 type = 2)
+})
 
-GENOME.class.split <- splitting.data(GENOME.class,
-positions=list(c(10:30),c(1000:12000)), type=2)
-is(GENOME.class.split)
+# Get neutrality, F_ST (fixation index) and diversity statistics
+genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  neutrality.stats(genomeClassSplit_list[[x]],
+                   FAST = F, do.R2 = T)
+})
+neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  get.neutrality(genomeClassSplit_list[[x]],
+                 theta = T)[[1]]
+})
 
+genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  F_ST.stats(genomeClassSplit_list[[x]],
+             detail = T, mode = "nucleotide", FAST = F)
+})
+F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  get.F_ST(genomeClassSplit_list[[x]],
+           mode = "nucleotide")
+})
 
+genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  diversity.stats(genomeClassSplit_list[[x]],
+                  pi = T, keep.site.info = T)
+})
+diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  get.diversity(genomeClassSplit_list[[x]],
+                between = F)[[1]]
+})
 
-# Create list of vcf-format tables in which each element corresponds to one NLR
-vcf_NLRs_list <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
-  vcf[vcf$CHROM == features_NLRs[x,]$V1 &
-      vcf$POS   >= features_NLRs[x,]$V4 &
-      vcf$POS   <= features_NLRs[x,]$V5,]
-}, mc.cores = detectCores())
-pgvcf <- readData("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/VCF",
-                  format="VCF", FAST=T, big.data=T)
-pgvcf <- readVCF("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz")
- sep = "\t", data.table = F, skip = 30, header = T)
+#genomeClassSplit$Tajima.D
 
-pgvcf <- readData("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/VCF", format="VCF", FAST=T, big.data=T)
-
-
+# Manually calculate neutrality statistics
 # Load 811 exomes-derived SNP matrix from He et al. (2019) Nat. Genet.
 vcf <- fread("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf",
              sep = "\t", data.table = F, skip = 30, header = T)
@@ -177,7 +188,7 @@ if(length(vcf_NLRs_list) != dim(features_NLRs)[1]) {
 # calculate the mean number of pairwise differences (Pi; π),
 # get the number of segregating sites (S),
 # calculate the expectation of Pi for a neutral population (theta; θ),
-# and calculate Tajima's D (Pi - theta = tajimaD)
+# and calculate Tajima's D
 # See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
 tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
   # Get the number of sequences to be compared, n
@@ -195,15 +206,30 @@ tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
     return(ij_diff_ipairs)
   })))
   # Calculate Pi for NLR x
-  Pi <- sum_ij_diff / ( ( n * (n - 1) ) / 2 )
+  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
   # Using the number of segregating sites, S,
   # get the expectation of Pi for a neutral population in which
   # only mutation and drift are occurring (theta; θ)
-  theta <- S / sum( sapply(1:(n-1), function(i) 1/i) )
-  tajimaD <- Pi - theta
+  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
+  # obtain the variance of d expected under a standard neutral model, Vd
+  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
+  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
+  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
+  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
+  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
+  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
+  c1 <- b1 - (1/a1)
+  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
+  e1 <- c1/a1
+  e2 <- c2 / ( (a1^2) + a2 )
+  theta <- S / a1
+  d <- ( Pi - theta )
+  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
+  tajimaD <- d / ( sqrt(Vd) ) 
   tajimaD_df <- data.frame(chr = as.character(features_NLRs[x,]$V1),
                            start = as.integer(features_NLRs[x,]$V4),
                            end = as.integer(features_NLRs[x,]$V5),
+                           width = as.integer( (as.integer(features_NLRs[x,]$V5) - as.integer(features_NLRs[x,]$V4)) + 1 ),
                            strand = as.character(features_NLRs[x,]$V7),
                            ID = as.character(features_NLRs[x,]$V9),
                            n = as.integer(n),
@@ -214,32 +240,8 @@ tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
                            stringsAsFactors = F)
   return(tajimaD_df)
 }, mc.cores = detectCores(), mc.preschedule = T)
-
+tajimaD_NLRs <- do.call(rbind, tajimaD_NLRs_list)
     
-PiList <- mclapply(10:(dim(tmp)[2]-1), function(x) {
-  diffx <- NULL
-  for(y in (x+1):dim(tmp)[2]) {
-    diffy <- sum(tmp[,x] != tmp[,y], na.rm = T)
-    diffx <- c(diffx, diffy)
-  }
-  diffx
-}, mc.cores = detectCores())
-
-# Load haplotype matrix from Balfourier et al. (2019) Sci. Adv. 5: doi.org/10.1126/sciadv.aav0536
-# Suppl. data S3
-haps <- fread("/home/ajt200/analysis/wheat/annotation/Balfourier_2019_SciAdv_SNP_diversity/Balfourier_et_al_Wheat_Phylogeography_DataS3_unix.txt",
-              sep = "\t", data.table = F, header = F, stringsAsFactors = F)
-haps <- as.data.frame(t(haps), stringsAsFactors = F)
-colnames(haps) <- as.character(haps[1,])
-haps <- haps[-1,]
-haps[3:dim(haps)[2]] <- lapply(haps[3:dim(haps)[2]], as.integer)
-# Make phased haplotypes unphased
-# (i.e., convert minus numbers into positive numbers)
-haps[6:dim(haps)[2]] <- lapply(haps[6:dim(haps)[2]], abs)
-uniqueHapsList <- apply(haps[,6:dim(haps)[2]], 1, unique)
-hapNos <- sapply(seq_along(uniqueHapsList), function(x) {
-  length(uniqueHapsList[[x]])
-})
 
 # Create GRanges object for each haplotype block,
 # including number of haplotypes per block (hapNo)
