@@ -1,7 +1,8 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 #
-# Divide features into quantiles based on the number of haplotypes
+# Divide features into quantiles based on population genetics statistics
+# (e.g., Tajima's D, Pi normalised by locus with, or nucleotide diversity normalised by locus width).
 # in a given feature region (e.g., TSS to TTS).
 # Extract and save feature IDs for each quantile for further analyses
 # (e.g., GO enrichment and average + 95% CI profile plotting).
@@ -112,52 +113,85 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 genomeClass_list <- lapply(seq_along(chrs), function(x) {
   print(x)
   Whop_readVCF(v = vcf_handle,
-        numcols = 1000,
-        tid = chrs[x],
-        frompos = 1,
-        topos = 1000000000,
-        samplenames = NA,
-        gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
-        include.unknown = T)
+               numcols = 1000,
+               tid = chrs[x],
+               frompos = 1,
+               topos = 1000000000,
+               samplenames = NA,
+               gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
+               include.unknown = T)
 })
 
-# Extact variants located within NLRs
-genomeClassSplit_list <- lapply(seq_along(genomeClass_list), function(x) {
+# Extact variants located within features
+genomeClassSplit_list <- mclapply(seq_along(genomeClass_list), function(x) {
   splitting.data(genomeClass_list[[x]],
-                 positions = lapply(which(features_NLRs$V1 == chrs[x]), function(x) {
-                               features_NLRs[x,]$V4:features_NLRs[x,]$V5 }),
+                 positions = lapply(which(features$V1 == chrs[x]), function(x) {
+                               features[x,]$V4:features[x,]$V5 }),
                  type = 2)
-})
+}, mc.cores = detectCores(), mc.preschedule = F)
 
-# Get neutrality, F_ST (fixation index) and diversity statistics
-genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+# Get neutrality, diversity, and F_ST (fixation index) statistics
+genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   neutrality.stats(genomeClassSplit_list[[x]],
                    FAST = F, do.R2 = T)
-})
+}, mc.cores = detectCores(), mc.preschedule = F)
 neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  get.neutrality(genomeClassSplit_list[[x]],
-                 theta = T)[[1]]
+  data.frame(get.neutrality(genomeClassSplit_list[[x]],
+                            theta = T)[[1]],
+             stringsAsFactors = F)
 })
 
-genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  F_ST.stats(genomeClassSplit_list[[x]],
-             detail = T, mode = "nucleotide", FAST = F)
-})
-F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  get.F_ST(genomeClassSplit_list[[x]],
-           mode = "nucleotide")
-})
-
-genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   diversity.stats(genomeClassSplit_list[[x]],
                   pi = T, keep.site.info = T)
-})
+}, mc.cores = detectCores(), mc.preschedule = F)
 diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  get.diversity(genomeClassSplit_list[[x]],
-                between = F)[[1]]
+  data.frame(get.diversity(genomeClassSplit_list[[x]],
+                           between = F)[[1]],
+             stringsAsFactors = F)
 })
 
-#genomeClassSplit$Tajima.D
+#genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+#  F_ST.stats(genomeClassSplit_list[[x]],
+#             detail = T, mode = "nucleotide", FAST = F)
+#})
+## This generates only 0s or NaNs for NLRs
+#F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+#  data.frame(get.F_ST(genomeClassSplit_list[[x]],
+#             mode = "nucleotide"),
+#             stringsAsFactors = F)
+#})
+
+# Combine statistics into one dataframe
+popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
+  data.frame(chr = as.character(chrs[x]),
+             start = as.integer(sub(pattern = " - \\d+", replacement = "",
+                                    x = genomeClassSplit_list[[x]]@region.names)),
+             end = as.integer(sub(pattern = "\\d+ - ", replacement = "",
+                                  x = genomeClassSplit_list[[x]]@region.names)),
+             strand = as.character(features[features$V1 == chrs[x],]$V7),
+             ID = as.character(features[features$V1 == chrs[x],]$V9),
+             nuc.diversity.within = as.numeric(diversity_stats_df_list[[x]]$nuc.diversity.within),
+             hap.diversity.within = as.numeric(diversity_stats_df_list[[x]]$hap.diversity.within),
+             Pi = as.numeric(diversity_stats_df_list[[x]]$Pi),
+             hap.F_ST.vs.all = as.numeric(diversity_stats_df_list[[x]]$hap.F_ST.vs.all),
+             nuc.F_ST.vs.all = as.numeric(diversity_stats_df_list[[x]]$nuc.F_ST.vs.all),
+             neutrality_stats_df_list[[x]],
+             stringsAsFactors = F,
+             row.names = as.character(1:dim(neutrality_stats_df_list[[x]])[1]))
+})
+popgen_stats <- do.call(rbind, popgen_stats_df_list)
+# Sanity check to ensure popgen_stats feature chromosome IDs and start and end coordinates
+# are identical to those in features data.frame
+if(!identical(popgen_stats$chr, features$V1)) { 
+  stop("popgen_stats chromosome IDs are not identical to those in features data.frame!")
+}
+if(!identical(popgen_stats$start, features$V4)) {
+  stop("popgen_stats start coordinates are not identical to those in features data.frame!")
+}
+if(!identical(popgen_stats$end, features$V5)) {
+  stop("popgen_stats end coordinates are not identical to those in features data.frame!")
+}
 
 # Manually calculate neutrality statistics
 # Load 811 exomes-derived SNP matrix from He et al. (2019) Nat. Genet.
@@ -170,6 +204,78 @@ vcf <- data.frame(mclapply(vcf, function(x) {
                   }, mc.cores = detectCores(), mc.preschedule = T),
                   stringsAsFactors = F)
 vcf$POS <- as.integer(vcf$POS)
+
+# Create list of vcf-format tables in which each element corresponds to one feature
+vcf_features_list <- mclapply(seq_along(1:dim(features)[1]), function(x) {
+  vcf[vcf$CHROM == features[x,]$V1 &
+      vcf$POS   >= features[x,]$V4 &
+      vcf$POS   <= features[x,]$V5,]
+}, mc.cores = detectCores(), mc.preschedule = T)
+
+# Sanity check to ensure vcf_features_list has of the same number of elements
+# as features has rows
+if(length(vcf_features_list) != dim(features)[1]) {
+  stop("vcf_features_list does not have the same number of elements as features has rows!")
+}
+
+# For each feature, get the number of single-nucleotide differences between each pair of sequences,
+# calculate the mean number of pairwise differences (Pi; π),
+# get the number of segregating sites (S),
+# calculate the expectation of Pi for a neutral population (theta; θ),
+# and calculate Tajima's D
+# See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
+tajimaD_features_list <- mclapply(seq_along(vcf_features_list), function(x) {
+  # Get the number of sequences to be compared, n
+  # 9 corresponds to the number of columns that do not contain sequence variant info
+  n <- dim(vcf_features_list[[x]])[2]-9
+  # Get the number of segregating sites within feature x, S
+  S <- dim(vcf_features_list[[x]])[1]
+  # Calculate the sum of pairwise differences
+  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_features_list[[x]])[2]-1), function(i) {
+    ij_diff_ipairs <- NULL
+    for(j in (i+1):dim(vcf_features_list[[x]])[2]) {
+      ij_diff <- sum(vcf_features_list[[x]][,i] != vcf_features_list[[x]][,j], na.rm = T)
+      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
+    }
+    return(ij_diff_ipairs)
+  })))
+  # Calculate Pi for feature x
+  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
+  # Using the number of segregating sites, S,
+  # get the expectation of Pi for a neutral population in which
+  # only mutation and drift are occurring (theta; θ)
+  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
+  # obtain the variance of d expected under a standard neutral model, Vd
+  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
+  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
+  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
+  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
+  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
+  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
+  c1 <- b1 - (1/a1)
+  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
+  e1 <- c1/a1
+  e2 <- c2 / ( (a1^2) + a2 )
+  theta <- S / a1
+  d <- ( Pi - theta )
+  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
+  tajimaD <- d / ( sqrt(Vd) ) 
+  tajimaD_df <- data.frame(chr = as.character(features[x,]$V1),
+                           start = as.integer(features[x,]$V4),
+                           end = as.integer(features[x,]$V5),
+                           width = as.integer( (as.integer(features[x,]$V5) - as.integer(features[x,]$V4)) + 1 ),
+                           strand = as.character(features[x,]$V7),
+                           ID = as.character(features[x,]$V9),
+                           n = as.integer(n),
+                           S = as.integer(S),
+                           Pi = as.numeric(Pi),
+                           theta = as.numeric(theta),
+                           tajimaD  = as.numeric(tajimaD),
+                           stringsAsFactors = F)
+  return(tajimaD_df)
+}, mc.cores = detectCores(), mc.preschedule = T)
+tajimaD_features <- do.call(rbind, tajimaD_features_list)
+
 
 # Create list of vcf-format tables in which each element corresponds to one NLR
 vcf_NLRs_list <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
@@ -242,15 +348,6 @@ tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
 }, mc.cores = detectCores(), mc.preschedule = T)
 tajimaD_NLRs <- do.call(rbind, tajimaD_NLRs_list)
     
-
-# Create GRanges object for each haplotype block,
-# including number of haplotypes per block (hapNo)
-hapsGR <- GRanges(seqnames = haps$Chromosome,
-                  ranges = IRanges(start = haps$'Haplotype start',
-                                   end = haps$'Haplotype stop'),
-                  strand = "*",
-                  hapNo = hapNos)
-
 
 # Load features 
 features <- lapply(seq_along(featureName), function(x) {
