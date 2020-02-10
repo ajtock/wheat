@@ -11,7 +11,7 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_Krasileva_NB_ARC_genes_into_haplotypeNo_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 100kb 200
+# /applications/R/R-3.4.0/bin/Rscript group_Krasileva_NB_ARC_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 100kb 200
 
 featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
                                split = ","))
@@ -41,7 +41,7 @@ print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
 
-outDir <- paste0("quantiles_by_tajimasD_in_",
+outDir <- paste0("quantiles_by_nucleotideDiversity_in_",
                  region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
@@ -169,6 +169,10 @@ popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) 
                                     x = genomeClassSplit_list[[x]]@region.names)),
              end = as.integer(sub(pattern = "\\d+ - ", replacement = "",
                                   x = genomeClassSplit_list[[x]]@region.names)),
+             width = as.integer( ( as.integer(sub(pattern = "\\d+ - ", replacement = "",
+                                                  x = genomeClassSplit_list[[x]]@region.names)) -
+                                   as.integer(sub(pattern = " - \\d+", replacement = "",
+                                                  x = genomeClassSplit_list[[x]]@region.names)) ) + 1 ),
              strand = as.character(features[features$V1 == chrs[x],]$V7),
              ID = as.character(features[features$V1 == chrs[x],]$V9),
              nuc.diversity.within = as.numeric(diversity_stats_df_list[[x]]$nuc.diversity.within),
@@ -205,76 +209,77 @@ vcf <- data.frame(mclapply(vcf, function(x) {
                   stringsAsFactors = F)
 vcf$POS <- as.integer(vcf$POS)
 
-# Create list of vcf-format tables in which each element corresponds to one feature
-vcf_features_list <- mclapply(seq_along(1:dim(features)[1]), function(x) {
-  vcf[vcf$CHROM == features[x,]$V1 &
-      vcf$POS   >= features[x,]$V4 &
-      vcf$POS   <= features[x,]$V5,]
-}, mc.cores = detectCores(), mc.preschedule = T)
-
-# Sanity check to ensure vcf_features_list has of the same number of elements
-# as features has rows
-if(length(vcf_features_list) != dim(features)[1]) {
-  stop("vcf_features_list does not have the same number of elements as features has rows!")
-}
-
-# For each feature, get the number of single-nucleotide differences between each pair of sequences,
-# calculate the mean number of pairwise differences (Pi; π),
-# get the number of segregating sites (S),
-# calculate the expectation of Pi for a neutral population (theta; θ),
-# and calculate Tajima's D
-# See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
-tajimaD_features_list <- mclapply(seq_along(vcf_features_list), function(x) {
-  # Get the number of sequences to be compared, n
-  # 9 corresponds to the number of columns that do not contain sequence variant info
-  n <- dim(vcf_features_list[[x]])[2]-9
-  # Get the number of segregating sites within feature x, S
-  S <- dim(vcf_features_list[[x]])[1]
-  # Calculate the sum of pairwise differences
-  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_features_list[[x]])[2]-1), function(i) {
-    ij_diff_ipairs <- NULL
-    for(j in (i+1):dim(vcf_features_list[[x]])[2]) {
-      ij_diff <- sum(vcf_features_list[[x]][,i] != vcf_features_list[[x]][,j], na.rm = T)
-      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
-    }
-    return(ij_diff_ipairs)
-  })))
-  # Calculate Pi for feature x
-  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
-  # Using the number of segregating sites, S,
-  # get the expectation of Pi for a neutral population in which
-  # only mutation and drift are occurring (theta; θ)
-  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
-  # obtain the variance of d expected under a standard neutral model, Vd
-  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
-  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
-  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
-  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
-  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
-  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
-  c1 <- b1 - (1/a1)
-  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
-  e1 <- c1/a1
-  e2 <- c2 / ( (a1^2) + a2 )
-  theta <- S / a1
-  d <- ( Pi - theta )
-  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
-  tajimaD <- d / ( sqrt(Vd) ) 
-  tajimaD_df <- data.frame(chr = as.character(features[x,]$V1),
-                           start = as.integer(features[x,]$V4),
-                           end = as.integer(features[x,]$V5),
-                           width = as.integer( (as.integer(features[x,]$V5) - as.integer(features[x,]$V4)) + 1 ),
-                           strand = as.character(features[x,]$V7),
-                           ID = as.character(features[x,]$V9),
-                           n = as.integer(n),
-                           S = as.integer(S),
-                           Pi = as.numeric(Pi),
-                           theta = as.numeric(theta),
-                           tajimaD  = as.numeric(tajimaD),
-                           stringsAsFactors = F)
-  return(tajimaD_df)
-}, mc.cores = detectCores(), mc.preschedule = T)
-tajimaD_features <- do.call(rbind, tajimaD_features_list)
+### TOO MEMORY INTENSIVE
+## Create list of vcf-format tables in which each element corresponds to one feature
+#vcf_features_list <- mclapply(seq_along(1:dim(features)[1]), function(x) {
+#  vcf[vcf$CHROM == features[x,]$V1 &
+#      vcf$POS   >= features[x,]$V4 &
+#      vcf$POS   <= features[x,]$V5,]
+#}, mc.cores = detectCores(), mc.preschedule = T)
+#
+## Sanity check to ensure vcf_features_list has of the same number of elements
+## as features has rows
+#if(length(vcf_features_list) != dim(features)[1]) {
+#  stop("vcf_features_list does not have the same number of elements as features has rows!")
+#}
+#
+## For each feature, get the number of single-nucleotide differences between each pair of sequences,
+## calculate the mean number of pairwise differences (Pi; π),
+## get the number of segregating sites (S),
+## calculate the expectation of Pi for a neutral population (theta; θ),
+## and calculate Tajima's D
+## See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
+#tajimaD_features_list <- mclapply(seq_along(vcf_features_list), function(x) {
+#  # Get the number of sequences to be compared, n
+#  # 9 corresponds to the number of columns that do not contain sequence variant info
+#  n <- dim(vcf_features_list[[x]])[2]-9
+#  # Get the number of segregating sites within feature x, S
+#  S <- dim(vcf_features_list[[x]])[1]
+#  # Calculate the sum of pairwise differences
+#  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_features_list[[x]])[2]-1), function(i) {
+#    ij_diff_ipairs <- NULL
+#    for(j in (i+1):dim(vcf_features_list[[x]])[2]) {
+#      ij_diff <- sum(vcf_features_list[[x]][,i] != vcf_features_list[[x]][,j], na.rm = T)
+#      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
+#    }
+#    return(ij_diff_ipairs)
+#  })))
+#  # Calculate Pi for feature x
+#  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
+#  # Using the number of segregating sites, S,
+#  # get the expectation of Pi for a neutral population in which
+#  # only mutation and drift are occurring (theta; θ)
+#  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
+#  # obtain the variance of d expected under a standard neutral model, Vd
+#  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
+#  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
+#  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
+#  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
+#  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
+#  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
+#  c1 <- b1 - (1/a1)
+#  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
+#  e1 <- c1/a1
+#  e2 <- c2 / ( (a1^2) + a2 )
+#  theta <- S / a1
+#  d <- ( Pi - theta )
+#  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
+#  tajimaD <- d / ( sqrt(Vd) ) 
+#  tajimaD_df <- data.frame(chr = as.character(features[x,]$V1),
+#                           start = as.integer(features[x,]$V4),
+#                           end = as.integer(features[x,]$V5),
+#                           width = as.integer( (as.integer(features[x,]$V5) - as.integer(features[x,]$V4)) + 1 ),
+#                           strand = as.character(features[x,]$V7),
+#                           ID = as.character(features[x,]$V9),
+#                           n = as.integer(n),
+#                           S = as.integer(S),
+#                           Pi = as.numeric(Pi),
+#                           theta = as.numeric(theta),
+#                           tajimaD  = as.numeric(tajimaD),
+#                           stringsAsFactors = F)
+#  return(tajimaD_df)
+#}, mc.cores = detectCores(), mc.preschedule = T)
+#tajimaD_features <- do.call(rbind, tajimaD_features_list)
 
 
 # Create list of vcf-format tables in which each element corresponds to one NLR
@@ -438,21 +443,6 @@ feature_cMMb_overlapsList <- lapply(seq_along(featuresGR_ext), function(x) {
 feature_cMMb <- sapply(feature_cMMb_overlapsList,
                        function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
 
-# Obtain mean haplotype numbers for each feature between start and end coordinates
-# Where features overlap more than one haplotype block, calculate mean haplotype number
-feature_hap_overlaps <- findOverlaps(query = featuresGR,
-                                     subject = hapsGR,
-                                     type = "any",
-                                     select = "all",
-                                     ignore.strand = TRUE)
-feature_hap_overlapsList <- lapply(seq_along(featuresGR), function(x) {
-  subjectHits(feature_hap_overlaps)[queryHits(feature_hap_overlaps) == x]
-})
-feature_hap <- sapply(feature_hap_overlapsList,
-                      function(x) mean(hapsGR$hapNo[x], na.rm = TRUE))
-# Normalise by gene length (haplotype number per 1 kb)
-feature_hap <- feature_hap/(width(featuresGR)/1e3)
-
 # Get intron number per gene
 introns <- lapply(seq_along(featureName), function(x) {
   read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
@@ -503,7 +493,18 @@ exonNoPerGene <- unlist(mclapply(seq_along(as.character(features$featureID)), fu
 # cM/Mb values, and intron and exon numbers
 featuresGR <- GRanges(featuresGR,
                       featureID = featuresGR$featureID,
-                      hapNo = feature_hap,
+                      # Normalise by feature width (per 1 kb)
+                      nucDiversity_norm = popgen_stats$nuc.diversity.within/(popgen_stats$width/1e3),
+                      # The PopGenome developers advise that, where include.unknown = TRUE in the
+                      # Whop_readVCF() function call, "diversity.stats: pi and haplotype diversity should not be used"
+                      hapDiversity_norm = popgen_stats$hap.diversity.within,
+                      # Normalise by feature width (per 1 kb)
+                      Pi_norm = popgen_stats$Pi/(popgen_stats$width/1e3),
+                      TajimaD = popgen_stats$Tajima.D,
+                      nSegregatingSites_norm = popgen_stats$n.segregating.sites/(popgen_stats$width/1e3),
+                      RozasR2 = popgen_stats$Rozas.R_2,
+                      FuLiF = popgen_stats$Fu.Li.F,
+                      FuLiD = popgen_stats$Fu.Li.D,
                       cMMb = feature_cMMb,
                       exons = exonNoPerGene,
                       introns = intronNoPerGene)
@@ -528,49 +529,35 @@ ranLoc_cMMb_overlapsList <- lapply(seq_along(ranLocsGR_ext), function(x) {
 ranLoc_cMMb <- sapply(ranLoc_cMMb_overlapsList,
                       function(x) mean(cMMbGR$cMMb[x], na.rm = TRUE))
 
-# Obtain mean haplotype numbers for each ranLoc between start and end coordinates
-# Where ranLoc overlap more than one haplotype block, calculate mean haplotype number
-ranLoc_hap_overlaps <- findOverlaps(query = ranLocsGR,
-                                    subject = hapsGR,
-                                    type = "any",
-                                    select = "all",
-                                    ignore.strand = TRUE)
-ranLoc_hap_overlapsList <- lapply(seq_along(ranLocsGR), function(x) {
-  subjectHits(ranLoc_hap_overlaps)[queryHits(ranLoc_hap_overlaps) == x]
-})
-ranLoc_hap <- sapply(ranLoc_hap_overlapsList,
-                     function(x) mean(hapsGR$hapNo[x], na.rm = TRUE))
-# Normalise by gene length (haplotype number per 1 kb)
-ranLoc_hap <- ranLoc_hap/(width(ranLocsGR)/1e3)
-
 # Combine ranLoc coordinates and their corresponding mean haplotype numbers,
 # cM/Mb values 
 ranLocsGR <- GRanges(ranLocsGR,
                      ranLocID = ranLocsGR$ranLocID,
-                     hapNo = ranLoc_hap,
                      cMMb = ranLoc_cMMb)
 ranLocsGR <- ranLocsGR[ID_indices]
 
-# Divide features into quantiles based on decreasing hapNo
+# Divide features into quantiles based on decreasing nucleotideDiversity
 featuresDF <- data.frame(featuresGR,
                          quantile = as.character(""),
                          stringsAsFactors = F)
-featuresDF$hapNo[which(is.na(featuresDF$hapNo))] <- 0
+#featuresDF$nucDiversity_norm[which(is.na(featuresDF$nucDiversity_norm))] <- 0
 quantilesStats <- data.frame()
 for(k in 1:quantiles) {
   if(k < quantiles) {
   # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-    featuresDF[ percent_rank(featuresDF$hapNo) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$hapNo) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$nucDiversity_norm) &
+                percent_rank(featuresDF$nucDiversity_norm) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$nucDiversity_norm) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   } else {
   # Final quantile should span 0 to, e.g., 0.25 proportions of features
-    featuresDF[ percent_rank(featuresDF$hapNo) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$hapNo) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$nucDiversity_norm) &
+                percent_rank(featuresDF$nucDiversity_norm) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$nucDiversity_norm) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   }
   write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
               file = paste0(outDir,
                             "quantile", k, "_of_", quantiles,
-                            "_by_haplotypeNo_in_",
+                            "_by_nucleotideDiversity_in_",
                             region, "_of_",
                             substring(featureName[1][1], first = 1, last = 5), "_in_",
                             paste0(substring(featureName, first = 10, last = 16),
@@ -581,12 +568,12 @@ for(k in 1:quantiles) {
                       n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
                       mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
                       total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
-                      mean_hapNo = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$hapNo, na.rm = T)))
+                      mean_nucleotideDiversity = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$nucDiversity_norm, na.rm = T)))
   quantilesStats <- rbind(quantilesStats, stats)
 }
 write.table(quantilesStats,
             file = paste0(outDir,
-                          "summary_", quantiles, "quantiles_by_haplotypeNo_in_",
+                          "summary_", quantiles, "quantiles_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -596,7 +583,7 @@ write.table(quantilesStats,
 write.table(featuresDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_haplotypeNo_in_",
+                          "_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -618,7 +605,7 @@ for(k in 1:quantiles) {
 write.table(ranLocsDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_haplotypeNo_in_",
+                          "_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -626,13 +613,13 @@ write.table(ranLocsDF,
                           substring(featureName[1][1], first = 18), "_ranLocs.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE)
 
-## Order features in each quantile by decreasing hapNo levels
+## Order features in each quantile by decreasing nucleotideDiversity levels
 ## to define "row_order" for heatmaps
 #combineRowOrders <- function(quantile_bool_list) {
 #  do.call("c", lapply(quantile_bool_list, function(x) {
-#    quantile_hapNo <- rowMeans(hapNo[x,], na.rm = T)
-#    quantile_hapNo[which(is.na(quantile_hapNo))] <- 0
-#    which(x)[order(quantile_hapNo, decreasing = T)]
+#    quantile_nucleotideDiversity <- rowMeans(nucleotideDiversity[x,], na.rm = T)
+#    quantile_nucleotideDiversity[which(is.na(quantile_nucleotideDiversity))] <- 0
+#    which(x)[order(quantile_nucleotideDiversity, decreasing = T)]
 #  }))
 #}
 #row_order <- combineRowOrders(quantile_bool_list =
@@ -643,16 +630,16 @@ write.table(ranLocsDF,
 ## Confirm row_order is as would be obtained by alternative method
 ## Note that this alternative 
 #stopifnot(identical(row_order,
-#                    order(featuresDF$hapNo,
+#                    order(featuresDF$nucleotideDiversity,
 #                          decreasing=T)))
 #
-## Order feature IDs in each quantile by decreasing hapNo levels
+## Order feature IDs in each quantile by decreasing nucleotideDiversity levels
 ## for use in GO term enrichment analysis
 #listCombineRowOrders <- function(quantile_bool_list) {
 #  do.call(list, lapply(quantile_bool_list, function(x) {
-#    quantile_hapNo <- rowMeans(hapNo[x,], na.rm = T)
-#    quantile_hapNo[which(is.na(quantile_hapNo))] <- 0
-#    which(x)[order(quantile_hapNo, decreasing = T)]
+#    quantile_nucleotideDiversity <- rowMeans(nucleotideDiversity[x,], na.rm = T)
+#    quantile_nucleotideDiversity[which(is.na(quantile_nucleotideDiversity))] <- 0
+#    which(x)[order(quantile_nucleotideDiversity, decreasing = T)]
 #  }))
 #}
 #featureIndicesList <- listCombineRowOrders(quantile_bool_list =
@@ -677,7 +664,7 @@ write.table(ranLocsDF,
 #  write.table(featureIDsQuantileList[[k]],
 #              file = paste0(outDir,
 #                            "featureIDs_quantile", k, "_of_", quantiles,
-#                            "_by_haplotypeNo_in_",
+#                            "_by_nucleotideDiversity_in_",
 #                            region, "_of_",
 #                            substring(featureName[1][1], first = 1, last = 5), "_in_",
 #                            paste0(substring(featureName, first = 10, last = 16),
@@ -1187,7 +1174,7 @@ write.table(ranLocsDF,
 #           paste0(substring(featureName, first = 10, last = 16),
 #                  collapse = "_"), "_",
 #           substring(featureName[1][1], first = 18),
-#           "_heatmaps_quantiled_by_haplotypeNo_in_", region, ".pdf"),
+#           "_heatmaps_quantiled_by_nucleotideDiversity_in_", region, ".pdf"),
 #    width = 3*length(htmpList),
 #    height = 10)
 #draw(htmps,
