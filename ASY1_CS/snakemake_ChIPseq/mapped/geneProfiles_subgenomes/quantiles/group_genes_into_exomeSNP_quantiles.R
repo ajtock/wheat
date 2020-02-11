@@ -41,7 +41,7 @@ print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
 
-outDir <- paste0("quantiles_by_FuLiF_in_",
+outDir <- paste0("quantiles_by_nucleotideDiversity_in_",
                  region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
@@ -394,28 +394,28 @@ ranLocsGR <- GRanges(ranLocsGR,
                      cMMb = ranLoc_cMMb)
 #ranLocsGR <- ranLocsGR[ID_indices]
 
-# Divide features into quantiles based on decreasing FuLiF
+# Divide features into quantiles based on decreasing nucleotideDiversity
 featuresDF <- data.frame(featuresGR,
                          quantile = as.character(""),
                          stringsAsFactors = F)
-#featuresDF$FuLiF[which(is.na(featuresDF$FuLiF))] <- 0
+#featuresDF$nucleotideDiversity[which(is.na(featuresDF$nucleotideDiversity))] <- 0
 quantilesStats <- data.frame()
 for(k in 1:quantiles) {
   if(k < quantiles) {
   # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-    featuresDF[ !is.na(featuresDF$FuLiF) &
-                percent_rank(featuresDF$FuLiF) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$FuLiF) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$nucleotideDiversity) &
+                percent_rank(featuresDF$nucleotideDiversity) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$nucleotideDiversity) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   } else {
   # Final quantile should span 0 to, e.g., 0.25 proportions of features
-    featuresDF[ !is.na(featuresDF$FuLiF) &
-                percent_rank(featuresDF$FuLiF) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$FuLiF) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$nucleotideDiversity) &
+                percent_rank(featuresDF$nucleotideDiversity) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$nucleotideDiversity) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   }
   write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
               file = paste0(outDir,
                             "quantile", k, "_of_", quantiles,
-                            "_by_FuLiF_in_",
+                            "_by_nucleotideDiversity_in_",
                             region, "_of_",
                             substring(featureName[1][1], first = 1, last = 5), "_in_",
                             paste0(substring(featureName, first = 10, last = 16),
@@ -426,12 +426,12 @@ for(k in 1:quantiles) {
                       n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
                       mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
                       total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
-                      mean_FuLiF = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$FuLiF, na.rm = T)))
+                      mean_nucleotideDiversity = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$nucleotideDiversity, na.rm = T)))
   quantilesStats <- rbind(quantilesStats, stats)
 }
 write.table(quantilesStats,
             file = paste0(outDir,
-                          "summary_", quantiles, "quantiles_by_FuLiF_in_",
+                          "summary_", quantiles, "quantiles_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -441,7 +441,7 @@ write.table(quantilesStats,
 write.table(featuresDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_FuLiF_in_",
+                          "_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -463,7 +463,7 @@ for(k in 1:quantiles) {
 write.table(ranLocsDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_FuLiF_in_",
+                          "_by_nucleotideDiversity_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -471,13 +471,13 @@ write.table(ranLocsDF,
                           substring(featureName[1][1], first = 18), "_ranLocs.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE)
 
-## Order features in each quantile by decreasing FuLiF levels
+## Order features in each quantile by decreasing nucleotideDiversity levels
 ## to define "row_order" for heatmaps
 #combineRowOrders <- function(quantile_bool_list) {
 #  do.call("c", lapply(quantile_bool_list, function(x) {
-#    quantile_FuLiF <- rowMeans(FuLiF[x,], na.rm = T)
-#    quantile_FuLiF[which(is.na(quantile_FuLiF))] <- 0
-#    which(x)[order(quantile_FuLiF, decreasing = T)]
+#    quantile_nucleotideDiversity <- rowMeans(nucleotideDiversity[x,], na.rm = T)
+#    quantile_nucleotideDiversity[which(is.na(quantile_nucleotideDiversity))] <- 0
+#    which(x)[order(quantile_nucleotideDiversity, decreasing = T)]
 #  }))
 #}
 #row_order <- combineRowOrders(quantile_bool_list =
@@ -488,16 +488,16 @@ write.table(ranLocsDF,
 ## Confirm row_order is as would be obtained by alternative method
 ## Note that this alternative 
 #stopifnot(identical(row_order,
-#                    order(featuresDF$FuLiF,
+#                    order(featuresDF$nucleotideDiversity,
 #                          decreasing=T)))
 #
-## Order feature IDs in each quantile by decreasing FuLiF levels
+## Order feature IDs in each quantile by decreasing nucleotideDiversity levels
 ## for use in GO term enrichment analysis
 #listCombineRowOrders <- function(quantile_bool_list) {
 #  do.call(list, lapply(quantile_bool_list, function(x) {
-#    quantile_FuLiF <- rowMeans(FuLiF[x,], na.rm = T)
-#    quantile_FuLiF[which(is.na(quantile_FuLiF))] <- 0
-#    which(x)[order(quantile_FuLiF, decreasing = T)]
+#    quantile_nucleotideDiversity <- rowMeans(nucleotideDiversity[x,], na.rm = T)
+#    quantile_nucleotideDiversity[which(is.na(quantile_nucleotideDiversity))] <- 0
+#    which(x)[order(quantile_nucleotideDiversity, decreasing = T)]
 #  }))
 #}
 #featureIndicesList <- listCombineRowOrders(quantile_bool_list =
@@ -522,7 +522,7 @@ write.table(ranLocsDF,
 #  write.table(featureIDsQuantileList[[k]],
 #              file = paste0(outDir,
 #                            "featureIDs_quantile", k, "_of_", quantiles,
-#                            "_by_FuLiF_in_",
+#                            "_by_nucleotideDiversity_in_",
 #                            region, "_of_",
 #                            substring(featureName[1][1], first = 1, last = 5), "_in_",
 #                            paste0(substring(featureName, first = 10, last = 16),
@@ -1032,7 +1032,7 @@ write.table(ranLocsDF,
 #           paste0(substring(featureName, first = 10, last = 16),
 #                  collapse = "_"), "_",
 #           substring(featureName[1][1], first = 18),
-#           "_heatmaps_quantiled_by_FuLiF_in_", region, ".pdf"),
+#           "_heatmaps_quantiled_by_nucleotideDiversity_in_", region, ".pdf"),
 #    width = 3*length(htmpList),
 #    height = 10)
 #draw(htmps,
