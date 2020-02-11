@@ -5,10 +5,10 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript Krasileva_NB_ARC_genes_into_exomeSNP_quantiles_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 2 100kb 1 '0.75,0.96'
+# /applications/R/R-3.5.0/bin/Rscript exomeSNP_quantile_genes_avgProfileRibbon.R nucleotideDiversity Diversity both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 3 100kb 1 '0.75,0.96'
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
+#orderingFactor <- "nucleotideDiversity"
+#orderingFactorName <- "Diversity"
 #align <- "both"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
@@ -20,7 +20,7 @@
 #binSize <- 20
 #binName <- "20bp"
 #region <- "bodies"
-#quantiles <- 4
+#quantiles <- 3
 #winName <- "100kb"
 #minMarkerDist <- 1
 ## top left
@@ -37,8 +37,8 @@
 #                                        split = ",")))
 
 args <- commandArgs(trailingOnly = T)
-libName <- args[1]
-dirName <- args[2]
+orderingFactor <- args[1]
+orderingFactorName <- args[2]
 align <- args[3]
 featureName <- unlist(strsplit(args[4],
                                split = ","))
@@ -65,20 +65,22 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-outDir <- paste0("NLRquantiles_by_nSegregatingSites_in_",
-                 region, "/")
+outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define plot titles
-featureNamePlot <- "Seg. sites NLR quantiles"
-ranFeatNamePlot <- "Random NLR quantiles"
+featureNamePlot <- paste0(orderingFactorName, " ",
+                          substr(featureName[1], start = 1, stop = 4),
+                          " quantiles")
+ranFeatNamePlot <- paste0("Random ",
+                          substr(featureName[1], start = 1, stop = 4),
+                          " quantiles")
 ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
-quantileColours <- c("red", "purple", "blue", "navy")
-quantileColours <- c("red", "navy")
+quantileColours <- c("red", "purple", "navy")
 
 # Define feature start and end labels for plotting
 if(grepl("genes", featureName)) {
@@ -96,7 +98,7 @@ chrs <- chrs[-length(chrs)]
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
 featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
-                                "_by_nSegregatingSites_in_",
+                                "_by_", orderingFactor, "_in_",
                                 region, "_of_",
                                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                                 paste0(substring(featureName, first = 10, last = 16),
@@ -120,33 +122,13 @@ if(length(featureName) == 3) {
 } else {
  features <- features[[1]]
 }
-
-## Subset features to only those corresponding to NLRs
-#features_NLRs <- features[features$V9 %in% NLRs$V9,]
-## Get NLR IDs and their row indices in features
-#IDs <- sub(pattern = "\\.\\d+", replacement = "",
-#           features_NLRs$V9)
-#ID_indices <- which(featureIDs %in% IDs)
-#nonIDs <- featureIDs[!(featureIDs %in% IDs)]
+stopifnot(identical(as.character(featuresDF$featureID),
+                    as.character(features$V9)))
 
 # Get row indices for each feature quantile
 quantileIndices <- lapply(1:quantiles, function(k) {
   which(featuresDF$quantile == paste0("Quantile ", k))
 })
-quantileIndices_features <- lapply(1:quantiles, function(k) {
-  which(features$V9 %in% featuresDF[quantileIndices[[k]],]$featureID)
-})
-lapply(1:quantiles, function(k) {
-  if(
-    sum(featuresDF[quantileIndices[[k]],]$featureID %in%
-        features[quantileIndices_features[[k]],]$V9) !=
-    length(quantileIndices[[k]])
-  ) {
-    stop(paste0("Quantile ", k, ": NLR quantile IDs are not identical to IDs selected from complete feature dataframe"))
-  }
-})
-quantileIndices <- quantileIndices_features
-
 
 ## Random feature quantiles
 # Define function to randomly select n rows from
@@ -173,31 +155,15 @@ randomPCIndices <- lapply(1:quantiles, function(k) {
   }
   randomPCIndicesk
 })
-randomPCIndices_features <- lapply(1:quantiles, function(k) {
-  which(features$V9 %in% featuresDF[randomPCIndices[[k]],]$featureID)
+# Confirm per-chromosome feature numbers are the same for quantiles and random groupings
+lapply(seq_along(1:quantiles), function(k) {
+  sapply(seq_along(chrs), function(x) {
+    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
+                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))    {
+      stop("Quantile features and random features do not consist of the same number of features per chromosome")
+    }
+  })
 })
-lapply(1:quantiles, function(k) {
-  if(
-    sum(featuresDF[randomPCIndices[[k]],]$featureID %in%
-        features[randomPCIndices_features[[k]],]$V9) !=
-    length(randomPCIndices[[k]])
-  ) {
-    stop(paste0("Random ", k, ": NLR randomPC IDs are not identical to IDs selected from complete feature dataframe"))
-  }
-})
-randomPCIndices <- randomPCIndices_features
-## Confirm per-chromosome feature numbers are the same for quantiles and random groupings
-#### NOT TRUE
-#lapply(seq_along(1:quantiles), function(k) {
-#  sapply(seq_along(chrs), function(x) {
-#    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
-#                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))    {
-#      stop("Quantile features and random features do not consist of the same number of features per chromosome")
-#    }
-#  })
-#})
-#### NOT TRUE
-
 
 
 # Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
@@ -738,7 +704,7 @@ ggObj1_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -795,7 +761,7 @@ ggObj2_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -852,7 +818,7 @@ ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -885,10 +851,11 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
-              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+              "_by_", orderingFactor, "_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+              substring(featureName[1][1], first = 18), "_v110220.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1155,7 +1122,7 @@ ggObj1_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -1212,7 +1179,7 @@ ggObj2_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -1269,7 +1236,7 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -1290,22 +1257,23 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
                  ")"))
 }, mc.cores = length(otherNamesPlot))
 
-ggObjGA_combined <- grid.arrange(grobs = c(
-                                           ggObj1_combined_other,
-                                           ggObj2_combined_other,
-                                           ggObj3_combined_other
-                                          ),
-                                 layout_matrix = cbind(
-                                                       1:length(c(otherNamesPlot)),
-                                                       (length(c(otherNamesPlot))+1):(length(c(otherNamesPlot))*2),
-                                                       ((length(c(otherNamesPlot))*2)+1):(length(c(otherNamesPlot))*3)
-                                                      ))
+#ggObjGA_combined <- grid.arrange(grobs = c(
+#                                           ggObj1_combined_other,
+#                                           ggObj2_combined_other,
+#                                           ggObj3_combined_other
+#                                          ),
+#                                 layout_matrix = cbind(
+#                                                       1:length(c(otherNamesPlot)),
+#                                                       (length(c(otherNamesPlot))+1):(length(c(otherNamesPlot))*2),
+#                                                       ((length(c(otherNamesPlot))*2)+1):(length(c(otherNamesPlot))*3)
+#                                                      ))
 #ggsave(paste0(plotDir,
 #              "other_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+#              "_by_", orderingFactor, "_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1566,7 +1534,7 @@ ggObj1_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -1623,7 +1591,7 @@ ggObj2_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -1680,7 +1648,7 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -1713,10 +1681,11 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "sRNA_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+#              "_by_", orderingFactor, "_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1977,7 +1946,7 @@ ggObj1_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2034,7 +2003,7 @@ ggObj2_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2091,7 +2060,7 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -2124,10 +2093,11 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+#              "_by_", orderingFactor, "_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2416,7 +2386,7 @@ ggObj1_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2473,7 +2443,7 @@ ggObj2_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2530,7 +2500,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -2563,10 +2533,11 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "varietalSNPclass_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+#              "_by_", orderingFactor, "_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2870,7 +2841,7 @@ ggObj1_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-#  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2927,7 +2898,7 @@ ggObj2_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-#  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2984,7 +2955,7 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-#  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -3017,10 +2988,11 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
 #                                                      ))
 #ggsave(paste0(plotDir,
 #              "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
-#              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+#              "_by_", orderingFactor, "_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -3063,10 +3035,11 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 ggsave(paste0(plotDir,
               "combined_avgProfiles_around_", quantiles, "quantiles",
-              "_by_nSegregatingSites_in_", region, "_of_Krasileva_NB_ARC_genes_in_",
+              "_by_", orderingFactor, "_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v300120.pdf"),
+              substring(featureName[1][1], first = 18), "_v110220.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
 

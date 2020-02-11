@@ -11,7 +11,7 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_Krasileva_NB_ARC_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 100kb 200
+# /applications/R/R-3.4.0/bin/Rscript group_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 100kb 200
 
 featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
                                split = ","))
@@ -41,14 +41,11 @@ print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
 
-outDir <- paste0("NLRquantiles_by_nSegregatingSites_in_",
+outDir <- paste0("quantiles_by_FuLiF_in_",
                  region, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
-
-# Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3", header = F)
 
 # Load features
 features <- lapply(seq_along(featureName), function(x) {
@@ -68,35 +65,35 @@ if(length(featureName) == 3) {
 featureIDs <- sub(pattern = "\\.\\d+", replacement = "",
                   features$V9)
 
-# Subset features to only those corresponding to NLRs
-features_NLRs <- features[features$V9 %in% NLRs$V9,]
-# Get NLR IDs and their row indices in features
-IDs <- sub(pattern = "\\.\\d+", replacement = "",
-           features_NLRs$V9)
-ID_indices <- which(featureIDs %in% IDs)
-nonIDs <- featureIDs[!(featureIDs %in% IDs)]
-# Function to randomly select feature IDs not present in IDs
-ran_nonIDs_select <- function(nonIDsChr, n) {
-  sample(x = nonIDsChr,
-         size = n,
-         replace = FALSE)
-}
-# Apply ran_nonIDs_select() function on a per-chromosome basis
-# and create growing vector of feature IDs called ran_nonIDs
-set.seed(9237452)
-ran_nonIDs <- NULL
-for(i in 1:length(levels(features$V1))) {
-  IDsChr <- IDs[grepl(paste0("TraesCS",
-                             sub("chr", "", levels(features$V1))[i]),
-                      IDs)]
-  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
-                                   sub("chr", "", levels(features$V1))[i]),
-                      nonIDs)]
-  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-                                     n = length(IDsChr))
-  ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
-}
-ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
+## Subset features to only those corresponding to NLRs
+#features_NLRs <- features[features$V9 %in% NLRs$V9,]
+## Get NLR IDs and their row indices in features
+#IDs <- sub(pattern = "\\.\\d+", replacement = "",
+#           features_NLRs$V9)
+#ID_indices <- which(featureIDs %in% IDs)
+#nonIDs <- featureIDs[!(featureIDs %in% IDs)]
+## Function to randomly select feature IDs not present in IDs
+#ran_nonIDs_select <- function(nonIDsChr, n) {
+#  sample(x = nonIDsChr,
+#         size = n,
+#         replace = FALSE)
+#}
+## Apply ran_nonIDs_select() function on a per-chromosome basis
+## and create growing vector of feature IDs called ran_nonIDs
+#set.seed(9237452)
+#ran_nonIDs <- NULL
+#for(i in 1:length(levels(features$V1))) {
+#  IDsChr <- IDs[grepl(paste0("TraesCS",
+#                             sub("chr", "", levels(features$V1))[i]),
+#                      IDs)]
+#  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
+#                                   sub("chr", "", levels(features$V1))[i]),
+#                      nonIDs)]
+#  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
+#                                     n = length(IDsChr))
+#  ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
+#}
+#ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
 
 # Load 811 exomes-derived SNP matrix from He et al. (2019) Nat. Genet.
 if(!(file.exists("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz.tbi"))) {
@@ -198,162 +195,6 @@ if(!identical(popgen_stats$start, features$V4)) {
 if(!identical(popgen_stats$end, features$V5)) {
   stop("popgen_stats end coordinates are not identical to those in features data.frame!")
 }
-
-# Manually calculate neutrality statistics
-# Load 811 exomes-derived SNP matrix from He et al. (2019) Nat. Genet.
-vcf <- fread("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf",
-             sep = "\t", data.table = F, skip = 30, header = T)
-colnames(vcf)[1] <- "CHROM"
-# Re-encode missing data ("./.") as NA
-vcf <- data.frame(mclapply(vcf, function(x) {
-                    gsub(pattern = "\\.\\/\\.", replacement = NA, x = x)
-                  }, mc.cores = detectCores(), mc.preschedule = T),
-                  stringsAsFactors = F)
-vcf$POS <- as.integer(vcf$POS)
-
-### TOO MEMORY INTENSIVE
-## Create list of vcf-format tables in which each element corresponds to one feature
-#vcf_features_list <- mclapply(seq_along(1:dim(features)[1]), function(x) {
-#  vcf[vcf$CHROM == features[x,]$V1 &
-#      vcf$POS   >= features[x,]$V4 &
-#      vcf$POS   <= features[x,]$V5,]
-#}, mc.cores = detectCores(), mc.preschedule = T)
-#
-## Sanity check to ensure vcf_features_list has of the same number of elements
-## as features has rows
-#if(length(vcf_features_list) != dim(features)[1]) {
-#  stop("vcf_features_list does not have the same number of elements as features has rows!")
-#}
-#
-## For each feature, get the number of single-nucleotide differences between each pair of sequences,
-## calculate the mean number of pairwise differences (Pi; π),
-## get the number of segregating sites (S),
-## calculate the expectation of Pi for a neutral population (theta; θ),
-## and calculate Tajima's D
-## See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
-#tajimaD_features_list <- mclapply(seq_along(vcf_features_list), function(x) {
-#  # Get the number of sequences to be compared, n
-#  # 9 corresponds to the number of columns that do not contain sequence variant info
-#  n <- dim(vcf_features_list[[x]])[2]-9
-#  # Get the number of segregating sites within feature x, S
-#  S <- dim(vcf_features_list[[x]])[1]
-#  # Calculate the sum of pairwise differences
-#  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_features_list[[x]])[2]-1), function(i) {
-#    ij_diff_ipairs <- NULL
-#    for(j in (i+1):dim(vcf_features_list[[x]])[2]) {
-#      ij_diff <- sum(vcf_features_list[[x]][,i] != vcf_features_list[[x]][,j], na.rm = T)
-#      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
-#    }
-#    return(ij_diff_ipairs)
-#  })))
-#  # Calculate Pi for feature x
-#  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
-#  # Using the number of segregating sites, S,
-#  # get the expectation of Pi for a neutral population in which
-#  # only mutation and drift are occurring (theta; θ)
-#  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
-#  # obtain the variance of d expected under a standard neutral model, Vd
-#  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
-#  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
-#  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
-#  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
-#  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
-#  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
-#  c1 <- b1 - (1/a1)
-#  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
-#  e1 <- c1/a1
-#  e2 <- c2 / ( (a1^2) + a2 )
-#  theta <- S / a1
-#  d <- ( Pi - theta )
-#  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
-#  tajimaD <- d / ( sqrt(Vd) ) 
-#  tajimaD_df <- data.frame(chr = as.character(features[x,]$V1),
-#                           start = as.integer(features[x,]$V4),
-#                           end = as.integer(features[x,]$V5),
-#                           width = as.integer( (as.integer(features[x,]$V5) - as.integer(features[x,]$V4)) + 1 ),
-#                           strand = as.character(features[x,]$V7),
-#                           ID = as.character(features[x,]$V9),
-#                           n = as.integer(n),
-#                           S = as.integer(S),
-#                           Pi = as.numeric(Pi),
-#                           theta = as.numeric(theta),
-#                           tajimaD  = as.numeric(tajimaD),
-#                           stringsAsFactors = F)
-#  return(tajimaD_df)
-#}, mc.cores = detectCores(), mc.preschedule = T)
-#tajimaD_features <- do.call(rbind, tajimaD_features_list)
-
-
-# Create list of vcf-format tables in which each element corresponds to one NLR
-vcf_NLRs_list <- mclapply(seq_along(1:dim(features_NLRs)[1]), function(x) {
-  vcf[vcf$CHROM == features_NLRs[x,]$V1 &
-      vcf$POS   >= features_NLRs[x,]$V4 &
-      vcf$POS   <= features_NLRs[x,]$V5,]
-}, mc.cores = detectCores(), mc.preschedule = T)
-
-# Sanity check to ensure vcf_NLRs_list has of the same number of elements
-# as features_NLRs has rows
-if(length(vcf_NLRs_list) != dim(features_NLRs)[1]) {
-  stop("vcf_NLRs_list does not have the same number of elements as features_NLRs has rows!")
-}
-
-# For each NLR, get the number of single-nucleotide differences between each pair of sequences,
-# calculate the mean number of pairwise differences (Pi; π),
-# get the number of segregating sites (S),
-# calculate the expectation of Pi for a neutral population (theta; θ),
-# and calculate Tajima's D
-# See https://arundurvasula.wordpress.com/2015/02/18/interpreting-tajimas-d/
-tajimaD_NLRs_list <- mclapply(seq_along(vcf_NLRs_list), function(x) {
-  # Get the number of sequences to be compared, n
-  # 9 corresponds to the number of columns that do not contain sequence variant info
-  n <- dim(vcf_NLRs_list[[x]])[2]-9
-  # Get the number of segregating sites within NLR x, S
-  S <- dim(vcf_NLRs_list[[x]])[1]
-  # Calculate the sum of pairwise differences
-  sum_ij_diff <- sum(unlist(lapply(10:(dim(vcf_NLRs_list[[x]])[2]-1), function(i) {
-    ij_diff_ipairs <- NULL
-    for(j in (i+1):dim(vcf_NLRs_list[[x]])[2]) {
-      ij_diff <- sum(vcf_NLRs_list[[x]][,i] != vcf_NLRs_list[[x]][,j], na.rm = T)
-      ij_diff_ipairs <- c(ij_diff_ipairs, ij_diff)
-    }
-    return(ij_diff_ipairs)
-  })))
-  # Calculate Pi for NLR x
-  Pi <- sum_ij_diff / ( (n * (n - 1)) / 2 )
-  # Using the number of segregating sites, S,
-  # get the expectation of Pi for a neutral population in which
-  # only mutation and drift are occurring (theta; θ)
-  # We also need to calculate a1, a2, b1, b2, c1, c2, e1 and e2 to
-  # obtain the variance of d expected under a standard neutral model, Vd
-  # See Tajima (1989) Genetics 123: https://www.genetics.org/content/genetics/123/3/585.full.pdf
-  # and https://ocw.mit.edu/courses/health-sciences-and-technology/hst-508-quantitative-genomics-fall-2005/study-materials/tajimad1.pdf
-  a1 <- sum( sapply(1:(n - 1), function(i) 1/i) )
-  a2 <- sum( sapply(1:(n - 1), function(i) 1/(i^2)) )
-  b1 <- ( n + 1 ) / ( 3 * (n - 1) )
-  b2 <- ( 2 * ((n^2) + n + 3) ) / ( (9 * n) * (n - 1) )
-  c1 <- b1 - (1/a1)
-  c2 <- b2 - ( (n + 2) / (a1 * n) ) + ( a2 / (a1^2) )
-  e1 <- c1/a1
-  e2 <- c2 / ( (a1^2) + a2 )
-  theta <- S / a1
-  d <- ( Pi - theta )
-  Vd <- (e1 * S) + ( (e2 * S) * (S - 1) ) 
-  tajimaD <- d / ( sqrt(Vd) ) 
-  tajimaD_df <- data.frame(chr = as.character(features_NLRs[x,]$V1),
-                           start = as.integer(features_NLRs[x,]$V4),
-                           end = as.integer(features_NLRs[x,]$V5),
-                           width = as.integer( (as.integer(features_NLRs[x,]$V5) - as.integer(features_NLRs[x,]$V4)) + 1 ),
-                           strand = as.character(features_NLRs[x,]$V7),
-                           ID = as.character(features_NLRs[x,]$V9),
-                           n = as.integer(n),
-                           S = as.integer(S),
-                           Pi = as.numeric(Pi),
-                           theta = as.numeric(theta),
-                           tajimaD  = as.numeric(tajimaD),
-                           stringsAsFactors = F)
-  return(tajimaD_df)
-}, mc.cores = detectCores(), mc.preschedule = T)
-tajimaD_NLRs <- do.call(rbind, tajimaD_NLRs_list)
     
 
 # Load features 
@@ -510,21 +351,21 @@ featuresGR <- GRanges(featuresGR,
                       cMMb = feature_cMMb,
                       exons = exonNoPerGene,
                       introns = intronNoPerGene)
-featuresGR <- featuresGR[ID_indices]
+#featuresGR <- featuresGR[ID_indices]
 
 # Sanity check to ensure featuresGR feauture IDs, chromosome IDs and start and end coordinates
 # are identical to those in features data.frame
-if(!identical(gsub("\\.\\d+", "", as.character(featuresGR$featureID)), IDs)) {
-  stop("featuresGR feature IDs are not identical to those in NLR IDs vector!")
+if(!identical(gsub("\\.\\d+", "", as.character(featuresGR$featureID)), featureIDs)) {
+  stop("featuresGR feature IDs are not identical to those in featureIDs vector!")
 }
-if(!identical(as.character(seqnames(featuresGR)), as.character(features_NLRs$V1))) { 
-  stop("featuresGR chromosome IDs are not identical to those in features_NLRs data.frame!")
+if(!identical(as.character(seqnames(featuresGR)), as.character(features$chr))) { 
+  stop("featuresGR chromosome IDs are not identical to those in features data.frame!")
 }
-if(!identical(start(featuresGR), features_NLRs$V4)) {
-  stop("featuresGR start coordinates are not identical to those in features_NLRs data.frame!")
+if(!identical(start(featuresGR), features$start)) {
+  stop("featuresGR start coordinates are not identical to those in features data.frame!")
 }
-if(!identical(end(featuresGR), features_NLRs$V5)) {
-  stop("featuresGR end coordinates are not identical to those in features_NLRs data.frame!")
+if(!identical(end(featuresGR), features$end)) {
+  stop("featuresGR end coordinates are not identical to those in features data.frame!")
 }
 
 # Obtain winName-scaled cMMb values for each ranLoc between promoter and terminator
@@ -551,30 +392,30 @@ ranLoc_cMMb <- sapply(ranLoc_cMMb_overlapsList,
 ranLocsGR <- GRanges(ranLocsGR,
                      ranLocID = ranLocsGR$ranLocID,
                      cMMb = ranLoc_cMMb)
-ranLocsGR <- ranLocsGR[ID_indices]
+#ranLocsGR <- ranLocsGR[ID_indices]
 
-# Divide features into quantiles based on decreasing nSegregatingSites
+# Divide features into quantiles based on decreasing FuLiF
 featuresDF <- data.frame(featuresGR,
                          quantile = as.character(""),
                          stringsAsFactors = F)
-#featuresDF$nSegregatingSites[which(is.na(featuresDF$nSegregatingSites))] <- 0
+#featuresDF$FuLiF[which(is.na(featuresDF$FuLiF))] <- 0
 quantilesStats <- data.frame()
 for(k in 1:quantiles) {
   if(k < quantiles) {
   # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-    featuresDF[ !is.na(featuresDF$nSegregatingSites) &
-                percent_rank(featuresDF$nSegregatingSites) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$nSegregatingSites) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$FuLiF) &
+                percent_rank(featuresDF$FuLiF) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$FuLiF) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   } else {
   # Final quantile should span 0 to, e.g., 0.25 proportions of features
-    featuresDF[ !is.na(featuresDF$nSegregatingSites) &
-                percent_rank(featuresDF$nSegregatingSites) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$nSegregatingSites) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+    featuresDF[ !is.na(featuresDF$FuLiF) &
+                percent_rank(featuresDF$FuLiF) <= 1-((k-1)/quantiles) &
+                percent_rank(featuresDF$FuLiF) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
   }
   write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
               file = paste0(outDir,
                             "quantile", k, "_of_", quantiles,
-                            "_by_nSegregatingSites_in_",
+                            "_by_FuLiF_in_",
                             region, "_of_",
                             substring(featureName[1][1], first = 1, last = 5), "_in_",
                             paste0(substring(featureName, first = 10, last = 16),
@@ -585,12 +426,12 @@ for(k in 1:quantiles) {
                       n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
                       mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
                       total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
-                      mean_nSegregatingSites = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$nSegregatingSites, na.rm = T)))
+                      mean_FuLiF = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$FuLiF, na.rm = T)))
   quantilesStats <- rbind(quantilesStats, stats)
 }
 write.table(quantilesStats,
             file = paste0(outDir,
-                          "summary_", quantiles, "quantiles_by_nSegregatingSites_in_",
+                          "summary_", quantiles, "quantiles_by_FuLiF_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -600,7 +441,7 @@ write.table(quantilesStats,
 write.table(featuresDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_nSegregatingSites_in_",
+                          "_by_FuLiF_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -622,7 +463,7 @@ for(k in 1:quantiles) {
 write.table(ranLocsDF,
             file = paste0(outDir,
                           "features_", quantiles, "quantiles",
-                          "_by_nSegregatingSites_in_",
+                          "_by_FuLiF_in_",
                           region, "_of_",
                           substring(featureName[1][1], first = 1, last = 5), "_in_",
                           paste0(substring(featureName, first = 10, last = 16),
@@ -630,13 +471,13 @@ write.table(ranLocsDF,
                           substring(featureName[1][1], first = 18), "_ranLocs.txt"),
             quote = FALSE, sep = "\t", row.names = FALSE)
 
-## Order features in each quantile by decreasing nSegregatingSites levels
+## Order features in each quantile by decreasing FuLiF levels
 ## to define "row_order" for heatmaps
 #combineRowOrders <- function(quantile_bool_list) {
 #  do.call("c", lapply(quantile_bool_list, function(x) {
-#    quantile_nSegregatingSites <- rowMeans(nSegregatingSites[x,], na.rm = T)
-#    quantile_nSegregatingSites[which(is.na(quantile_nSegregatingSites))] <- 0
-#    which(x)[order(quantile_nSegregatingSites, decreasing = T)]
+#    quantile_FuLiF <- rowMeans(FuLiF[x,], na.rm = T)
+#    quantile_FuLiF[which(is.na(quantile_FuLiF))] <- 0
+#    which(x)[order(quantile_FuLiF, decreasing = T)]
 #  }))
 #}
 #row_order <- combineRowOrders(quantile_bool_list =
@@ -647,16 +488,16 @@ write.table(ranLocsDF,
 ## Confirm row_order is as would be obtained by alternative method
 ## Note that this alternative 
 #stopifnot(identical(row_order,
-#                    order(featuresDF$nSegregatingSites,
+#                    order(featuresDF$FuLiF,
 #                          decreasing=T)))
 #
-## Order feature IDs in each quantile by decreasing nSegregatingSites levels
+## Order feature IDs in each quantile by decreasing FuLiF levels
 ## for use in GO term enrichment analysis
 #listCombineRowOrders <- function(quantile_bool_list) {
 #  do.call(list, lapply(quantile_bool_list, function(x) {
-#    quantile_nSegregatingSites <- rowMeans(nSegregatingSites[x,], na.rm = T)
-#    quantile_nSegregatingSites[which(is.na(quantile_nSegregatingSites))] <- 0
-#    which(x)[order(quantile_nSegregatingSites, decreasing = T)]
+#    quantile_FuLiF <- rowMeans(FuLiF[x,], na.rm = T)
+#    quantile_FuLiF[which(is.na(quantile_FuLiF))] <- 0
+#    which(x)[order(quantile_FuLiF, decreasing = T)]
 #  }))
 #}
 #featureIndicesList <- listCombineRowOrders(quantile_bool_list =
@@ -681,7 +522,7 @@ write.table(ranLocsDF,
 #  write.table(featureIDsQuantileList[[k]],
 #              file = paste0(outDir,
 #                            "featureIDs_quantile", k, "_of_", quantiles,
-#                            "_by_nSegregatingSites_in_",
+#                            "_by_FuLiF_in_",
 #                            region, "_of_",
 #                            substring(featureName[1][1], first = 1, last = 5), "_in_",
 #                            paste0(substring(featureName, first = 10, last = 16),
@@ -1191,7 +1032,7 @@ write.table(ranLocsDF,
 #           paste0(substring(featureName, first = 10, last = 16),
 #                  collapse = "_"), "_",
 #           substring(featureName[1][1], first = 18),
-#           "_heatmaps_quantiled_by_nSegregatingSites_in_", region, ".pdf"),
+#           "_heatmaps_quantiled_by_FuLiF_in_", region, ".pdf"),
 #    width = 3*length(htmpList),
 #    height = 10)
 #draw(htmps,
