@@ -121,15 +121,6 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
                include.unknown = T)
 })
 
-#genomeClass_chr1A <- Whop_readVCF(v = vcf_handle,
-#                                  numcols = 1000,
-#                                  tid = "chr1A",
-#                                  frompos = 1,
-#                                  topos = 1000000000,
-#                                  samplenames = NA,
-#                                  gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
-#                                  include.unknown = T) 
-
 # Specify populations based on regional groupings of accessions
 pop_names <- c("NorthAfrica",
                "SubSaharanAfrica",
@@ -173,6 +164,17 @@ neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x)
              stringsAsFactors = F)
 })
 
+genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  F_ST.stats(genomeClassSplit_list[[x]],
+             detail = T, mode = "nucleotide", FAST = F)
+})
+# This generates only 0s or NaNs for NLRs
+F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  data.frame(get.F_ST(genomeClassSplit_list[[x]],
+             mode = "nucleotide"),
+             stringsAsFactors = F)
+})
+
 genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   diversity.stats(genomeClassSplit_list[[x]],
                   pi = T, keep.site.info = T)
@@ -182,17 +184,6 @@ diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) 
                            between = F)[[1]],
              stringsAsFactors = F)
 })
-
-#genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-#  F_ST.stats(genomeClassSplit_list[[x]],
-#             detail = T, mode = "nucleotide", FAST = F)
-#})
-## This generates only 0s or NaNs for NLRs
-#F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-#  data.frame(get.F_ST(genomeClassSplit_list[[x]],
-#             mode = "nucleotide"),
-#             stringsAsFactors = F)
-#})
 
 # Combine statistics into one dataframe
 popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
