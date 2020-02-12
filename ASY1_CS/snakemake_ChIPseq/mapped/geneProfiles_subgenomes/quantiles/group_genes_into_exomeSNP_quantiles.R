@@ -168,22 +168,27 @@ genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
   F_ST.stats(genomeClassSplit_list[[x]],
              detail = T, mode = "nucleotide", FAST = F)
 })
-# This generates only 0s or NaNs for NLRs
 F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
   data.frame(get.F_ST(genomeClassSplit_list[[x]],
              mode = "nucleotide"),
              stringsAsFactors = F)
 })
 
-genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
-  diversity.stats(genomeClassSplit_list[[x]],
-                  pi = T, keep.site.info = T)
-}, mc.cores = detectCores(), mc.preschedule = F)
-diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  data.frame(get.diversity(genomeClassSplit_list[[x]],
-                           between = F)[[1]],
-             stringsAsFactors = F)
-})
+# diversity.stats function generates error when applied to
+# genomeClassSplit_list consisting of multiple populations:
+# "Error in `rownames<-`(`*tmp*`, value = nam) :
+#   attempt to set 'rownames' on an object with no dimensions"
+# However, most diversity stats (but not Pi from Nei) are
+# available after running F_ST.stats
+#genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
+#  diversity.stats(genomeClassSplit_list[[x]],
+#                  pi = T, keep.site.info = T)
+#}, mc.cores = detectCores(), mc.preschedule = F)
+#diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+#  data.frame(get.diversity(genomeClassSplit_list[[x]],
+#                           between = F)[[1]],
+#             stringsAsFactors = F)
+#})
 
 # Combine statistics into one dataframe
 popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
