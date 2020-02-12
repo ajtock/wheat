@@ -95,14 +95,16 @@ featureIDs <- sub(pattern = "\\.\\d+", replacement = "",
 #}
 #ran_nonID_indices <- which(featureIDs %in% ran_nonIDs)
 
+inDir <- "/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/"
+
 # Load 811 exomes-derived SNP matrix from He et al. (2019) Nat. Genet.
-if(!(file.exists("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz.tbi"))) {
-  tabix_build("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz",
+if(!(file.exists(paste0(inDir, "all.GP08_mm75_het3_publication01142019.vcf.gz.tbi")))) {
+  tabix_build(paste0(inDir, "all.GP08_mm75_het3_publication01142019.vcf.gz"),
               sc = as.integer(1), bc = as.integer(2), ec = as.integer(2), meta = "#", lineskip = as.integer(0))
 } else {
   print("*.vcf.gz.tbi index file exists")
 }
-vcf_handle <- vcf_open("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/all.GP08_mm75_het3_publication01142019.vcf.gz")
+vcf_handle <- vcf_open(paste0(inDir, "all.GP08_mm75_het3_publication01142019.vcf.gz"))
 #chrs <- unique(as.character(features$V1)
 chrs <- paste0(rep("chr", 21), rep(1:7, 3),
                c(rep("A", 7), rep("B", 7), rep("D", 7)))
@@ -117,6 +119,39 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
                samplenames = NA,
                gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
                include.unknown = T)
+})
+
+#genomeClass_chr1A <- Whop_readVCF(v = vcf_handle,
+#                                  numcols = 1000,
+#                                  tid = "chr1A",
+#                                  frompos = 1,
+#                                  topos = 1000000000,
+#                                  samplenames = NA,
+#                                  gffpath = "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706.gff3",
+#                                  include.unknown = T) 
+
+# Specify populations based on regional groupings of accessions
+pop_names <- c("NorthAfrica",
+               "SubSaharanAfrica",
+               "WesternEurope",
+               "EasternEurope",
+               "MiddleEast",
+               "FormerSU",
+               "CentralAsia",
+               "SouthAsia",
+               "EastAsia",
+               "NorthAmerica",
+               "CentralAmerica",
+               "SouthAmerica",
+               "Oceania")
+
+pop_list <- lapply(seq_along(pop_names), function(x) {
+  as.character(read.table(paste0(inDir, pop_names[x], "_accessions.txt"))[[1]])
+})
+
+genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
+  set.populations(genomeClass_list[[x]],
+                  pop_list, diploid = T)
 })
 
 # Extact variants located within features
