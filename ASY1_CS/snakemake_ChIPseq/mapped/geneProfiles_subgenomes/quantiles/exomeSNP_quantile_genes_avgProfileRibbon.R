@@ -5,10 +5,11 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript exomeSNP_quantile_genes_avgProfileRibbon.R nucleotideDiversity Diversity both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 3 100kb 1 '0.75,0.96'
+# /applications/R/R-3.5.0/bin/Rscript exomeSNP_quantile_genes_avgProfileRibbon.R nucleotideDiversity Diversity WesternEurope both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 3 100kb 1 '0.75,0.96'
 
 #orderingFactor <- "nucleotideDiversity"
 #orderingFactorName <- "Diversity"
+#pop_name <- "WesternEurope"
 #align <- "both"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
@@ -39,21 +40,22 @@
 args <- commandArgs(trailingOnly = T)
 orderingFactor <- args[1]
 orderingFactorName <- args[2]
-align <- args[3]
-featureName <- unlist(strsplit(args[4],
+pop_name <- args[3]
+align <- args[4]
+featureName <- unlist(strsplit(args[5],
                                split = ","))
-bodyLength <- as.numeric(args[5])
-upstream <- as.numeric(args[6])
-downstream <- as.numeric(args[6])
-flankName <- args[7]
-flankNamePlot <- args[8]
-binSize <- as.numeric(args[9])
-binName <- args[10]
-region <- args[11]
-quantiles <- as.numeric(args[12])
-winName <- args[13]
-minMarkerDist <-  as.numeric(args[14])
-legendPos <- as.numeric(unlist(strsplit(args[15],
+bodyLength <- as.numeric(args[6])
+upstream <- as.numeric(args[7])
+downstream <- as.numeric(args[7])
+flankName <- args[8]
+flankNamePlot <- args[9]
+binSize <- as.numeric(args[10])
+binName <- args[11]
+region <- args[12]
+quantiles <- as.numeric(args[13])
+winName <- args[14]
+minMarkerDist <- as.numeric(args[15])
+legendPos <- as.numeric(unlist(strsplit(args[16],
                                         split = ",")))
 
 library(parallel)
@@ -65,7 +67,7 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/")
+outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/", pop_name, "/")
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -92,8 +94,10 @@ if(grepl("genes", featureName)) {
 }
 
 # Genomic definitions
-chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
-chrs <- chrs[-length(chrs)]
+#chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
+#chrs <- chrs[-length(chrs)]
+chrs <- paste0(rep("chr", 21), rep(1:7, 3),
+               c(rep("A", 7), rep("B", 7), rep("D", 7)))
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
@@ -855,7 +859,7 @@ ggsave(paste0(plotDir,
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1273,7 +1277,7 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+#              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -1685,7 +1689,7 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+#              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2097,7 +2101,7 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+#              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2537,7 +2541,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+#              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -2992,7 +2996,7 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
 #              substring(featureName[1][1], first = 1, last = 5), "_in_",
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
-#              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+#              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
 #       plot = ggObjGA_combined,
 #       height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 
@@ -3039,7 +3043,7 @@ ggsave(paste0(plotDir,
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v110220.pdf"),
+              substring(featureName[1][1], first = 18), "_", pop_name, "_v130220.pdf"),
        plot = ggObjGA_combined,
        height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
 

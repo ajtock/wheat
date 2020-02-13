@@ -122,22 +122,22 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
 })
 
 # Specify populations based on regional groupings of accessions
-pop_names <- c("NorthAfrica",
-               "SubSaharanAfrica",
-               "WesternEurope",
-               "EasternEurope",
-               "MiddleEast",
-               "FormerSU",
-               "CentralAsia",
-               "SouthAsia",
-               "EastAsia",
-               "NorthAmerica",
-               "CentralAmerica",
-               "SouthAmerica",
-               "Oceania")
+pop_name <- c("NorthAfrica",
+              "SubSaharanAfrica",
+              "WesternEurope",
+              "EasternEurope",
+              "MiddleEast",
+              "FormerSU",
+              "CentralAsia",
+              "SouthAsia",
+              "EastAsia",
+              "NorthAmerica",
+              "CentralAmerica",
+              "SouthAmerica",
+              "Oceania")
 
-pop_list <- lapply(seq_along(pop_names), function(x) {
-  as.character(read.table(paste0(inDir, pop_names[x], "_accessions.txt"))[[1]])
+pop_list <- lapply(seq_along(pop_name), function(x) {
+  as.character(read.table(paste0(inDir, pop_name[x], "_accessions.txt"))[[1]])
 })
 
 genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
@@ -418,6 +418,154 @@ exonNoPerGene <- unlist(mclapply(seq_along(as.character(features$featureID)), fu
   dim(exons[as.character(exons$Parent) == as.character(features$featureID)[x],])[1]
 }, mc.cores = detectCores()))
 
+
+# Calculate mean log2(ASY1 ChIP/control) and log2(DMC1 ChIP/control) in
+# gene promoters, bodies and terminators
+# Extract and save feature IDs for each quantile for further analyses
+# (e.g., GO enrichment and average + 95% CI profile plotting).
+
+# Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
+# and sort by decreasing log2mat1RegionRowMeans
+ChIPNames <- c(
+               "ASY1_CS_Rep1_ChIP",
+               "DMC1_Rep1_ChIP"
+              )
+ChIPNamesDir <- c(
+                  "ASY1_CS",
+                  "DMC1"
+                 )
+log2ChIPNamesPlot <- c(
+                       "ASY1",
+                       "DMC1"
+                      )
+ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
+  if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "CENH3_ChIP_SRR1686799")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(ChIPNames[x] %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
+                                "H3K27ac_Rep1_ChIP_SRR8126621")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    paste0("/home/ajt200/analysis/wheat/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  }
+})
+
+controlNames <- c(
+                  "H3_input_SRR6350669",
+                  "MNase_Rep1"
+                 )
+controlNamesDir <- c(
+                     "input",
+                     "MNase"
+                    )
+controlNamesPlot <- c(
+                      "Input",
+                      "MNase"
+                     )
+controlDirs <- sapply(seq_along(controlNames), function(x) {
+  if(controlNames[x] == "H3_input_SRR6350669") {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else if(controlNames[x] == "MNase_Rep1") {
+    paste0("/home/ajt200/analysis/wheat/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/")
+  } else {
+    if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
+      stop(paste0("controlNames[", x, "] is neither H3_input_SRR6350669 nor MNase_Rep1"))
+    }
+  }
+})
+
+## control
+# feature
+control_featureMats <- mclapply(seq_along(controlNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(controlNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+control_featureMats <- mclapply(seq_along(control_featureMats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, control_featureMats[[x]])
+  } else {
+    control_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(control_featureMats))
+
+## ChIP
+# feature
+ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(ChIPDirs[x],
+                                ChIPNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                featureName[y], "_matrix_bin", binName,
+                                "_flank", flankName, ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(ChIPNames))
+# If features from all 3 subgenomes are to be analysed,
+# concatenate the 3 corresponding feature coverage matrices
+ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
+  if(length(featureName) == 3) {
+    do.call(rbind, ChIP_featureMats[[x]])
+  } else {
+    ChIP_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(ChIP_featureMats))
+
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
+log2ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
+  if(ChIPNames[x] %in% c(
+                         "ASY1_CS_Rep1_ChIP",
+                         "DMC1_Rep1_ChIP",
+                         "H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "H3K4me1_Rep1_ChIP_SRR8126618",
+                         "H3K27ac_Rep1_ChIP_SRR8126621"
+                        )) {
+    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[1]]+1))
+  } else {
+    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[2]]+1))
+  }
+}, mc.cores = length(ChIP_featureMats))
+
+log2ChIP_featureMats_promoters <- lapply(seq_along(log2ChIP_featureMats), function(x) {
+  log2ChIP_featureMats[[x]][,(((upstream-1000)/binSize)+1):(upstream/binSize)]
+})
+log2ChIP_featureMats_bodies <- lapply(seq_along(log2ChIP_featureMats), function(x) {
+  log2ChIP_featureMats[[x]][,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
+})
+log2ChIP_featureMats_terminators <- lapply(seq_along(log2ChIP_featureMats), function(x) {
+  log2ChIP_featureMats[[x]][,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
+})
+log2ChIP_featureMats_promotersRowMeans <- lapply(seq_along(log2ChIP_featureMats_promoters), function(x) {
+  rowMeans(log2ChIP_featureMats_promoters[[x]], na.rm = T)
+})
+log2ChIP_featureMats_bodiesRowMeans <- lapply(seq_along(log2ChIP_featureMats_bodies), function(x) {
+  rowMeans(log2ChIP_featureMats_bodies[[x]], na.rm = T)
+})
+log2ChIP_featureMats_terminatorsRowMeans <- lapply(seq_along(log2ChIP_featureMats_terminators), function(x) {
+  rowMeans(log2ChIP_featureMats_terminators[[x]], na.rm = T)
+})
+
 # Combine feature coordinates and their corresponding population genetics statistics,
 # mean cM/Mb values, and intron and exon numbers
 featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
@@ -437,6 +585,12 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             RozasR2 = popgen_stats_pop_list[[x]]$Rozas.R_2,
                             FuLiF = popgen_stats_pop_list[[x]]$Fu.Li.F,
                             FuLiD = popgen_stats_pop_list[[x]]$Fu.Li.D,
+                            ASY1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[1]],
+                            DMC1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[2]],
+                            ASY1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[1]],
+                            DMC1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[2]],
+                            ASY1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[1]],
+                            DMC1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[2]],
                             cMMb = feature_cMMb,
                             exons = exonNoPerGene,
                             introns = intronNoPerGene)
@@ -486,16 +640,19 @@ ranLocsGR <- GRanges(ranLocsGR,
                      cMMb = ranLoc_cMMb)
 #ranLocsGR <- ranLocsGR[ID_indices]
 
-
+# Define first set of ordering factors (population genetics statistics)
+# to be used for grouping genes into 2 quantiles
+# (3 quantiles can result in very uneven split of genes, or poor separation of values)
+quantiles <- 2
 orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[7:16]
 outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
-  sapply(seq_along(pop_names), function(x) {
-    paste0(outDir[w], pop_names[x], "/")
+  sapply(seq_along(pop_name), function(x) {
+    paste0(outDir[w], pop_name[x], "/")
   })
 })
 plotDir_list <- lapply(seq_along(outDir), function(w) {
-  sapply(seq_along(pop_names), function(x) {
+  sapply(seq_along(pop_name), function(x) {
     paste0(outDir_list[[w]][x], "plots/")
   })
 })
@@ -503,20 +660,19 @@ sapply(seq_along(outDir), function(w) {
  system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
 })
 sapply(seq_along(outDir), function(w) {
-  sapply(seq_along(pop_names), function(x) {
+  mclapply(seq_along(pop_name), function(x) {
     system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
-  })
+  }, mc.cores = length(pop_name), mc.preschedule = F)
 })
 sapply(seq_along(outDir), function(w) {
-  mclapply(seq_along(pop_names), function(x) {
+  mclapply(seq_along(pop_name), function(x) {
     system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
-  }, mc.cores = length(pop_names), mc.preschedule = F)
+  }, mc.cores = length(pop_name), mc.preschedule = F)
 })
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
-#for(x in 3:length(featuresGR_pop_list)) {
-for(x in 1:2) {
-  print(pop_names[x])
+for(x in 1:length(featuresGR_pop_list)) {
+  print(pop_name[x])
   featuresDF <- data.frame(featuresGR_pop_list[[x]],
                            quantile = as.character(""),
                            stringsAsFactors = F)
@@ -544,7 +700,7 @@ for(x in 1:2) {
                                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                                 paste0(substring(featureName, first = 10, last = 16),
                                        collapse = "_"), "_",
-                                substring(featureName[1][1], first = 18), ".txt"),
+                                substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
                   quote = FALSE, sep = "\t", row.names = FALSE)
       stats <- data.frame(quantile = as.integer(k),
                           n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
@@ -560,7 +716,7 @@ for(x in 1:2) {
                               substring(featureName[1][1], first = 1, last = 5), "_in_",
                               paste0(substring(featureName, first = 10, last = 16),
                                      collapse = "_"), "_",
-                              substring(featureName[1][1], first = 18), ".txt"),
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     write.table(featuresDF,
                 file = paste0(outDir_list[[w]][x],
@@ -570,7 +726,7 @@ for(x in 1:2) {
                               substring(featureName[1][1], first = 1, last = 5), "_in_",
                               paste0(substring(featureName, first = 10, last = 16),
                                      collapse = "_"), "_",
-                              substring(featureName[1][1], first = 18), ".txt"),
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
 
     # Divide ranLocs into quantiles based on feature quantile indices
@@ -592,7 +748,118 @@ for(x in 1:2) {
                               substring(featureName[1][1], first = 1, last = 5), "_in_",
                               paste0(substring(featureName, first = 10, last = 16),
                                      collapse = "_"), "_",
-                              substring(featureName[1][1], first = 18), "_ranLocs.txt"),
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], "_ranLocs.txt"),
+                quote = FALSE, sep = "\t", row.names = FALSE)
+  }, mc.cores = length(orderingFactor), mc.preschedule = F)
+}
+
+
+# Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
+# to be used for grouping genes into 4 quantiles
+quantiles <- 4
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[17:22]
+outDir <- paste0("quantiles_by_", orderingFactor, "/")
+outDir_list <- lapply(seq_along(outDir), function(w) {
+  sapply(seq_along(pop_name), function(x) {
+    paste0(outDir[w], pop_name[x], "/")
+  })
+})
+plotDir_list <- lapply(seq_along(outDir), function(w) {
+  sapply(seq_along(pop_name), function(x) {
+    paste0(outDir_list[[w]][x], "plots/")
+  })
+})
+sapply(seq_along(outDir), function(w) {
+ system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
+})
+sapply(seq_along(outDir), function(w) {
+  mclapply(seq_along(pop_name), function(x) {
+    system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
+  }, mc.cores = length(pop_name), mc.preschedule = F)
+})
+sapply(seq_along(outDir), function(w) {
+  mclapply(seq_along(pop_name), function(x) {
+    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
+  }, mc.cores = length(pop_name), mc.preschedule = F)
+})
+
+# For each population, divide features into quantiles based on decreasing orderingFactor
+for(x in 1:length(featuresGR_pop_list)) {
+  print(pop_name[x])
+  featuresDF <- data.frame(featuresGR_pop_list[[x]],
+                           quantile = as.character(""),
+                           stringsAsFactors = F)
+  mclapply(seq_along(orderingFactor), function(w) {
+    print(orderingFactor[w])
+    featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
+    quantilesStats <- data.frame()
+    for(k in 1:quantiles) {
+      if(k < quantiles) {
+      # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
+        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+      } else {
+      # Final quantile should span 0 to, e.g., 0.25 proportions of features
+        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+      }
+      write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
+                  file = paste0(outDir_list[[w]][x],
+                                "quantile", k, "_of_", quantiles,
+                                "_by_", orderingFactor[w],
+                                "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                paste0(substring(featureName, first = 10, last = 16),
+                                       collapse = "_"), "_",
+                                substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                  quote = FALSE, sep = "\t", row.names = FALSE)
+      stats <- data.frame(quantile = as.integer(k),
+                          n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
+                          mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
+                          total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
+                          mean_nucleotideDiversity = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),][,which(colnames(featuresDF) == orderingFactor[w])], na.rm = T)))
+      quantilesStats <- rbind(quantilesStats, stats)
+    }
+    write.table(quantilesStats,
+                file = paste0(outDir_list[[w]][x],
+                              "summary_", quantiles, "quantiles_by_", orderingFactor[w],
+                              "_of_",
+                              substring(featureName[1][1], first = 1, last = 5), "_in_",
+                              paste0(substring(featureName, first = 10, last = 16),
+                                     collapse = "_"), "_",
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                quote = FALSE, sep = "\t", row.names = FALSE)
+    write.table(featuresDF,
+                file = paste0(outDir_list[[w]][x],
+                              "features_", quantiles, "quantiles",
+                              "_by_", orderingFactor[w],
+                              "_of_",
+                              substring(featureName[1][1], first = 1, last = 5), "_in_",
+                              paste0(substring(featureName, first = 10, last = 16),
+                                     collapse = "_"), "_",
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                quote = FALSE, sep = "\t", row.names = FALSE)
+
+    # Divide ranLocs into quantiles based on feature quantile indices
+    ranLocsDF <- data.frame(ranLocsGR,
+                            random = as.character(""),
+                            stringsAsFactors = F)
+    # Get row indices for each feature quantile
+    quantileIndices <- lapply(1:quantiles, function(k) {
+      which(featuresDF$quantile == paste0("Quantile ", k))
+    })
+    for(k in 1:quantiles) {
+      ranLocsDF[quantileIndices[[k]],]$random <- paste0("Random ", k)
+    }
+    write.table(ranLocsDF,
+                file = paste0(outDir_list[[w]][x],
+                              "features_", quantiles, "quantiles",
+                              "_by_", orderingFactor[w],
+                              "_of_",
+                              substring(featureName[1][1], first = 1, last = 5), "_in_",
+                              paste0(substring(featureName, first = 10, last = 16),
+                                     collapse = "_"), "_",
+                              substring(featureName[1][1], first = 18), "_", pop_name[x], "_ranLocs.txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
   }, mc.cores = length(orderingFactor), mc.preschedule = F)
 }
