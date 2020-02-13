@@ -158,39 +158,73 @@ genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) 
   neutrality.stats(genomeClassSplit_list[[x]],
                    FAST = F, do.R2 = T)
 }, mc.cores = detectCores(), mc.preschedule = F)
-neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  data.frame(get.neutrality(genomeClassSplit_list[[x]],
-                            theta = T)[[1]],
-             stringsAsFactors = F)
-})
+## Below will extract stats for first population only
+#neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+#  data.frame(get.neutrality(genomeClassSplit_list[[x]],
+#                            theta = T)[[1]],
+#             stringsAsFactors = F)
+#})
 
 genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
   F_ST.stats(genomeClassSplit_list[[x]],
              detail = T, mode = "nucleotide", FAST = F)
 })
-F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  data.frame(get.F_ST(genomeClassSplit_list[[x]],
-             mode = "nucleotide"),
-             stringsAsFactors = F)
-})
+## Below will extract stats for first population only
+#F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+#  data.frame(get.F_ST(genomeClassSplit_list[[x]],
+#             mode = "nucleotide"),
+#             stringsAsFactors = F)
+#})
 
-# diversity.stats function generates error when applied to
-# genomeClassSplit_list consisting of multiple populations:
+# diversity.stats function generates error when applied to genomeClassSplit_list
+# consisting of multiple populations with "keep.site.info = T":
 # "Error in `rownames<-`(`*tmp*`, value = nam) :
 #   attempt to set 'rownames' on an object with no dimensions"
 # However, most diversity stats (but not Pi from Nei) are
 # available after running F_ST.stats
-#genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
-#  diversity.stats(genomeClassSplit_list[[x]],
-#                  pi = T, keep.site.info = T)
-#}, mc.cores = detectCores(), mc.preschedule = F)
+# If Pi from Nei is needed, run diversity.stats with "keep.site.info = F"
+# (HOWEVER: Pi shouldn't be used when "include.unknown = T"
+#  is specified in Whop_readVCF function call, as above)
+genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
+  diversity.stats(genomeClassSplit_list[[x]],
+                  pi = T, keep.site.info = F)
+}, mc.cores = detectCores(), mc.preschedule = F)
+## Below will extract stats for first population only
 #diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
 #  data.frame(get.diversity(genomeClassSplit_list[[x]],
 #                           between = F)[[1]],
 #             stringsAsFactors = F)
 #})
 
-# Combine statistics into one dataframe
+# For each population, combine statistics into one dataframe
+popgen_stats_df_pop_list_of_chr_lists <- lapply(seq_along(pop_list), function(w) {
+#for(w in seq_along(pop_list)) {
+  popgen_stats_df_chr_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  data.frame(chr = as.character(chrs[x]),
+             start = as.integer(sub(pattern = " - \\d+", replacement = "",
+                                    x = genomeClassSplit_list[[x]]@region.names)),
+             end = as.integer(sub(pattern = "\\d+ - ", replacement = "",
+                                  x = genomeClassSplit_list[[x]]@region.names)),
+             width = as.integer(genomeClassSplit_list[[x]]@n.sites),
+             ## OR
+             #width = as.integer( ( as.integer(sub(pattern = "\\d+ - ", replacement = "",
+             #                                     x = genomeClassSplit_list[[x]]@region.names)) -
+             #                      as.integer(sub(pattern = " - \\d+", replacement = "",
+             #                                     x = genomeClassSplit_list[[x]]@region.names)) ) + 1 ),
+             strand = as.character(features[features$V1 == chrs[x],]$V7),
+             ID = as.character(features[features$V1 == chrs[x],]$V9),
+             nuc.diversity.within = as.numeric(genomeClassSplit_list[[x]]@nuc.diversity.within[,w]),
+             hap.diversity.within = as.numeric(genomeClassSplit_list[[x]]@hap.diversity.within[,w]),
+             Pi_Nei = as.numeric(genomeClassSplit_list[[x]]@Pi[,w]),
+             nuc.F_ST.vs.all = as.numeric(genomeClassSplit_list[[x]]@nuc.F_ST.vs.all[,w]),
+             hap.F_ST.vs.all = as.numeric(genomeClassSplit_list[[x]]@hap.F_ST.vs.all[,w]),
+             nucleotide.F_ST = as.numeric(genomeClassSplit_list[[x]]@nucleotide.F_ST[,1]),
+             Tajima.D = as.numeric(genomeClassSplit_list[[x]]@Tajima.D[,w]),
+             neutrality_stats_df_list[[x]],
+             stringsAsFactors = F,
+             row.names = as.character(1:dim(neutrality_stats_df_list[[x]])[1]))
+})
+
 popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
   data.frame(chr = as.character(chrs[x]),
              start = as.integer(sub(pattern = " - \\d+", replacement = "",
