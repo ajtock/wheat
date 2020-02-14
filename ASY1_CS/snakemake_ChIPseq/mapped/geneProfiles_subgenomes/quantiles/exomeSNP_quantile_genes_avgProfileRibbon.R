@@ -5,7 +5,7 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript exomeSNP_quantile_genes_avgProfileRibbon.R nucleotideDiversity Diversity WesternEurope both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 3 100kb 1 '0.75,0.96'
+# /applications/R/R-3.5.0/bin/Rscript exomeSNP_quantile_genes_avgProfileRibbon.R nucleotideDiversity Diversity WesternEurope both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 2 100kb 1 '0.75,0.96'
 
 #orderingFactor <- "nucleotideDiversity"
 #orderingFactorName <- "Diversity"
@@ -21,7 +21,7 @@
 #binSize <- 20
 #binName <- "20bp"
 #region <- "bodies"
-#quantiles <- 3
+#quantiles <- 2
 #winName <- "100kb"
 #minMarkerDist <- 1
 ## top left
@@ -82,7 +82,7 @@ ranFeatNamePlot <- paste0("Random ",
 ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
-quantileColours <- c("red", "purple", "navy")
+quantileColours <- c("red", "navy")
 
 # Define feature start and end labels for plotting
 if(grepl("genes", featureName)) {
@@ -107,7 +107,7 @@ featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                                 paste0(substring(featureName, first = 10, last = 16),
                                        collapse = "_"), "_",
-                                substring(featureName[1][1], first = 18), ".txt"),
+                                substring(featureName[1][1], first = 18), "_", pop_name, ".txt"),
                          header = T, sep = "\t")
 
 # Load features to confirm feature (row) ordering in "featuresDF" is the same
@@ -708,7 +708,7 @@ ggObj1_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -765,7 +765,7 @@ ggObj2_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -822,7 +822,7 @@ ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
        y = log2ChIPNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -1126,7 +1126,7 @@ ggObj1_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -1183,7 +1183,7 @@ ggObj2_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -1240,7 +1240,7 @@ ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
        y = otherNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -1538,7 +1538,7 @@ ggObj1_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -1595,7 +1595,7 @@ ggObj2_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -1652,7 +1652,7 @@ ggObj3_combined_sRNA <- mclapply(seq_along(sRNANamesPlot), function(x) {
        y = sRNANamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -1950,7 +1950,7 @@ ggObj1_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2007,7 +2007,7 @@ ggObj2_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2064,7 +2064,7 @@ ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
        y = DNAmethNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -2390,7 +2390,7 @@ ggObj1_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2447,7 +2447,7 @@ ggObj2_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2504,7 +2504,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
        y = SNPclassNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
@@ -2845,7 +2845,7 @@ ggObj1_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
-  annotation_custom(legendLabs_feature[[3]]) +
+#  annotation_custom(legendLabs_feature[[3]]) +
 #  annotation_custom(legendLabs_feature[[4]]) +
   theme_bw() +
   theme(
@@ -2902,7 +2902,7 @@ ggObj2_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
-  annotation_custom(legendLabs_ranFeat[[3]]) +
+#  annotation_custom(legendLabs_ranFeat[[3]]) +
 #  annotation_custom(legendLabs_ranFeat[[4]]) +
   theme_bw() +
   theme(
@@ -2959,7 +2959,7 @@ ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
        y = superfamNamesPlot[x]) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
-  annotation_custom(legendLabs_ranLoc[[3]]) +
+#  annotation_custom(legendLabs_ranLoc[[3]]) +
 #  annotation_custom(legendLabs_ranLoc[[4]]) +
   theme_bw() +
   theme(
