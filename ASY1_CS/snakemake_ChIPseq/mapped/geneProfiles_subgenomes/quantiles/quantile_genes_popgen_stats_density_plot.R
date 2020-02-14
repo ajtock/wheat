@@ -86,7 +86,7 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
-for(x in 1:length(pop_name)) {
+mclapply(seq_along(pop_name), function(x) {
 featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
                                 "_by_", sub("_\\w+", "", libName), "_in_",
                                 region, "_of_",
@@ -139,7 +139,8 @@ selectRandomFeatures <- function(features, n) {
 }
 
 # Define seed so that random selections are reproducible
-set.seed(93750174)
+#set.seed(93750174)
+set.seed(453838430)
 
 # Divide features into random sets of equal number,
 # with the same number of genes per chromosome as
@@ -163,6 +164,12 @@ lapply(seq_along(1:quantiles), function(k) {
     }
   })
 })
+## Alternatively, randomly select without considering per-chromosome features
+#randomPCIndices <- lapply(1:quantiles, function(k) {
+#  randomPCfeatureskChr <- selectRandomFeatures(features = featuresDF,
+#                                               n = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1])
+#  as.integer(rownames(randomPCfeatureskChr))
+#})
 
 featuresDFtmp <- data.frame(featuresDF,
                             random = as.character(""),
@@ -174,25 +181,46 @@ for(k in 1:quantiles) {
   ranFeatsDF <- rbind(ranFeatsDF, ranFeatsDFk)
 }
 
+#k <- 1
+#dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+#               !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]) &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0 &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] < 0.001,])
+#
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] < 0.0002,])
+#dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+##               !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]) &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] >= 0 &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] < 0.0002,])
+#dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+##               !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]) &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] >= 0.0002 &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] < 0.0002,])
+#max(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+##               !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]) &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] >= 0 &
+#               featuresDF[,which(colnames(featuresDF) == orderingFactor)] < 0.0002,][,which(colnames(featuresDF) == orderingFactor)],
+#    na.rm = T)
+#
+#dim(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k) &
+#               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] >= 0 &
+#               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] < 0.02,])
+
 featuresDF <- featuresDF[featuresDF[,which(colnames(featuresDF) == orderingFactor)] <=
                          quantile(featuresDF[,which(colnames(featuresDF) == orderingFactor)],
-                                  probs = 0.9, na.rm = T),]
+                                  probs = 0.99, na.rm = T),]
+#                         featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0,]
 ranFeatsDF <- ranFeatsDF[ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] <=
                          quantile(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)],
-                                  probs = 0.9, na.rm = T),]
-xmin <- min(c(
-              featuresDF[unlist(quantileIndices),][,which(colnames(featuresDF) == orderingFactor)],
-              featuresDF[unlist(randomPCIndices),][,which(colnames(featuresDF) == orderingFactor)]
-#              ranLocsDF[unlist(quantileIndices),][,which(colnames(featuresDF) == orderingFactor)]
-             ), na.rm = T)
-xmax <- max(c(
-              featuresDF[unlist(quantileIndices),][,which(colnames(featuresDF) == orderingFactor)],
-              featuresDF[unlist(randomPCIndices),][,which(colnames(featuresDF) == orderingFactor)]
-#              ranLocsDF[unlist(quantileIndices),][,which(colnames(featuresDF) == orderingFactor)]
-             ), na.rm = T)
+                                  probs = 0.99, na.rm = T),]
+#                         ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] != 0,]
+xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
+              na.rm = T)
+xmax <- max(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
+              na.rm = T)
 minDensity <- 0
 maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",][,which(colnames(featuresDF) == orderingFactor)],
-                          na.rm = T)$y)+2
+                          na.rm = T)$y)+0.2
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
@@ -204,16 +232,16 @@ maxDensity <- max(
                         na.rm = T)$y)))
      })
    )
-)+2
+)+0.2
 
-# Recombination rate (cM/Mb) density plot function
-popgen_stats_plotFun <- function(featuresDF,
+# Population genetics density plot function
+popgen_stats_plotFun <- function(lociDF,
                                  parameter,
                                  parameterLab,
                                  featureGroup,
                                  featureNamePlot,
                                  quantileColours) {
-  ggplot(data = featuresDF,
+  ggplot(data = lociDF,
          mapping = aes(x = get(parameter),
                        colour = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
                        group = reorder(x = get(featureGroup), X = desc(get(featureGroup))))) +
@@ -245,57 +273,58 @@ popgen_stats_plotFun <- function(featuresDF,
   ggtitle(bquote(.(featureNamePlot)))
 }
 
-popgen_stats_plotFun <- function(lociDF,
-                                 parameter,
-                                 parameterLab,
-                                 featureGroup,
-                                 featureNamePlot,
-                                 quantileColours) {
-  ggplot(data = lociDF,
-         mapping = aes(x = get(parameter),
-                       fill = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
-                       colour = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
-                       group = reorder(x = get(featureGroup), X = desc(get(featureGroup))))) +
-  scale_colour_manual(values = rev(quantileColours)) +
-  geom_histogram(binwidth = 0.01) +
-  scale_x_continuous(
-                     limits = c(xmin, xmax),
-                     labels = function(x) sprintf("%1.1f", x)) +
-  scale_y_continuous(
-#                     limits = c(minDensity, maxDensity),
-                     labels = function(x) sprintf("%1.1f", x)) +
-  labs(x = parameterLab,
-       y = "Frequency") +
-  theme_bw() +
-  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
-        axis.ticks.y = element_line(size = 2.0, colour = "black"),
-        axis.ticks.x = element_blank(),
-        axis.ticks.length = unit(0.25, "cm"),
-        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
-        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono"),
-        axis.title = element_text(size = 26, colour = "black"),
-        legend.position = c(0.8, 0.8),
-        legend.text = element_text(size = 22, colour = "black"),
-        legend.key.size = unit(1, "cm"),
-        legend.title = element_blank(),
-        panel.grid = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
-        plot.title = element_text(hjust = 0.5, size = 30)) +
-  ggtitle(bquote(.(featureNamePlot)))
-}
+## histogram function (NEEDS WORK)
+#popgen_stats_plotFun <- function(lociDF,
+#                                 parameter,
+#                                 parameterLab,
+#                                 featureGroup,
+#                                 featureNamePlot,
+#                                 quantileColours) {
+#  ggplot(data = lociDF,
+#         mapping = aes(x = get(parameter),
+#                       fill = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
+#                       colour = reorder(x = get(featureGroup), X = desc(get(featureGroup))),
+#                       group = reorder(x = get(featureGroup), X = desc(get(featureGroup))))) +
+#  scale_colour_manual(values = rev(quantileColours)) +
+#  geom_histogram(binwidth = 0.01) +
+#  scale_x_continuous(
+#                     limits = c(xmin, xmax),
+#                     labels = function(x) sprintf("%1.1f", x)) +
+#  scale_y_continuous(
+##                     limits = c(minDensity, maxDensity),
+#                     labels = function(x) sprintf("%1.1f", x)) +
+#  labs(x = parameterLab,
+#       y = "Frequency") +
+#  theme_bw() +
+#  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+#        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+#        axis.ticks.x = element_blank(),
+#        axis.ticks.length = unit(0.25, "cm"),
+#        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+#        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+#        axis.title = element_text(size = 26, colour = "black"),
+#        legend.position = c(0.8, 0.8),
+#        legend.text = element_text(size = 22, colour = "black"),
+#        legend.key.size = unit(1, "cm"),
+#        legend.title = element_blank(),
+#        panel.grid = element_blank(),
+#        panel.border = element_blank(),
+#        panel.background = element_blank(),
+#        plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+#        plot.title = element_text(hjust = 0.5, size = 30)) +
+#  ggtitle(bquote(.(featureNamePlot)))
+#}
 
 ggObjGA_feature <- popgen_stats_plotFun(lociDF = featuresDF,
                                         parameter = orderingFactor,
-                                        parameterLab = orderingFactorName,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name[x], ")"),
                                         featureGroup = "quantile", 
                                         featureNamePlot = featureNamePlot,
                                         quantileColours = quantileColours
                                        )
 ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF,
                                         parameter = orderingFactor,
-                                        parameterLab = orderingFactorName,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name[x], ")"),
                                         featureGroup = "random", 
                                         featureNamePlot = ranFeatNamePlot,
                                         quantileColours = quantileColours
@@ -320,4 +349,4 @@ ggsave(paste0(plotDir[x],
               substring(featureName[1][1], first = 18), "_", pop_name[x], "_v140220.pdf"),
        plot = ggObjGA_combined,
        height = 6.5, width = 14)
-
+}, mc.cores = length(pop_name), mc.preschedule = F)
