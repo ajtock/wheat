@@ -4,7 +4,7 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 nucleotideDiversity 'Nucleotide diversity'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD 'Tajima D'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -12,8 +12,9 @@
 #                               split = ","))
 #region <- "promoters"
 #quantiles <- 4
-#orderingFactor <- "nucleotideDiversity"
-#orderingFactorName <- "Nucleotide diversity"
+#orderingFactor <- "Tajima D"
+#orderingFactorName <- "Tajima's D"
+#orderingFactorName <- expression(paste("Rozas' R"^"2"))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -47,6 +48,19 @@ pop_name <- c("NorthAfrica",
               "CentralAmerica",
               "SouthAmerica",
               "Oceania")
+pop_name_plot <- c("North Africa",
+                   "Sub-Saharan Africa",
+                   "Western Europe",
+                   "Eastern Europe",
+                   "Middle East",
+                   "Former SU",
+                   "Central Asia",
+                   "South Asia",
+                   "East Asia",
+                   "North America",
+                   "Central America",
+                   "South America",
+                   "Oceania")
 
 outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                  "_in_", region, "/")
@@ -64,7 +78,7 @@ featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
 ranFeatNamePlot <- paste0("Random ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles")
-ranLocNamePlot <- "Random locus quantiles"
+#ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
@@ -317,21 +331,21 @@ popgen_stats_plotFun <- function(lociDF,
 
 ggObjGA_feature <- popgen_stats_plotFun(lociDF = featuresDF,
                                         parameter = orderingFactor,
-                                        parameterLab = paste0(orderingFactorName, " (", pop_name[x], ")"),
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
                                         featureGroup = "quantile", 
                                         featureNamePlot = featureNamePlot,
                                         quantileColours = quantileColours
                                        )
 ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF,
                                         parameter = orderingFactor,
-                                        parameterLab = paste0(orderingFactorName, " (", pop_name[x], ")"),
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
                                         featureGroup = "random", 
                                         featureNamePlot = ranFeatNamePlot,
                                         quantileColours = quantileColours
                                        )
 #ggObjGA_ranLocs <- popgen_stats_plotFun(lociDF = ranLocsDF,
 #                                        parameter = orderingFactor,
-#                                        parameterLab = orderingFactorName,
+#                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
 #                                        featureGroup = "random", 
 #                                        featureNamePlot = ranLocNamePlot,
 #                                        quantileColours = quantileColours
