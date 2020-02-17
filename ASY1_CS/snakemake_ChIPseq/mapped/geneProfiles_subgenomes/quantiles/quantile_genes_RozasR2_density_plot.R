@@ -277,14 +277,14 @@ summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_
 #               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] >= 0 &
 #               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] < 0.02,])
 
-featuresDF <- featuresDF[featuresDF[,which(colnames(featuresDF) == orderingFactor)] <=
-                         quantile(featuresDF[,which(colnames(featuresDF) == orderingFactor)],
-                                  probs = 0.90, na.rm = T),]
-#                         featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0,]
-ranFeatsDF <- ranFeatsDF[ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] <=
-                         quantile(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)],
-                                  probs = 0.90, na.rm = T),]
-#                         ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] != 0,]
+featuresDF <- featuresDF[which(featuresDF[,which(colnames(featuresDF) == orderingFactor)] <=
+                               quantile(featuresDF[,which(colnames(featuresDF) == orderingFactor)],
+                                        probs = 0.90, na.rm = T)),]
+#                               featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0,]
+ranFeatsDF <- ranFeatsDF[which(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] <=
+                               quantile(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)],
+                                        probs = 0.90, na.rm = T)),]
+#                               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] != 0,]
 xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
 xmax <- max(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
