@@ -12,8 +12,9 @@
 #                               split = ","))
 #region <- "promoters"
 #quantiles <- 4
-#orderingFactor <- "Tajima D"
+#orderingFactor <- "TajimaD"
 #orderingFactorName <- "Tajima's D"
+#orderingFactor <- "RozasR2"
 #orderingFactorName <- expression(paste("Rozas' R"^"2"))
 
 args <- commandArgs(trailingOnly = T)
@@ -195,6 +196,64 @@ for(k in 1:quantiles) {
   ranFeatsDF <- rbind(ranFeatsDF, ranFeatsDFk)
 }
 
+# Calculate means, SDs, SEMs and 95% CIs
+# and create dataframe of summary statistics for plotting
+featuresDF_quantileMean <- sapply(1:quantiles, function(k) {
+  mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),][,colnames(featuresDF) == orderingFactor,], na.rm = T)
+})
+featuresDF_quantileSD <- sapply(1:quantiles, function(k) {
+  sd(featuresDF[featuresDF$quantile == paste0("Quantile ", k),][,colnames(featuresDF) == orderingFactor,], na.rm = T)
+})
+featuresDF_quantileSEM <- sapply(1:quantiles, function(k) {
+  featuresDF_quantileSD[k] / sqrt( (dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1] - 1) )
+})
+featuresDF_quantileCIlower <- sapply(1:quantiles, function(k) {
+  featuresDF_quantileMean[k] -
+    ( qt(0.975, df = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]-1 ) *
+      featuresDF_quantileSEM[k] )
+})
+featuresDF_quantileCIupper <- sapply(1:quantiles, function(k) {
+  featuresDF_quantileMean[k] +
+    ( qt(0.975, df = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]-1 ) *
+      featuresDF_quantileSEM[k] )
+})
+featuresDF_summary_stats <- data.frame(quantile = paste0("Quantile ", 1:4),
+                                       Mean = featuresDF_quantileMean,
+                                       SD = featuresDF_quantileSD,
+                                       SEM = featuresDF_quantileSEM,
+                                       CIlower = featuresDF_quantileCIlower,
+                                       CIupper = featuresDF_quantileCIupper,
+                                       stringsAsFactors = F)
+
+ranFeatsDF_randomMean <- sapply(1:quantiles, function(k) {
+  mean(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),][,colnames(ranFeatsDF) == orderingFactor,], na.rm = T)
+})
+ranFeatsDF_randomSD <- sapply(1:quantiles, function(k) {
+  sd(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),][,colnames(ranFeatsDF) == orderingFactor,], na.rm = T)
+})
+ranFeatsDF_randomSEM <- sapply(1:quantiles, function(k) {
+  ranFeatsDF_randomSD[k] / sqrt( (dim(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),])[1] - 1) )
+})
+ranFeatsDF_randomCIlower <- sapply(1:quantiles, function(k) {
+  ranFeatsDF_randomMean[k] -
+    ( qt(0.975, df = dim(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),])[1]-1 ) *
+      ranFeatsDF_randomSEM[k] )
+})
+ranFeatsDF_randomCIupper <- sapply(1:quantiles, function(k) {
+  ranFeatsDF_randomMean[k] +
+    ( qt(0.975, df = dim(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),])[1]-1 ) *
+      ranFeatsDF_randomSEM[k] )
+})
+ranFeatsDF_summary_stats <- data.frame(random = paste0("Random ", 1:4),
+                                       Mean = ranFeatsDF_randomMean,
+                                       SD = ranFeatsDF_randomSD,
+                                       SEM = ranFeatsDF_randomSEM,
+                                       CIlower = ranFeatsDF_randomCIlower,
+                                       CIupper = ranFeatsDF_randomCIupper,
+                                       stringsAsFactors = F)
+summary_stats_min <- min(c(featuresDF_summary_stats$CIlower, ranFeatsDF_summary_stats$CIlower), na.rm = T)
+summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_stats$CIupper), na.rm = T)
+
 #k <- 1
 #dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
 #               !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]) &
@@ -248,12 +307,25 @@ maxDensity <- max(
    )
 )+0.2
 
-# Population genetics density plot function
+# Define legend labels
+legendLabs_feature <- lapply(1:quantiles, function(x) {
+  grobTree(textGrob(bquote(.(paste0("Quantile ", 1:quantiles)[x])),
+                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 22)))
+})
+legendLabs_ranFeat <- lapply(1:quantiles, function(x) {
+  grobTree(textGrob(bquote(.(paste0("Random ", 1:quantiles)[x])),
+                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 22)))
+})
+
+# Population genetics statistic density plot function
 popgen_stats_plotFun <- function(lociDF,
                                  parameter,
                                  parameterLab,
                                  featureGroup,
                                  featureNamePlot,
+                                 legendLabs,
                                  quantileColours) {
   ggplot(data = lociDF,
          mapping = aes(x = get(parameter),
@@ -264,21 +336,96 @@ popgen_stats_plotFun <- function(lociDF,
   scale_x_continuous(limits = c(xmin, xmax),
                      labels = function(x) sprintf("%1.1f", x)) +
   scale_y_continuous(limits = c(minDensity, maxDensity),
-                     labels = function(x) sprintf("%1.1f", x)) +
+                     labels = function(x) sprintf("%1.3f", x)) +
   labs(x = parameterLab,
        y = "Density") +
+  annotation_custom(legendLabs[[1]]) +
+  annotation_custom(legendLabs[[2]]) +
+  annotation_custom(legendLabs[[3]]) +
+  annotation_custom(legendLabs[[4]]) +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+        axis.line.x = element_line(size = 2.0, colour = "black"),
+        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.x = element_line(size = 2.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 26, colour = "black"),
+        legend.position = "none",
+##       TEST WITH THIS WAY OF PLOTTING LEGEND LABELS TO CHECK THAT QUANTILES CORRESPOND TO EXPECTED COLOURS
+#        legend.position = c(0.8, 0.8),
+#        legend.text = element_text(size = 22, colour = "black"),
+#        legend.key.size = unit(1, "cm"),
+#        legend.title = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.3,0.3),"cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot)))
+}
+
+ggObjGA_feature <- popgen_stats_plotFun(lociDF = featuresDF,
+                                        parameter = orderingFactor,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
+                                        featureGroup = "quantile", 
+                                        featureNamePlot = featureNamePlot,
+                                        legendLabs = legendLabs_feature,
+                                        quantileColours = quantileColours
+                                       )
+ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF,
+                                        parameter = orderingFactor,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
+                                        featureGroup = "random", 
+                                        featureNamePlot = ranFeatNamePlot,
+                                        legendLabs = legendLabs_ranFeat,
+                                        quantileColours = quantileColours
+                                       )
+#ggObjGA_combined <- grid.arrange(ggObjGA_feature,
+#                                 ggObjGA_ranFeat,
+#                                 ncol = 2, as.table = F)
+#ggsave(paste0(plotDir[x],
+#              orderingFactor, "_around_", quantiles, "quantiles",
+#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
+#              paste0(substring(featureName, first = 10, last = 16),
+#                     collapse = "_"), "_",
+#              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v140220.pdf"),
+#       plot = ggObjGA_combined,
+#       height = 6.5, width = 14)
+
+# Plot means and 95% confidence intervals
+popgen_stats_meanCIs <- function(dataFrame,
+                                 parameterLab,
+                                 featureGroup,
+                                 featureNamePlot,
+                                 quantileColours) {
+  ggplot(data = dataFrame,
+         mapping = aes(x = get(featureGroup),
+                       y = Mean,
+                       colour = get(featureGroup))) +
+  labs(colour = "") +
+  geom_point(shape = 19, size = 6, position = position_dodge(width = 0.2)) +
+  geom_errorbar(mapping = aes(ymin = CIlower,
+                              ymax = CIupper),
+                width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
+  scale_colour_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(summary_stats_min, summary_stats_max),
+                     labels = function(x) sprintf("%1.2f", x)) +
+#  scale_x_discrete(breaks = as.vector(dataFrame$quantile),
+#                   labels = as.vector(dataFrame$quantile)) +
+  labs(x = "",
+       y = parameterLab) +
   theme_bw() +
   theme(axis.line.y = element_line(size = 2.0, colour = "black"),
         axis.ticks.y = element_line(size = 2.0, colour = "black"),
         axis.ticks.x = element_blank(),
         axis.ticks.length = unit(0.25, "cm"),
         axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
-        axis.text.x = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 22, colour = quantileColours, hjust = 1.0, vjust = 1.0, angle = 45),
         axis.title = element_text(size = 26, colour = "black"),
-        legend.position = c(0.8, 0.8),
-        legend.text = element_text(size = 22, colour = "black"),
-        legend.key.size = unit(1, "cm"),
-        legend.title = element_blank(),
+        legend.position = "none",
         panel.grid = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
@@ -286,6 +433,37 @@ popgen_stats_plotFun <- function(lociDF,
         plot.title = element_text(hjust = 0.5, size = 30)) +
   ggtitle(bquote(.(featureNamePlot)))
 }
+
+ggObjGA_feature_mean <- popgen_stats_meanCIs(dataFrame = featuresDF_summary_stats,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
+                                        featureGroup = "quantile",
+                                        featureNamePlot = featureNamePlot,
+                                        quantileColours = quantileColours
+                                       )
+ggObjGA_ranFeat_mean <- popgen_stats_meanCIs(dataFrame = ranFeatsDF_summary_stats,
+                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
+                                        featureGroup = "random",
+                                        featureNamePlot = ranFeatNamePlot,
+                                        quantileColours = quantileColours
+                                       )
+ggObjGA_combined <- grid.arrange(ggObjGA_feature,
+                                 ggObjGA_feature_mean,
+                                 ggObjGA_ranFeat,
+                                 ggObjGA_ranFeat_mean,
+                                 ncol = 2, as.table = F)
+ggsave(paste0(plotDir[x],
+              orderingFactor, "_around_", quantiles, "quantiles",
+              "_by_log2_", libName, "_control_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v140220.pdf"),
+       plot = ggObjGA_combined,
+       height = 13, width = 14)
+
+}, mc.cores = length(pop_name), mc.preschedule = F)
+
+
 
 ## histogram function (NEEDS WORK)
 #popgen_stats_plotFun <- function(lociDF,
@@ -329,38 +507,43 @@ popgen_stats_plotFun <- function(lociDF,
 #  ggtitle(bquote(.(featureNamePlot)))
 #}
 
-ggObjGA_feature <- popgen_stats_plotFun(lociDF = featuresDF,
-                                        parameter = orderingFactor,
-                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
-                                        featureGroup = "quantile", 
-                                        featureNamePlot = featureNamePlot,
-                                        quantileColours = quantileColours
-                                       )
-ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF,
-                                        parameter = orderingFactor,
-                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
-                                        featureGroup = "random", 
-                                        featureNamePlot = ranFeatNamePlot,
-                                        quantileColours = quantileColours
-                                       )
-#ggObjGA_ranLocs <- popgen_stats_plotFun(lociDF = ranLocsDF,
-#                                        parameter = orderingFactor,
-#                                        parameterLab = paste0(orderingFactorName, " (", pop_name_plot[x], ")"),
-#                                        featureGroup = "random", 
-#                                        featureNamePlot = ranLocNamePlot,
-#                                        quantileColours = quantileColours
-#                                       )
-ggObjGA_combined <- grid.arrange(ggObjGA_feature,
-                                 ggObjGA_ranFeat,
-#                                 ggObjGA_ranLocs,
-                                 ncol = 2, as.table = F)
-ggsave(paste0(plotDir[x],
-              orderingFactor, "_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v140220.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5, width = 14)
-}, mc.cores = length(pop_name), mc.preschedule = F)
+## Population genetics statistic boxplot or violin plot function
+#popgen_stats_plotFun <- function(lociDF,
+#                                 parameter,
+#                                 parameterLab,
+#                                 featureGroup,
+#                                 featureNamePlot,
+#                                 quantileColours) {
+#  ggplot(data = lociDF,
+#         mapping = aes(x = get(featureGroup),
+#                       y = get(parameter),
+#                       colour = get(featureGroup))) +
+#  scale_colour_manual(values = quantileColours) +
+#  #geom_boxplot(mapping = aes(colour = get(featureGroup)),
+#  #             notch = TRUE,
+#  #             varwidth = TRUE) +
+#  geom_violin(scale = "count",
+#              trim = FALSE,
+#              draw_quantiles = c(0.25, 0.50, 0.75)) +
+#  #geom_beeswarm(cex = 6,
+#  #              size = 4) +
+#  scale_y_continuous(limits = c(xmin, xmax),
+#                     labels = function(x) sprintf("%1.0f", x)) +
+#  labs(x = "",
+#       y = parameterLab) +
+#  theme_bw() +
+#  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+#        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+#        axis.ticks.x = element_blank(),
+#        axis.ticks.length = unit(0.25, "cm"),
+#        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+#        axis.text.x = element_text(size = 18, colour = quantileColours),
+#        axis.title = element_text(size = 26, colour = "black"),
+#        legend.position = "none",
+#        panel.grid = element_blank(),
+#        panel.border = element_blank(),
+#        panel.background = element_blank(),
+#        plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+#        plot.title = element_text(hjust = 0.5, size = 30)) +
+#  ggtitle(bquote(.(featureNamePlot)))
+#}
