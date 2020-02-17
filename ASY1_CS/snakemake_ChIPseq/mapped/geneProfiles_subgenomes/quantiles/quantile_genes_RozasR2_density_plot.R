@@ -4,7 +4,7 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD 'Tajima D'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_RozasR2_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 RozasR2 'Rozas R2'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -12,8 +12,8 @@
 #                               split = ","))
 #region <- "promoters"
 #quantiles <- 4
-#orderingFactor <- "TajimaD"
-#orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+#orderingFactor <- "RozasR2"
+#orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -279,11 +279,11 @@ summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_
 
 featuresDF <- featuresDF[featuresDF[,which(colnames(featuresDF) == orderingFactor)] <=
                          quantile(featuresDF[,which(colnames(featuresDF) == orderingFactor)],
-                                  probs = 0.99, na.rm = T),]
+                                  probs = 0.90, na.rm = T),]
 #                         featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0,]
 ranFeatsDF <- ranFeatsDF[ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] <=
                          quantile(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)],
-                                  probs = 0.99, na.rm = T),]
+                                  probs = 0.90, na.rm = T),]
 #                         ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] != 0,]
 xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
@@ -308,12 +308,12 @@ maxDensity <- max(
 # Define legend labels
 legendLabs_feature <- lapply(1:quantiles, function(x) {
   grobTree(textGrob(bquote(.(paste0("Quantile ", 1:quantiles)[x])),
-                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    x = 0.38, y = 0.90-((x-1)*0.07), just = "left",
                     gp = gpar(col = quantileColours[x], fontsize = 22)))
 })
 legendLabs_ranFeat <- lapply(1:quantiles, function(x) {
   grobTree(textGrob(bquote(.(paste0("Random ", 1:quantiles)[x])),
-                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    x = 0.38, y = 0.90-((x-1)*0.07), just = "left",
                     gp = gpar(col = quantileColours[x], fontsize = 22)))
 })
 
@@ -332,9 +332,9 @@ popgen_stats_plotFun <- function(lociDF,
   scale_colour_manual(values = rev(quantileColours)) +
   geom_density(size = 1.5) +
   scale_x_continuous(limits = c(xmin, xmax),
-                     labels = function(x) sprintf("%1.1f", x)) +
+                     labels = function(x) sprintf("%1.2f", x)) +
   scale_y_continuous(limits = c(minDensity, maxDensity),
-                     labels = function(x) sprintf("%1.3f", x)) +
+                     labels = function(x) sprintf("%2.0f", x)) +
   labs(x = parameterLab,
        y = "Density") +
   annotation_custom(legendLabs[[1]]) +
@@ -381,7 +381,7 @@ popgen_stats_meanCIs <- function(dataFrame,
                 width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
   scale_colour_manual(values = quantileColours) +
   scale_y_continuous(limits = c(summary_stats_min, summary_stats_max),
-                     labels = function(x) sprintf("%1.2f", x)) +
+                     labels = function(x) sprintf("%2.0f", x)) +
 #  scale_x_discrete(breaks = as.vector(dataFrame$quantile),
 #                   labels = as.vector(dataFrame$quantile)) +
   labs(x = "",
@@ -419,6 +419,7 @@ ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF,
                                         legendLabs = legendLabs_ranFeat,
                                         quantileColours = quantileColours
                                        )
+
 ggObjGA_feature_mean <- popgen_stats_meanCIs(dataFrame = featuresDF_summary_stats,
                                         parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
                                         featureGroup = "quantile",
