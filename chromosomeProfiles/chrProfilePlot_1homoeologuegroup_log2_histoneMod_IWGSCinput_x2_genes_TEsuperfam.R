@@ -2,7 +2,7 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 30.0 in chrPartitionPlotCov2_feature2 function
+# Change xblocks height to 32.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_genes_TEsuperfam.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 forestgreen magenta3 180220 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
