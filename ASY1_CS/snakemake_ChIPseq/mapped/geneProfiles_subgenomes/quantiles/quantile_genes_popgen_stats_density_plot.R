@@ -66,9 +66,7 @@ outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
 outDir <- sapply(seq_along(pop_name), function(x) {
   paste0(outDir, pop_name[x], "/")
 })
-plotDir <- sapply(seq_along(pop_name), function(x) {
-  paste0(outDir, "plots/")
-})
+plotDir <- paste0(outDir, "plots/")
 
 # Define plot titles
 featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
