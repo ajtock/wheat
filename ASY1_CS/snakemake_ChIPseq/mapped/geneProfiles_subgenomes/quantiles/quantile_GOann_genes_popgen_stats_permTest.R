@@ -7,21 +7,21 @@
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' promoters 1 4 TajimaD 'Tajima D' 10000 0.0001
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
-#featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
-#                               split = ","))
-#featureNamePlot <- "Defense_response_genes"
-#GO_ID <- "0006952"
-#region <- "promoters"
-#quantileNo <- 1
-#quantiles <- 4
-#orderingFactor <- "TajimaD"
-#orderingFactorName <- bquote("Tajima's" ~ italic("D"))
-#orderingFactor <- "RozasR2"
-#orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
-#randomSets <- 10000
-#minPval <- 0.0001
+libName <- "ASY1_CS_Rep1_ChIP"
+dirName <- "ASY1_CS"
+featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
+                               split = ","))
+featureNamePlot <- "Defense_response_genes"
+GO_ID <- "0006952"
+region <- "promoters"
+quantileNo <- 1
+quantiles <- 4
+orderingFactor <- "TajimaD"
+orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+orderingFactor <- "RozasR2"
+orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
+randomSets <- 10000
+minPval <- 0.0001
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -41,12 +41,12 @@ library(parallel)
 library(plotrix)
 #library(tidyr)
 #library(dplyr)
-#library(ggplot2)
+library(ggplot2)
 #library(ggbeeswarm)
 #library(ggthemes)
-#library(grid)
-#library(gridExtra)
-#library(extrafont)
+library(grid)
+library(gridExtra)
+library(extrafont)
 
 pop_name <- c("NorthAfrica",
               "SubSaharanAfrica",
@@ -82,6 +82,18 @@ outDir <- sapply(seq_along(pop_name), function(x) {
 })
 plotDir <- paste0(outDir, "plots/")
 
+# Define quantile colours
+quantileColours <- c("red", "black")
+makeTransparent <- function(thisColour, alpha = 180)
+{
+  newColour <- col2rgb(thisColour)
+  apply(newColour, 2, function(x) {
+    rgb(red = x[1], green = x[2], blue = x[3],
+        alpha = alpha, maxColorValue = 255)
+  })
+}
+quantileColours <- makeTransparent(quantileColours)
+
 # Load IDs of genes annotated with GO_ID in quantile quantileNo
 IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_in_", region,
                                       "/GO/featureIDs_quantile", quantileNo, "_of_", quantiles,
@@ -112,9 +124,14 @@ anno$`Gene-ID` <- sub(pattern = "\\.\\d+", replacement = "",
 # Replace "1G" with "2G" in gene IDs for consistency with v1.1
 anno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
                       x = anno$`Gene-ID`)
+IDs_annoGOIDs <- as.character(anno[anno$`Gene-ID` %in% IDs,]$`GO-IDs-(Description)-via-Interpro`)
+print(IDs_annoGOIDs)
+
 # Get subset corresponding to genes annotated with enriched GO_ID, and not in quantile quantileNo
-annoGOIDs <- anno[which(grepl(pattern = GO_ID, x = anno$`GO-IDs-via-Interpro`,
-                              fixed = T)),]
+annoGOIDs <- anno[unique(c(which(grepl(pattern = "defense response",
+                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)),
+                           which(grepl(pattern = "regulation of systemic acquired resistance",
+                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)))),]
 annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
 
 # Load table of features grouped into quantiles
@@ -138,10 +155,86 @@ for(x in seq_along(pop_name)) {
   #featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs),]
   featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% annoGOIDs,]
+  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
   featuresDF_IDs <- featuresDF_IDsDF$featureID
   featuresDF_nonIDs <- featuresDF_nonIDsDF$featureID
   featuresDF_annoGOIDs <- featuresDF_annoGOIDsDF$featureID
+
+  # Combine featuresDF_IDsDF and featuresDF_annoGOIDsDF to enable calculation of LSDs
+  IDsDF_annoGOIDsDF <- rbind(featuresDF_IDsDF, featuresDF_annoGOIDsDF)
+  # Linear model
+  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
+  # Create a dataframe containing means, SDs, SEMs or interval bounds
+  estimates <- expand.grid(quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
+  # Add the mean orderingFactor values to the dataframe
+  estimates$mean <- predict(lm1, newdata = estimates)
+  # Add the standard error of the difference between means to the estimates dataframe
+  estimates$sed <- summary(lm1)$coefficients[2,2]
+  # Get gene-grouping-specific 95% critical value of t for the gene-grouping-specific df
+  alpha <- 0.05
+  tQuantile1 <- qt(p = 1-(alpha/2),
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantile 1",])[1])
+  tNotQuantile1 <- qt(p = 1-(alpha/2),
+                      df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Not Quantile 1",])[1]) 
+  estimates$lsd <- c(tQuantile1*estimates$sed[1], tNotQuantile1*estimates$sed[2])
+
+  # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
+  popgen_stats_meanLSDs <- function(dataFrame,
+                                    parameterLab,
+                                    featureGroup,
+                                    featureNamePlot) {
+    ggplot(data = dataFrame,
+           mapping = aes(x = get(featureGroup),
+                         y = mean,
+                         colour = get(featureGroup))) +
+    labs(colour = "") +
+    geom_point(shape = 19, size = 6, position = position_dodge(width = 0.2)) +
+    geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
+                                ymax = mean+(lsd/2)),
+                  width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
+    scale_colour_manual(values = quantileColours) +
+    scale_y_continuous(
+  #                     limits = c(summary_stats_min, summary_stats_max),
+                       labels = function(x) sprintf("%1.2f", x)) +
+  #  scale_x_discrete(breaks = as.vector(dataFrame$quantile),
+  #                   labels = as.vector(dataFrame$quantile)) +
+    labs(x = "",
+         y = parameterLab) +
+    theme_bw() +
+    theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+          axis.ticks.y = element_line(size = 2.0, colour = "black"),
+          axis.ticks.x = element_blank(),
+          axis.ticks.length = unit(0.25, "cm"),
+          axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+          axis.text.x = element_text(size = 22, colour = quantileColours, hjust = 1.0, vjust = 1.0, angle = 45),
+          axis.title = element_text(size = 26, colour = "black"),
+          legend.position = "none",
+          panel.grid = element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+          plot.title = element_text(hjust = 0.5, size = 30)) +
+    ggtitle(bquote(.(featureNamePlot)))
+  }
   
+  ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame = estimates,
+                                                parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
+                                                featureGroup = "quantile",
+                                                featureNamePlot = gsub("_", " ", featureNamePlot)
+                                               )
+  
+  ggsave(paste0(plotDir[x],
+                orderingFactor, "_", pop_name[x], "_IDs_v_annoGOIDs_for_", featureNamePlot,
+                "_in_quantile", quantileNo, "_of_", quantiles,
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18),
+                "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
+         plot = ggObjGA_feature_mean,
+         height = 6.5, width = 7)
+
   # Calculate mean orderingFactor value for genes annotated with GO_ID in quantile quantileNo
   IDs_mean <- mean(featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                            orderingFactor)],
@@ -201,7 +294,10 @@ for(x in seq_along(pop_name)) {
                           permuted = "numeric",
                           expected = "numeric",
                           log2obsexp = "numeric",
-                          log2alpha = "numeric"))
+                          log2alpha = "numeric",
+                          GOgenesInQuantile = "numeric",
+                          GOgenesNotInQuantile = "numeric",
+                          genesNotInQuantile = "numeric"))
   
   # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
   options(scipen = 100)
@@ -237,7 +333,10 @@ for(x in seq_along(pop_name)) {
                                 permuted = ran_nonIDs_perm_means,
                                 expected = mean(ran_nonIDs_perm_means),
                                 log2obsexp = log2(IDs_mean / mean(ran_nonIDs_perm_means)),
-                                log2alpha = log2(nonIDs_alpha0.05 / mean(ran_nonIDs_perm_means)))
+                                log2alpha = log2(nonIDs_alpha0.05 / mean(ran_nonIDs_perm_means)),
+                                GOgenesInQuantile = length(featuresDF_IDs),
+                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
+                                genesNotInQuantile = length(featuresDF_nonIDs))
   save(nonIDs_permTestResults,
        file = paste0(outDir[x],
                      orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", featureNamePlot,
@@ -387,7 +486,10 @@ for(x in seq_along(pop_name)) {
                                 permuted = ran_annoGOIDs_perm_means,
                                 expected = mean(ran_annoGOIDs_perm_means),
                                 log2obsexp = log2(IDs_mean / mean(ran_annoGOIDs_perm_means)),
-                                log2alpha = log2(annoGOIDs_alpha0.05 / mean(ran_annoGOIDs_perm_means)))
+                                log2alpha = log2(annoGOIDs_alpha0.05 / mean(ran_annoGOIDs_perm_means)),
+                                GOgenesInQuantile = length(featuresDF_IDs),
+                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
+                                genesNotInQuantile = length(featuresDF_nonIDs))
   save(annoGOIDs_permTestResults,
        file = paste0(outDir[x],
                      orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
