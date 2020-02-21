@@ -82,7 +82,6 @@ outDir <- sapply(seq_along(pop_name), function(x) {
 })
 plotDir <- paste0(outDir, "plots/")
 
-
 # Load IDs of genes annotated with GO_ID in quantile quantileNo
 IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_in_", region,
                                       "/GO/featureIDs_quantile", quantileNo, "_of_", quantiles,
