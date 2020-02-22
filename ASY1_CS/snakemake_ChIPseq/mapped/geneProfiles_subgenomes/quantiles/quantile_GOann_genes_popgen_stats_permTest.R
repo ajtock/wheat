@@ -5,7 +5,7 @@
 # with those for randomSets sets of randomly selected GO-term-annotated genes not in that ASY1 quantile
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' promoters 1 4 TajimaD 'Tajima D' 10000 0.0001
+# /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
 
 libName <- "ASY1_CS_Rep1_ChIP"
 dirName <- "ASY1_CS"
@@ -13,7 +13,7 @@ featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_gen
                                split = ","))
 featureNamePlot <- "Defense_response_genes"
 GO_ID <- "0006952"
-region <- "promoters"
+region <- "bodies"
 quantileNo <- 1
 quantiles <- 4
 orderingFactor <- "TajimaD"
@@ -163,7 +163,7 @@ for(x in seq_along(pop_name)) {
   # Combine featuresDF_IDsDF and featuresDF_annoGOIDsDF to enable calculation of LSDs
   IDsDF_annoGOIDsDF <- rbind(featuresDF_IDsDF, featuresDF_annoGOIDsDF)
   # Linear model
-  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
+  lm1 <- lm(RozasR2 ~ quantile, data = IDsDF_annoGOIDsDF)
   # Create a dataframe containing means, SDs, SEMs or interval bounds
   estimates <- expand.grid(quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
   # Add the mean orderingFactor values to the dataframe
