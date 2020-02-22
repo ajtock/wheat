@@ -7,21 +7,21 @@
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
 
-libName <- "ASY1_CS_Rep1_ChIP"
-dirName <- "ASY1_CS"
-featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
-                               split = ","))
-featureNamePlot <- "Defense_response_genes"
-GO_ID <- "0006952"
-region <- "bodies"
-quantileNo <- 1
-quantiles <- 4
-orderingFactor <- "TajimaD"
-orderingFactorName <- bquote("Tajima's" ~ italic("D"))
-orderingFactor <- "RozasR2"
-orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
-randomSets <- 10000
-minPval <- 0.0001
+#libName <- "ASY1_CS_Rep1_ChIP"
+#dirName <- "ASY1_CS"
+#featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
+#                               split = ","))
+#featureNamePlot <- "Defense_response_genes"
+#GO_ID <- "0006952"
+#region <- "bodies"
+#quantileNo <- 1
+#quantiles <- 4
+#orderingFactor <- "TajimaD"
+#orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+#orderingFactor <- "RozasR2"
+#orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
+#randomSets <- 10000
+#minPval <- 0.0001
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -42,7 +42,7 @@ library(plotrix)
 #library(tidyr)
 #library(dplyr)
 library(ggplot2)
-#library(ggbeeswarm)
+library(ggbeeswarm)
 #library(ggthemes)
 library(grid)
 library(gridExtra)
@@ -83,7 +83,7 @@ outDir <- sapply(seq_along(pop_name), function(x) {
 plotDir <- paste0(outDir, "plots/")
 
 # Define quantile colours
-quantileColours <- c("red", "black")
+quantileColours <- c("red", "navy")
 makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
@@ -153,9 +153,11 @@ for(x in seq_along(pop_name)) {
   # Get orderingFactor values for IDs
   featuresDF_IDsDF <- featuresDF[featuresDF$featureID %in% IDs,]
   #featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs),]
-  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
+#  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
+  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% annoGOIDs,]
-  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
+  featuresDF_annoGOIDsDF <- featuresDF_annoGOIDsDF[featuresDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),]
+#  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
   featuresDF_IDs <- featuresDF_IDsDF$featureID
   featuresDF_nonIDs <- featuresDF_nonIDsDF$featureID
   featuresDF_annoGOIDs <- featuresDF_annoGOIDsDF$featureID
@@ -163,7 +165,7 @@ for(x in seq_along(pop_name)) {
   # Combine featuresDF_IDsDF and featuresDF_annoGOIDsDF to enable calculation of LSDs
   IDsDF_annoGOIDsDF <- rbind(featuresDF_IDsDF, featuresDF_annoGOIDsDF)
   # Linear model
-  lm1 <- lm(RozasR2 ~ quantile, data = IDsDF_annoGOIDsDF)
+  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
   # Create a dataframe containing means, SDs, SEMs or interval bounds
   estimates <- expand.grid(quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
   # Add the mean orderingFactor values to the dataframe
@@ -173,10 +175,23 @@ for(x in seq_along(pop_name)) {
   # Get gene-grouping-specific 95% critical value of t for the gene-grouping-specific df
   alpha <- 0.05
   tQuantile1 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantile 1",])[1])
-  tNotQuantile1 <- qt(p = 1-(alpha/2),
-                      df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Not Quantile 1",])[1]) 
-  estimates$lsd <- c(tQuantile1*estimates$sed[1], tNotQuantile1*estimates$sed[2])
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1])
+  tQuantile4 <- qt(p = 1-(alpha/2),
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1]) 
+  estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
+
+  Utest <- wilcox.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
+                                                   orderingFactor)],
+                       y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
+                                                   orderingFactor)],
+                       alternative = "two.sided")
+
+  UtestPval <- Utest$p.value
+  UtestPvalChar <- if(UtestPval < 0.0001) {
+                     "< 0.0001"
+                   } else {
+                     paste0("= ", as.character(round(UtestPval, digits = 4)))
+                   }
 
   # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
   popgen_stats_meanLSDs <- function(dataFrame,
@@ -192,6 +207,12 @@ for(x in seq_along(pop_name)) {
     geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
                                 ymax = mean+(lsd/2)),
                   width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
+    geom_beeswarm(data = IDsDF_annoGOIDsDF,
+                  mapping = aes(x = get(featureGroup),
+                                y = TajimaD,
+                                colour = get(featureGroup)),
+                  cex = 6,
+                  size = 3) +
     scale_colour_manual(values = quantileColours) +
     scale_y_continuous(
   #                     limits = c(summary_stats_min, summary_stats_max),
@@ -212,9 +233,10 @@ for(x in seq_along(pop_name)) {
           panel.grid = element_blank(),
           panel.border = element_blank(),
           panel.background = element_blank(),
-          plot.margin = unit(c(0.3,1.2,0.1,0.3),"cm"),
+          plot.margin = unit(c(0.6,1.2,0.1,0.3),"cm"),
           plot.title = element_text(hjust = 0.5, size = 30)) +
-    ggtitle(bquote(.(featureNamePlot)))
+    ggtitle(bquote(atop(.(featureNamePlot),
+                   "MWW" ~ italic("P") ~ .(UtestPvalChar))))
   }
   
   ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame = estimates,
