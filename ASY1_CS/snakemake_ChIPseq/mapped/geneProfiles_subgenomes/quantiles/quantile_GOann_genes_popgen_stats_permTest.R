@@ -31,16 +31,19 @@ featureName <- unlist(strsplit(args[3],
 featureNamePlot <- args[4]
 GO_ID <- args[5]
 region <- args[6]
-quantiles <- as.numeric(args[7])
-orderingFactor <- args[8]
-orderingFactorName <- args[9]
-randomSets <- as.numeric(args[10])
-minPval <- as.numeric(args[11])
+quantileNo <- as.numeric(args[7])
+quantiles <- as.numeric(args[8])
+orderingFactor <- args[9]
+orderingFactorName <- args[10]
+randomSets <- as.numeric(args[11])
+minPval <- as.numeric(args[12])
 
 library(parallel)
 library(plotrix)
 #library(tidyr)
 #library(dplyr)
+library(WRS2)
+library(PairedData)
 library(ggplot2)
 library(ggbeeswarm)
 #library(ggthemes)
@@ -138,6 +141,7 @@ annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
 # by decreasing log2(libName/control) in region
 #mclapply(seq_along(pop_name), function(x) {
 for(x in seq_along(pop_name)) {
+  print(pop_name[x])
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
                                   "_by_", sub("_\\w+", "", libName), "_in_",
                                   region, "_of_",
@@ -161,37 +165,78 @@ for(x in seq_along(pop_name)) {
   featuresDF_IDs <- featuresDF_IDsDF$featureID
   featuresDF_nonIDs <- featuresDF_nonIDsDF$featureID
   featuresDF_annoGOIDs <- featuresDF_annoGOIDsDF$featureID
-
+ 
   # Combine featuresDF_IDsDF and featuresDF_annoGOIDsDF to enable calculation of LSDs
   IDsDF_annoGOIDsDF <- rbind(featuresDF_IDsDF, featuresDF_annoGOIDsDF)
   # Linear model
-  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
+#  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
+  lm1 <- lm(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+            IDsDF_annoGOIDsDF$quantile)
   # Create a dataframe containing means, SDs, SEMs or interval bounds
   estimates <- expand.grid(quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
   # Add the mean orderingFactor values to the dataframe
-  estimates$mean <- predict(lm1, newdata = estimates)
+  estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
+                                             which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
+                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),
+                                             which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]))
   # Add the standard error of the difference between means to the estimates dataframe
   estimates$sed <- summary(lm1)$coefficients[2,2]
   # Get gene-grouping-specific 95% critical value of t for the gene-grouping-specific df
   alpha <- 0.05
   tQuantile1 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1])
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1] - 1)
   tQuantile4 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1]) 
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
 
+  # Evaluate differences between-gene-quantile orderingFactor values
   Utest <- wilcox.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                    orderingFactor)],
                        y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
                                                    orderingFactor)],
-                       alternative = "two.sided")
-
+                       alternative = "less")
   UtestPval <- Utest$p.value
   UtestPvalChar <- if(UtestPval < 0.0001) {
                      "< 0.0001"
                    } else {
                      paste0("= ", as.character(round(UtestPval, digits = 4)))
                    }
+
+  ttest <- t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
+                                              orderingFactor)],
+                  y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
+                                              orderingFactor)],
+                  alternative = "less")
+  ttestPval <- ttest$p.value
+  ttestPvalChar <- if(ttestPval < 0.0001) {
+                     "< 0.0001"
+                   } else {
+                     paste0("= ", as.character(round(ttestPval, digits = 4)))
+                   }
+
+#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+#                       tr = 0.1, nboot = 10000, side = T)
+#  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+#                       IDsDF_annoGOIDsDF$quantile, 
+#                       tr = 0.1, nboot = 10000, side = T)
+#  yuenbttestPval <- yuenbttest$p.value
+#  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
+#                          "< 0.0001"
+#                        } else {
+#                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
+#                        }
+
+  yuenttest <- yuen.t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
+                                                       orderingFactor)],
+                           y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==
+                                                       orderingFactor)],
+                           tr = 0.1, alternative = "less", mu = 0, paired = F, conf.level = 0.95)
+  yuenttestPval <- yuenttest$p.value
+  yuenttestPvalChar <- if(yuenttestPval < 0.0001) {
+                         "< 0.0001"
+                       } else {
+                         paste0("= ", as.character(round(yuenttestPval, digits = 4)))
+                       }
 
   # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
   popgen_stats_meanLSDs <- function(dataFrame,
@@ -209,16 +254,17 @@ for(x in seq_along(pop_name)) {
                   width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
     geom_beeswarm(data = IDsDF_annoGOIDsDF,
                   mapping = aes(x = get(featureGroup),
-                                y = TajimaD,
+                                y = get(orderingFactor),
                                 colour = get(featureGroup)),
-                  cex = 6,
+                  priority = "ascending",
+                  cex = 4,
                   size = 3) +
     scale_colour_manual(values = quantileColours) +
     scale_y_continuous(
-  #                     limits = c(summary_stats_min, summary_stats_max),
+#                       limits = c(summary_stats_min, summary_stats_max),
                        labels = function(x) sprintf("%1.2f", x)) +
-  #  scale_x_discrete(breaks = as.vector(dataFrame$quantile),
-  #                   labels = as.vector(dataFrame$quantile)) +
+#    scale_x_discrete(breaks = as.vector(dataFrame$quantile),
+#                     labels = as.vector(dataFrame$quantile)) +
     labs(x = "",
          y = parameterLab) +
     theme_bw() +
@@ -233,10 +279,11 @@ for(x in seq_along(pop_name)) {
           panel.grid = element_blank(),
           panel.border = element_blank(),
           panel.background = element_blank(),
-          plot.margin = unit(c(0.6,1.2,0.1,0.3),"cm"),
+          plot.margin = unit(c(0.8,1.2,0.1,0.3),"cm"),
           plot.title = element_text(hjust = 0.5, size = 30)) +
     ggtitle(bquote(atop(.(featureNamePlot),
-                   "MWW" ~ italic("P") ~ .(UtestPvalChar))))
+                        atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
+                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
   }
   
   ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame = estimates,
@@ -255,7 +302,7 @@ for(x in seq_along(pop_name)) {
                 substring(featureName[1][1], first = 18),
                 "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
          plot = ggObjGA_feature_mean,
-         height = 6.5, width = 7)
+         height = 8, width = 7)
 
   # Calculate mean orderingFactor value for genes annotated with GO_ID in quantile quantileNo
   IDs_mean <- mean(featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
