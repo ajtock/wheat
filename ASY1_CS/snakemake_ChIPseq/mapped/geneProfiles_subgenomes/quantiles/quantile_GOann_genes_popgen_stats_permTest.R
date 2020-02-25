@@ -7,21 +7,21 @@
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript quantile_GOann_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
-#featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
-#                               split = ","))
-#featureNamePlot <- "Defense_response_genes"
-#GO_ID <- "0006952"
-#region <- "bodies"
-#quantileNo <- 1
-#quantiles <- 4
-#orderingFactor <- "TajimaD"
-#orderingFactorName <- bquote("Tajima's" ~ italic("D"))
-#orderingFactor <- "RozasR2"
-#orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
-#randomSets <- 10000
-#minPval <- 0.0001
+libName <- "ASY1_CS_Rep1_ChIP"
+dirName <- "ASY1_CS"
+featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
+                               split = ","))
+featureNamePlot <- "Defense_response_genes"
+GO_ID <- "0006952"
+region <- "bodies"
+quantileNo <- 1
+quantiles <- 4
+orderingFactor <- "TajimaD"
+orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+orderingFactor <- "RozasR2"
+orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
+randomSets <- 10000
+minPval <- 0.0001
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -140,6 +140,8 @@ annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
 #mclapply(seq_along(pop_name), function(x) {
+estimates_allpops <- data.frame()
+IDsDF_annoGOIDsDF_stat_allpops <- data.frame() 
 for(x in seq_along(pop_name)) {
   print(pop_name[x])
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
@@ -168,12 +170,19 @@ for(x in seq_along(pop_name)) {
  
   # Combine featuresDF_IDsDF and featuresDF_annoGOIDsDF to enable calculation of LSDs
   IDsDF_annoGOIDsDF <- rbind(featuresDF_IDsDF, featuresDF_annoGOIDsDF)
+  IDsDF_annoGOIDsDF_stat <- data.frame(population = pop_name_plot[x],
+                                       stat = IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)],
+                                       quantile = IDsDF_annoGOIDsDF$quantile)
+  colnames(IDsDF_annoGOIDsDF_stat) <- c("population", orderingFactor, "quantile")
+  IDsDF_annoGOIDsDF_stat_allpops <- rbind(IDsDF_annoGOIDsDF_stat_allpops, IDsDF_annoGOIDsDF_stat)
+
   # Linear model
 #  lm1 <- lm(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF)
   lm1 <- lm(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
             IDsDF_annoGOIDsDF$quantile)
   # Create a dataframe containing means, SDs, SEMs or interval bounds
-  estimates <- expand.grid(quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
+  estimates <- expand.grid(population = pop_name_plot[x],
+                           quantile = unique(IDsDF_annoGOIDsDF$quantile)) 
   # Add the mean orderingFactor values to the dataframe
   estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
@@ -188,7 +197,7 @@ for(x in seq_along(pop_name)) {
   tQuantile4 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
-
+  
   # Evaluate differences between-gene-quantile orderingFactor values
   Utest <- wilcox.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                    orderingFactor)],
@@ -214,8 +223,8 @@ for(x in seq_along(pop_name)) {
                      paste0("= ", as.character(round(ttestPval, digits = 4)))
                    }
 
-#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
-#                       tr = 0.1, nboot = 10000, side = T)
+##  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+##                       tr = 0.1, nboot = 10000, side = T)
 #  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
 #                       IDsDF_annoGOIDsDF$quantile, 
 #                       tr = 0.1, nboot = 10000, side = T)
@@ -237,6 +246,92 @@ for(x in seq_along(pop_name)) {
                        } else {
                          paste0("= ", as.character(round(yuenttestPval, digits = 4)))
                        }
+
+  estimates$UtestPval <- UtestPvalChar
+  estimates$ttestPval <- ttestPvalChar
+  estimates$yuenttestPval <- yuenttestPvalChar
+
+  # Combine estimates for each population into one dataframe 
+  estimates_allpops <- rbind(estimates_allpops, estimates)
+}
+
+  # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
+  popgen_stats_meanLSDs <- function(dataFrame,
+                                    parameterLab,
+                                    populationGroup,
+                                    featureGroup,
+                                    featureNamePlot) {
+    ggplot(data = dataFrame,
+           mapping = aes(x = get(populationGroup),
+                         y = mean,
+                         colour = get(featureGroup))) +
+    labs(colour = "") +
+    geom_point(shape = "-", size = 18, position = position_dodge(width = 0.3)) +
+    geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
+                                ymax = mean+(lsd/2)),
+                  width = 0.3, size = 3, position = position_dodge(width = 0.3)) +
+    geom_beeswarm(data = IDsDF_annoGOIDsDF_stat_allpops,
+                  mapping = aes(x = get(populationGroup),
+                                y = get(orderingFactor),
+                                colour = get(featureGroup)),
+                  priority = "ascending",
+                  groupOnX = T,
+                  dodge.width = 0.3,
+                  cex = 0.2,
+                  size = 3,) +
+    scale_colour_manual(values = quantileColours) +
+    scale_y_continuous(
+#                       limits = c(summary_stats_min, summary_stats_max),
+                       labels = function(x) sprintf("%1.0f", x)) +
+#    scale_x_discrete(breaks = as.vector(dataFrame$quantile),
+#                     labels = as.vector(dataFrame$quantile)) +
+    guides(fill = guide_legend(direction = "horizontal",
+                               label.position = "top",
+                               label.theme = element_text(size = 100, hjust = 0, vjust = 0.5, angle = 90),
+                               nrow = 1,
+                               byrow = TRUE)) +
+    labs(x = "",
+         y = parameterLab) +
+    theme_bw() +
+    theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+          axis.ticks.y = element_line(size = 2.0, colour = "black"),
+          axis.ticks.x = element_blank(),
+          axis.ticks.length = unit(0.25, "cm"),
+          axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+          axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
+          axis.title = element_text(size = 26, colour = "black"),
+#          legend.position = "none",
+          legend.background = element_rect(fill = "transparent"),
+          legend.key = element_rect(colour = "transparent",
+                                    fill = "transparent"),
+          panel.grid = element_blank(),
+          panel.border = element_blank(),
+          panel.background = element_blank(),
+          plot.margin = unit(c(0.8,1.2,0.1,0.3),"cm"),
+          plot.title = element_text(hjust = 0.5, size = 30)) +
+    ggtitle(bquote(atop(.(featureNamePlot))))
+#                        atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
+#                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
+  }
+  
+  ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame = estimates_allpops,
+                                                parameterLab = bquote(.(orderingFactorName)),
+                                                populationGroup = "population",
+                                                featureGroup = "quantile",
+                                                featureNamePlot = gsub("_", " ", featureNamePlot)
+                                               )
+  
+  ggsave(paste0(plotDir[x],
+                orderingFactor, "_all_pops_IDs_v_annoGOIDs_for_", featureNamePlot,
+                "_in_quantile", quantileNo, "_of_", quantiles,
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18),
+                "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
+         plot = ggObjGA_feature_mean,
+         height = 8, width = 39, limitsize = F)
 
   # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
   popgen_stats_meanLSDs <- function(dataFrame,
@@ -337,20 +432,6 @@ for(x in seq_along(pop_name)) {
     return(mean(featuresDF_nonIDsDF[featuresDF_nonIDsDF$featureID %in%
                                     ran_nonIDs,][,which(colnames(featuresDF_nonIDsDF) ==
                                                         orderingFactor)],
-                na.rm = T))
-  }, mc.cores = detectCores(), mc.preschedule = T))
-  
-  # Define seed so that random selections are reproducible
-  set.seed(453838430)
-  
-  # Apply ran_nonIDs_select() function to generate randomSets random sets
-  # of IDs from featuresDF_annoGOIDs for which to calculate randomSets mean orderingFactor values
-  ran_annoGOIDs_perm_means <- unlist(mclapply(1:randomSets, function(y) {
-    ran_annoGOIDs <- ran_nonIDs_select(nonIDsChr = featuresDF_annoGOIDs,
-                                       n = length(featuresDF_IDs))
-    return(mean(featuresDF_annoGOIDsDF[featuresDF_annoGOIDsDF$featureID %in%
-                                       ran_annoGOIDs,][,which(colnames(featuresDF_annoGOIDsDF) ==
-                                                              orderingFactor)],
                 na.rm = T))
   }, mc.cores = detectCores(), mc.preschedule = T))
   
@@ -460,6 +541,7 @@ for(x in seq_along(pop_name)) {
     }
   }
   hist(nonIDs_permTestResults@permuted,
+       breaks = 50,
        freq = FALSE,
        col = "dodgerblue",
        border = NA,
@@ -523,158 +605,172 @@ for(x in seq_along(pop_name)) {
                "red"),
        cex = 0.8)
   dev.off()
-
-  # Determine whether mean orderingFactor values for genes annotated with GO_ID in quantile quantileNo
-  # are lower than or higher than those for genes randomly selected from featuresDF_nonIDs and featuresDF_annoGOIDs
-  IDs_lessThan_annoGOIDs_Bool <- IDs_mean < ran_annoGOIDs_perm_means
-  IDs_moreThan_annoGOIDs_Bool <- IDs_mean > ran_annoGOIDs_perm_means
-  
-  # Calculate P-values and significance levels
-  if(IDs_mean < mean(ran_annoGOIDs_perm_means)) {
-    annoGOIDs_pval <- 1 - ( sum(IDs_lessThan_annoGOIDs_Bool) / length(ran_annoGOIDs_perm_means) )
-    if(annoGOIDs_pval == 0) {
-      annoGOIDs_pval <- minPval
-    }
-    annoGOIDs_MoreOrLessThanRandom <- "LessThanRandom"
-    annoGOIDs_alpha0.05 <- quantile(ran_annoGOIDs_perm_means, probs = 0.05)[[1]]
-  } else {
-    annoGOIDs_pval <- 1 - ( sum(IDs_moreThan_annoGOIDs_Bool) / length(ran_annoGOIDs_perm_means) )
-    if(annoGOIDs_pval == 0) {
-      annoGOIDs_pval <- minPval
-    }
-    annoGOIDs_MoreOrLessThanRandom <- "MoreThanRandom"
-    annoGOIDs_alpha0.05 <- quantile(ran_annoGOIDs_perm_means, probs = 0.95)[[1]]
-  }
-  
-  # Create permutation test results object
-  annoGOIDs_permTestResults <- new("permTest_popgen_stats",
-                                alternative = annoGOIDs_MoreOrLessThanRandom,
-                                alpha0.05 = annoGOIDs_alpha0.05,
-                                pval = annoGOIDs_pval,
-                                observed = IDs_mean,
-                                permuted = ran_annoGOIDs_perm_means,
-                                expected = mean(ran_annoGOIDs_perm_means),
-                                log2obsexp = log2(IDs_mean / mean(ran_annoGOIDs_perm_means)),
-                                log2alpha = log2(annoGOIDs_alpha0.05 / mean(ran_annoGOIDs_perm_means)),
-                                GOgenesInQuantile = length(featuresDF_IDs),
-                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
-                                genesNotInQuantile = length(featuresDF_nonIDs))
-  save(annoGOIDs_permTestResults,
-       file = paste0(outDir[x],
-                     orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
-                     "_in_quantile", quantileNo, "_of_", quantiles,
-                     "_by_log2_", libName, "_control_in_", region, "_of_",
-                     substring(featureName[1][1], first = 1, last = 5), "_in_",
-                     paste0(substring(featureName, first = 10, last = 16),
-                            collapse = "_"), "_",
-                     substring(featureName[1][1], first = 18),
-                     "_ann_with_GO_BP_enrichment_GO:", GO_ID, ".RData"))
-
-  # Generate histogram
-  pdf(paste0(plotDir[x],
-             orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
-             "_in_quantile", quantileNo, "_of_", quantiles,
-             "_by_log2_", libName, "_control_in_", region, "_of_",
-             substring(featureName[1][1], first = 1, last = 5), "_in_",
-             paste0(substring(featureName, first = 10, last = 16),
-                    collapse = "_"), "_",
-             substring(featureName[1][1], first = 18),
-             "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_hist.pdf"), 
-             height = 4.5, width = 5)
-  par(mar = c(3.1, 3.1, 4.1, 1.1),
-      mgp = c(1.85, 0.75, 0))
-  ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
-  #options(scipen = 100)
-  # Calculate max density
-  maxDensityPlus <- max(density(annoGOIDs_permTestResults@permuted)$y)*1.2
-  if(orderingFactor %in% c("TajimaD", "FuLiF", "FuLiD")) {
-    if(annoGOIDs_permTestResults@alternative == "MoreThanRandom") {
-      xlim <- c(pmin(-1, min(annoGOIDs_permTestResults@permuted)*1.2),
-                pmax(annoGOIDs_permTestResults@observed/1.2, annoGOIDs_permTestResults@alpha0.05/1.2))
-      textX1 <- quantile(xlim, 0.25)[[1]]
-#      textX1 <- min(annoGOIDs_permTestResults@permuted)*1.15
-    } else {
-      xlim <- c(pmin(-1, annoGOIDs_permTestResults@observed*1.2),
-                max(annoGOIDs_permTestResults@permuted)/1.2)
-      textX1 <- quantile(xlim, 0.75)[[1]]
-#      textX1 <- min(annoGOIDs_permTestResults@permuted)*1.15
-    }
-  } else {
-    if(annoGOIDs_permTestResults@alternative == "MoreThanRandom") {
-      xlim <- c(pmin(-1, min(annoGOIDs_permTestResults@permuted)/1.2),
-                pmax(annoGOIDs_permTestResults@observed*1.2, annoGOIDs_permTestResults@alpha0.05*1.2))
-      textX1 <- quantile(xlim, 0.25)[[1]]
-#      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15
-    } else {
-      xlim <- c(pmin(-1, annoGOIDs_permTestResults@observed/1.2),
-                max(annoGOIDs_permTestResults@permuted)*1.2)
-      textX1 <- quantile(xlim, 0.75)[[1]]
-#      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15
-    }
-  }
-  hist(annoGOIDs_permTestResults@permuted,
-       freq = FALSE,
-       col = "dodgerblue",
-       border = NA,
-       lwd = 2,
-       xlim = c(pretty(xlim)[1],
-                pretty(xlim)[length(pretty(xlim))]),
-       ylim = c(0,
-                maxDensityPlus),
-       xaxt = "n", yaxt = "n",
-       xlab = "", ylab = "", main = "",
-       axes = FALSE)
-  axis(side = 2,
-       at = pretty(density(annoGOIDs_permTestResults@permuted)$y),
-       lwd = 2)
-  mtext(side = 2,
-        text = "Density",
-        line = 1.85)
-  axis(side = 1,
-       at = pretty(xlim),
-       lwd = 2)
-  mtext(side = 1,
-        text = bquote("Mean" ~ .(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
-        line = 1.85)
-  titleText <- list(bquote(.(gsub("_", " ", featureNamePlot)) ~
-                           "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
-                           "(" * .(region) * ") in" ~
-                           .(paste0(substring(featureName, first = 10, last = 16),
-                                    collapse = " ")) ~ 
-                           .(substring(featureName[1][1], first = 18))),
-                    bquote(italic("P")*" = "*
-                           .(as.character(round(annoGOIDs_permTestResults@pval,
-                                                digits = 6)))),
-                    bquote("Permutations = "*.(prettyNum(length(annoGOIDs_permTestResults@permuted),
-                                                         big.mark = ",",
-                                                         trim = T))))
-  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
-  lines(density(annoGOIDs_permTestResults@permuted),
-        col = "dodgerblue3",
-        lwd = 1.5)
-  ablineclip(v = annoGOIDs_permTestResults@expected,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2)
-  ablineclip(v = annoGOIDs_permTestResults@observed,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, col = "forestgreen")
-  ablineclip(v = annoGOIDs_permTestResults@alpha0.05,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, lty = 5, col = "red")
-  text(x = c(textX1,
-             annoGOIDs_permTestResults@expected,
-             annoGOIDs_permTestResults@observed,
-             annoGOIDs_permTestResults@alpha0.05),
-       y = c(maxDensityPlus*.95,
-             maxDensityPlus,
-             maxDensityPlus,
-             maxDensityPlus*.95),
-       labels = c("Permuted",
-                  "Expected",
-                  "Observed",
-                  expression(alpha*" = 0.05")),
-       col = c("dodgerblue",
-               "black",
-               "forestgreen",
-               "red"),
-       cex = 0.8)
-  dev.off()
 }
+#  # Define seed so that random selections are reproducible
+#  set.seed(453838430)
+#  
+#  # Apply ran_nonIDs_select() function to generate randomSets random sets
+#  # of IDs from featuresDF_annoGOIDs for which to calculate randomSets mean orderingFactor values
+#  ran_annoGOIDs_perm_means <- unlist(mclapply(1:randomSets, function(y) {
+#    ran_annoGOIDs <- ran_nonIDs_select(nonIDsChr = featuresDF_annoGOIDs,
+#                                       n = length(featuresDF_IDs))
+#    return(mean(featuresDF_annoGOIDsDF[featuresDF_annoGOIDsDF$featureID %in%
+#                                       ran_annoGOIDs,][,which(colnames(featuresDF_annoGOIDsDF) ==
+#                                                              orderingFactor)],
+#                na.rm = T))
+#  }, mc.cores = detectCores(), mc.preschedule = T))
+#  
+#  # Determine whether mean orderingFactor values for genes annotated with GO_ID in quantile quantileNo
+#  # are lower than or higher than those for genes randomly selected from featuresDF_nonIDs and featuresDF_annoGOIDs
+#  IDs_lessThan_annoGOIDs_Bool <- IDs_mean < ran_annoGOIDs_perm_means
+#  IDs_moreThan_annoGOIDs_Bool <- IDs_mean > ran_annoGOIDs_perm_means
+#  
+#  # Calculate P-values and significance levels
+#  if(IDs_mean < mean(ran_annoGOIDs_perm_means)) {
+#    annoGOIDs_pval <- 1 - ( sum(IDs_lessThan_annoGOIDs_Bool) / length(ran_annoGOIDs_perm_means) )
+#    if(annoGOIDs_pval == 0) {
+#      annoGOIDs_pval <- minPval
+#    }
+#    annoGOIDs_MoreOrLessThanRandom <- "LessThanRandom"
+#    annoGOIDs_alpha0.05 <- quantile(ran_annoGOIDs_perm_means, probs = 0.05)[[1]]
+#  } else {
+#    annoGOIDs_pval <- 1 - ( sum(IDs_moreThan_annoGOIDs_Bool) / length(ran_annoGOIDs_perm_means) )
+#    if(annoGOIDs_pval == 0) {
+#      annoGOIDs_pval <- minPval
+#    }
+#    annoGOIDs_MoreOrLessThanRandom <- "MoreThanRandom"
+#    annoGOIDs_alpha0.05 <- quantile(ran_annoGOIDs_perm_means, probs = 0.95)[[1]]
+#  }
+#  
+#  # Create permutation test results object
+#  annoGOIDs_permTestResults <- new("permTest_popgen_stats",
+#                                alternative = annoGOIDs_MoreOrLessThanRandom,
+#                                alpha0.05 = annoGOIDs_alpha0.05,
+#                                pval = annoGOIDs_pval,
+#                                observed = IDs_mean,
+#                                permuted = ran_annoGOIDs_perm_means,
+#                                expected = mean(ran_annoGOIDs_perm_means),
+#                                log2obsexp = log2(IDs_mean / mean(ran_annoGOIDs_perm_means)),
+#                                log2alpha = log2(annoGOIDs_alpha0.05 / mean(ran_annoGOIDs_perm_means)),
+#                                GOgenesInQuantile = length(featuresDF_IDs),
+#                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
+#                                genesNotInQuantile = length(featuresDF_nonIDs))
+#  save(annoGOIDs_permTestResults,
+#       file = paste0(outDir[x],
+#                     orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
+#                     "_in_quantile", quantileNo, "_of_", quantiles,
+#                     "_by_log2_", libName, "_control_in_", region, "_of_",
+#                     substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                     paste0(substring(featureName, first = 10, last = 16),
+#                            collapse = "_"), "_",
+#                     substring(featureName[1][1], first = 18),
+#                     "_ann_with_GO_BP_enrichment_GO:", GO_ID, ".RData"))
+#
+#  # Generate histogram
+#  pdf(paste0(plotDir[x],
+#             orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
+#             "_in_quantile", quantileNo, "_of_", quantiles,
+#             "_by_log2_", libName, "_control_in_", region, "_of_",
+#             substring(featureName[1][1], first = 1, last = 5), "_in_",
+#             paste0(substring(featureName, first = 10, last = 16),
+#                    collapse = "_"), "_",
+#             substring(featureName[1][1], first = 18),
+#             "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_hist.pdf"), 
+#             height = 4.5, width = 5)
+#  par(mar = c(3.1, 3.1, 4.1, 1.1),
+#      mgp = c(1.85, 0.75, 0))
+#  ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+#  #options(scipen = 100)
+#  # Calculate max density
+#  maxDensityPlus <- max(density(annoGOIDs_permTestResults@permuted)$y)*1.2
+#  if(orderingFactor %in% c("TajimaD", "FuLiF", "FuLiD")) {
+#    if(annoGOIDs_permTestResults@alternative == "MoreThanRandom") {
+#      xlim <- c(pmin(-1, min(annoGOIDs_permTestResults@permuted)*1.2),
+#                pmax(annoGOIDs_permTestResults@observed/1.2, annoGOIDs_permTestResults@alpha0.05/1.2))
+#      textX1 <- quantile(xlim, 0.25)[[1]]
+##      textX1 <- min(annoGOIDs_permTestResults@permuted)*1.15
+#    } else {
+#      xlim <- c(pmin(-1, annoGOIDs_permTestResults@observed*1.2),
+#                max(annoGOIDs_permTestResults@permuted)/1.2)
+#      textX1 <- quantile(xlim, 0.75)[[1]]
+##      textX1 <- min(annoGOIDs_permTestResults@permuted)*1.15
+#    }
+#  } else {
+#    if(annoGOIDs_permTestResults@alternative == "MoreThanRandom") {
+#      xlim <- c(pmin(-1, min(annoGOIDs_permTestResults@permuted)/1.2),
+#                pmax(annoGOIDs_permTestResults@observed*1.2, annoGOIDs_permTestResults@alpha0.05*1.2))
+#      textX1 <- quantile(xlim, 0.25)[[1]]
+##      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15
+#    } else {
+#      xlim <- c(pmin(-1, annoGOIDs_permTestResults@observed/1.2),
+#                max(annoGOIDs_permTestResults@permuted)*1.2)
+#      textX1 <- quantile(xlim, 0.75)[[1]]
+##      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15
+#    }
+#  }
+#  hist(annoGOIDs_permTestResults@permuted,
+#       freq = FALSE,
+#       col = "dodgerblue",
+#       border = NA,
+#       lwd = 2,
+#       xlim = c(pretty(xlim)[1],
+#                pretty(xlim)[length(pretty(xlim))]),
+#       ylim = c(0,
+#                maxDensityPlus),
+#       xaxt = "n", yaxt = "n",
+#       xlab = "", ylab = "", main = "",
+#       axes = FALSE)
+#  axis(side = 2,
+#       at = pretty(density(annoGOIDs_permTestResults@permuted)$y),
+#       lwd = 2)
+#  mtext(side = 2,
+#        text = "Density",
+#        line = 1.85)
+#  axis(side = 1,
+#       at = pretty(xlim),
+#       lwd = 2)
+#  mtext(side = 1,
+#        text = bquote("Mean" ~ .(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
+#        line = 1.85)
+#  titleText <- list(bquote(.(gsub("_", " ", featureNamePlot)) ~
+#                           "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
+#                           "(" * .(region) * ") in" ~
+#                           .(paste0(substring(featureName, first = 10, last = 16),
+#                                    collapse = " ")) ~ 
+#                           .(substring(featureName[1][1], first = 18))),
+#                    bquote(italic("P")*" = "*
+#                           .(as.character(round(annoGOIDs_permTestResults@pval,
+#                                                digits = 6)))),
+#                    bquote("Permutations = "*.(prettyNum(length(annoGOIDs_permTestResults@permuted),
+#                                                         big.mark = ",",
+#                                                         trim = T))))
+#  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
+#  lines(density(annoGOIDs_permTestResults@permuted),
+#        col = "dodgerblue3",
+#        lwd = 1.5)
+#  ablineclip(v = annoGOIDs_permTestResults@expected,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2)
+#  ablineclip(v = annoGOIDs_permTestResults@observed,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, col = "forestgreen")
+#  ablineclip(v = annoGOIDs_permTestResults@alpha0.05,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, lty = 5, col = "red")
+#  text(x = c(textX1,
+#             annoGOIDs_permTestResults@expected,
+#             annoGOIDs_permTestResults@observed,
+#             annoGOIDs_permTestResults@alpha0.05),
+#       y = c(maxDensityPlus*.95,
+#             maxDensityPlus,
+#             maxDensityPlus,
+#             maxDensityPlus*.95),
+#       labels = c("Permuted",
+#                  "Expected",
+#                  "Observed",
+#                  expression(alpha*" = 0.05")),
+#       col = c("dodgerblue",
+#               "black",
+#               "forestgreen",
+#               "red"),
+#       cex = 0.8)
+#  dev.off()
+#}
 #}, mc.cores = length(pop_name), mc.preschedule = F)
