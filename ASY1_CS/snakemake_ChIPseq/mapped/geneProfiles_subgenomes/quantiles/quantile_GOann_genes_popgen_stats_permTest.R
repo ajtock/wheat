@@ -197,13 +197,21 @@ for(x in seq_along(pop_name)) {
   tQuantile4 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
-  
+
+  if(estimates$mean[1] < estimates$mean[2]) {
+    altHyp <- "less"
+  } else if(estimates$mean[1] > estimates$mean[2]) {
+    altHyp <- "greater"
+  } else {
+    altHyp <- "two.sided"
+  }
+
   # Evaluate differences between-gene-quantile orderingFactor values
   Utest <- wilcox.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                    orderingFactor)],
                        y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
                                                    orderingFactor)],
-                       alternative = "less")
+                       alternative = altHyp)
   UtestPval <- Utest$p.value
   UtestPvalChar <- if(UtestPval < 0.0001) {
                      "< 0.0001"
@@ -215,7 +223,7 @@ for(x in seq_along(pop_name)) {
                                               orderingFactor)],
                   y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
                                               orderingFactor)],
-                  alternative = "less")
+                  alternative = altHyp)
   ttestPval <- ttest$p.value
   ttestPvalChar <- if(ttestPval < 0.0001) {
                      "< 0.0001"
@@ -239,7 +247,7 @@ for(x in seq_along(pop_name)) {
                                                        orderingFactor)],
                            y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==
                                                        orderingFactor)],
-                           tr = 0.1, alternative = "less", mu = 0, paired = F, conf.level = 0.95)
+                           tr = 0.1, alternative = altHyp, mu = 0, paired = F, conf.level = 0.95)
   yuenttestPval <- yuenttest$p.value
   yuenttestPvalChar <- if(yuenttestPval < 0.0001) {
                          "< 0.0001"
@@ -253,85 +261,6 @@ for(x in seq_along(pop_name)) {
 
   # Combine estimates for each population into one dataframe 
   estimates_allpops <- rbind(estimates_allpops, estimates)
-}
-
-  # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
-  popgen_stats_meanLSDs <- function(dataFrame,
-                                    parameterLab,
-                                    populationGroup,
-                                    featureGroup,
-                                    featureNamePlot) {
-    ggplot(data = dataFrame,
-           mapping = aes(x = get(populationGroup),
-                         y = mean,
-                         colour = get(featureGroup))) +
-    labs(colour = "") +
-    geom_point(shape = "-", size = 18, position = position_dodge(width = 0.3)) +
-    geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
-                                ymax = mean+(lsd/2)),
-                  width = 0.3, size = 3, position = position_dodge(width = 0.3)) +
-    geom_beeswarm(data = IDsDF_annoGOIDsDF_stat_allpops,
-                  mapping = aes(x = get(populationGroup),
-                                y = get(orderingFactor),
-                                colour = get(featureGroup)),
-                  priority = "ascending",
-                  groupOnX = T,
-                  dodge.width = 0.3,
-                  cex = 0.2,
-                  size = 3,) +
-    scale_colour_manual(values = quantileColours) +
-    scale_y_continuous(
-#                       limits = c(summary_stats_min, summary_stats_max),
-                       labels = function(x) sprintf("%1.0f", x)) +
-#    scale_x_discrete(breaks = as.vector(dataFrame$quantile),
-#                     labels = as.vector(dataFrame$quantile)) +
-    guides(fill = guide_legend(direction = "horizontal",
-                               label.position = "top",
-                               label.theme = element_text(size = 100, hjust = 0, vjust = 0.5, angle = 90),
-                               nrow = 1,
-                               byrow = TRUE)) +
-    labs(x = "",
-         y = parameterLab) +
-    theme_bw() +
-    theme(axis.line.y = element_line(size = 2.0, colour = "black"),
-          axis.ticks.y = element_line(size = 2.0, colour = "black"),
-          axis.ticks.x = element_blank(),
-          axis.ticks.length = unit(0.25, "cm"),
-          axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
-          axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
-          axis.title = element_text(size = 26, colour = "black"),
-#          legend.position = "none",
-          legend.background = element_rect(fill = "transparent"),
-          legend.key = element_rect(colour = "transparent",
-                                    fill = "transparent"),
-          panel.grid = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          plot.margin = unit(c(0.8,1.2,0.1,0.3),"cm"),
-          plot.title = element_text(hjust = 0.5, size = 30)) +
-    ggtitle(bquote(atop(.(featureNamePlot))))
-#                        atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
-#                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
-  }
-  
-  ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame = estimates_allpops,
-                                                parameterLab = bquote(.(orderingFactorName)),
-                                                populationGroup = "population",
-                                                featureGroup = "quantile",
-                                                featureNamePlot = gsub("_", " ", featureNamePlot)
-                                               )
-  
-  ggsave(paste0(plotDir[x],
-                orderingFactor, "_all_pops_IDs_v_annoGOIDs_for_", featureNamePlot,
-                "_in_quantile", quantileNo, "_of_", quantiles,
-                "_by_log2_", libName, "_control_in_", region, "_of_",
-                substring(featureName[1][1], first = 1, last = 5), "_in_",
-                paste0(substring(featureName, first = 10, last = 16),
-                       collapse = "_"), "_",
-                substring(featureName[1][1], first = 18),
-                "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
-         plot = ggObjGA_feature_mean,
-         height = 8, width = 39, limitsize = F)
 
   # Plot orderingFactor means and LSDs for IDs vs annoGOIDs
   popgen_stats_meanLSDs <- function(dataFrame,
@@ -388,7 +317,7 @@ for(x in seq_along(pop_name)) {
                                                )
   
   ggsave(paste0(plotDir[x],
-                orderingFactor, "_", pop_name[x], "_IDs_v_annoGOIDs_for_", featureNamePlot,
+                orderingFactor, "_", pop_name[x], "_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
                 "_in_quantile", quantileNo, "_of_", quantiles,
                 "_by_log2_", libName, "_control_in_", region, "_of_",
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -489,7 +418,7 @@ for(x in seq_along(pop_name)) {
                                 genesNotInQuantile = length(featuresDF_nonIDs))
   save(nonIDs_permTestResults,
        file = paste0(outDir[x],
-                     orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", featureNamePlot,
+                     orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
                      "_in_quantile", quantileNo, "_of_", quantiles,
                      "_by_log2_", libName, "_control_in_", region, "_of_",
                      substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -500,7 +429,7 @@ for(x in seq_along(pop_name)) {
 
   # Generate histogram
   pdf(paste0(plotDir[x],
-             orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", featureNamePlot,
+             orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
              "_in_quantile", quantileNo, "_of_", quantiles,
              "_by_log2_", libName, "_control_in_", region, "_of_",
              substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -606,6 +535,95 @@ for(x in seq_along(pop_name)) {
        cex = 0.8)
   dev.off()
 }
+
+# Plot orderingFactor means and LSDs for IDs vs annoGOIDs for all populations
+popgen_stats_meanLSDs <- function(dataFrame1,
+                                  dataFrame2,
+                                  parameterLab,
+                                  populationGroup,
+                                  featureGroup,
+                                  featureNamePlot) {
+  ggplot(data = dataFrame1,
+         mapping = aes(x = get(populationGroup),
+                       y = mean,
+                       colour = get(featureGroup))) +
+  labs(colour = "") +
+  geom_point(shape = "-", size = 18, position = position_dodge(width = 0.6)) +
+  geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
+                              ymax = mean+(lsd/2)),
+                width = 0.3, size = 2, position = position_dodge(width = 0.6)) +
+  geom_beeswarm(data = dataFrame2,
+                mapping = aes(x = get(populationGroup),
+                              y = get(orderingFactor),
+                              colour = get(featureGroup)),
+                priority = "ascending",
+                groupOnX = T,
+                dodge.width = 0.6,
+                cex = 0.4,
+                size = 3,) +
+  scale_colour_manual(values = quantileColours) +
+  scale_y_continuous(labels = function(x) sprintf("%3.0f", x)) +
+#  scale_x_discrete(position = "bottom",
+#                   breaks = levels(dataFrame1$population),
+#                   labels = levels(dataFrame1$population)) +
+  guides(fill = guide_legend(direction = "horizontal",
+                             label.position = "top",
+                             label.theme = element_text(size = 22, hjust = 0, vjust = 0.5, angle = 90),
+                             nrow = 1,
+                             byrow = TRUE)) +
+  labs(x = "",
+       y = parameterLab) +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.y = element_text(size = 22, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
+        axis.title = element_text(size = 26, colour = "black"),
+        legend.text = element_text(size = 26),
+        legend.background = element_rect(fill = "transparent"),
+        legend.key = element_rect(colour = "transparent",
+                                  fill = "transparent"),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.8,1.2,0.1,0.3),"cm"),
+        plot.title = element_text(hjust = 0.5, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot))) +
+  annotate(geom = "text",
+           size = 8,
+           x = seq_along(pop_name),
+           y = 220, angle = 0,
+#           y = 1.8, angle = 0,
+           parse = T,
+           label = lapply(seq_along(pop_name), function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(unique(dataFrame1$ttestPval)[x])) }) ) +
+  annotate(geom = "text",
+           size = 8,
+           x = seq_along(pop_name),
+           y = 205, angle = 0,
+#           y = 1.5, angle = 0,
+           parse = T,
+           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenttestPval)[x])) }) )
+}
+ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
+                                              dataFrame2 = IDsDF_annoGOIDsDF_stat_allpops,
+                                              parameterLab = bquote(.(orderingFactorName)),
+                                              populationGroup = "population",
+                                              featureGroup = "quantile",
+                                              featureNamePlot = gsub("_", " ", featureNamePlot))
+ggsave(paste0(substring(outDir[1], first = 1, last = 28),
+              orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
+              "_in_quantile", quantileNo, "_of_", quantiles,
+              "_by_log2_", libName, "_control_in_", region, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18),
+              "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
+       plot = ggObjGA_feature_mean,
+       height = 8, width = 39)
+
 #  # Define seed so that random selections are reproducible
 #  set.seed(453838430)
 #  
@@ -657,7 +675,7 @@ for(x in seq_along(pop_name)) {
 #                                genesNotInQuantile = length(featuresDF_nonIDs))
 #  save(annoGOIDs_permTestResults,
 #       file = paste0(outDir[x],
-#                     orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
+#                     orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #                     "_in_quantile", quantileNo, "_of_", quantiles,
 #                     "_by_log2_", libName, "_control_in_", region, "_of_",
 #                     substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -668,7 +686,7 @@ for(x in seq_along(pop_name)) {
 #
 #  # Generate histogram
 #  pdf(paste0(plotDir[x],
-#             orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", featureNamePlot,
+#             orderingFactor, "_", pop_name[x], "_random_annoGOIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #             "_in_quantile", quantileNo, "_of_", quantiles,
 #             "_by_log2_", libName, "_control_in_", region, "_of_",
 #             substring(featureName[1][1], first = 1, last = 5), "_in_",
