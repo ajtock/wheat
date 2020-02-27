@@ -168,6 +168,7 @@ for(x in seq_along(pop_name)) {
   ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
   ### REMOVING THEM MAKES PLOTS EASIER TO INTERPRET
+  ### SHOW MWW U TEST P-VALUES RATHER THAN YUEN T-TEST P-VALUES IF PRE-TRIMMING
   if(orderingFactor == "RozasR2") {
    featuresDF_IDsDF <-  featuresDF_IDsDF[featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                                  orderingFactor)] < 1,]
@@ -246,18 +247,20 @@ for(x in seq_along(pop_name)) {
                    }
 
   trim <- 0.1
-##  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
-##                       tr = trim, nboot = 10000, side = T)
-#  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
-#                       IDsDF_annoGOIDsDF$quantile, 
+#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
 #                       tr = trim, nboot = 10000, side = T)
-#  yuenbttestPval <- yuenbttest$p.value
-#  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
-#                          "< 0.0001"
-#                        } else {
-#                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
-#                        }
-
+  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+                       IDsDF_annoGOIDsDF$quantile,
+                       tr = trim, nboot = 10000, side = T)
+  yuenbttestPval <- yuenbttest$p.value
+  yuenbttestPval <- yuenbttestPval/2
+  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
+                          "< 0.0001"
+                        } else {
+                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
+                        }
+  # Bootstrapped version above does not provide for one-tailed tests, so using yuen.t.test instead
+  # Alternatively, could divide yuenbttestPval by 2
   yuenttest <- yuen.t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                        orderingFactor)],
                            y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==
@@ -273,6 +276,7 @@ for(x in seq_along(pop_name)) {
   estimates$UtestPval <- UtestPvalChar
   estimates$ttestPval <- ttestPvalChar
   estimates$yuenttestPval <- yuenttestPvalChar
+  estimates$yuenbttestPval <- yuenbttestPvalChar
 
   # Combine estimates for each population into one dataframe 
   estimates_allpops <- rbind(estimates_allpops, estimates)
@@ -322,7 +326,7 @@ for(x in seq_along(pop_name)) {
           plot.title = element_text(hjust = 0.5, size = 30)) +
     ggtitle(bquote(atop(.(featureNamePlot),
                         atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
-                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
+                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenbttestPvalChar)))))
 #                             "MWW test"  ~ italic("P") ~ .(UtestPvalChar)))))
   }
   
@@ -623,7 +627,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            y = 1.5, angle = 0,
 #           y = 0.21, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenttestPval)[x])) }) )
+           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenbttestPval)[x])) }) )
 #           label = lapply(seq_along(pop_name), function(x) { bquote("MWW" ~ italic("P") ~ .(unique(dataFrame1$UtestPval)[x])) }) )
 }
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
@@ -735,12 +739,12 @@ ggsave(paste0(substring(outDir[1], first = 1, last = 28),
 #    }
 #  } else {
 #    if(annoGOIDs_permTestResults@alternative == "MoreThanRandom") {
-#      xlim <- c(pmin(-1, min(annoGOIDs_permTestResults@permuted)/1.2),
+#      xlim <- c(pmin(0, min(annoGOIDs_permTestResults@permuted)/1.2),
 #                pmax(annoGOIDs_permTestResults@observed*1.2, annoGOIDs_permTestResults@alpha0.05*1.2))
 #      textX1 <- quantile(xlim, 0.25)[[1]]
 ##      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15
 #    } else {
-#      xlim <- c(pmin(-1, annoGOIDs_permTestResults@observed/1.2),
+#      xlim <- c(pmin(0, annoGOIDs_permTestResults@observed/1.2),
 #                max(annoGOIDs_permTestResults@permuted)*1.2)
 #      textX1 <- quantile(xlim, 0.75)[[1]]
 ##      textX1 <- min(annoGOIDs_permTestResults@permuted)/1.15

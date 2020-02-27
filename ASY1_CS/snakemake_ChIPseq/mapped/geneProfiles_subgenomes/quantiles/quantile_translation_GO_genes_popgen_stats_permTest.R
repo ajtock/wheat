@@ -244,18 +244,20 @@ for(x in seq_along(pop_name)) {
                    }
 
   trim <- 0.1
-##  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
-##                       tr = trim, nboot = 10000, side = T)
-#  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
-#                       IDsDF_annoGOIDsDF$quantile, 
+#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
 #                       tr = trim, nboot = 10000, side = T)
-#  yuenbttestPval <- yuenbttest$p.value
-#  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
-#                          "< 0.0001"
-#                        } else {
-#                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
-#                        }
-
+  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+                       IDsDF_annoGOIDsDF$quantile,
+                       tr = trim, nboot = 10000, side = T)
+  yuenbttestPval <- yuenbttest$p.value
+  yuenbttestPval <- yuenbttestPval/2
+  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
+                          "< 0.0001"
+                        } else {
+                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
+                        }
+  # Bootstrapped version above does not provide for one-tailed tests, so using yuen.t.test instead
+  # Alternatively, could divide yuenbttestPval by 2
   yuenttest <- yuen.t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                        orderingFactor)],
                            y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==
@@ -271,6 +273,7 @@ for(x in seq_along(pop_name)) {
   estimates$UtestPval <- UtestPvalChar
   estimates$ttestPval <- ttestPvalChar
   estimates$yuenttestPval <- yuenttestPvalChar
+  estimates$yuenbttestPval <- yuenbttestPvalChar
 
   # Combine estimates for each population into one dataframe 
   estimates_allpops <- rbind(estimates_allpops, estimates)
@@ -320,7 +323,7 @@ for(x in seq_along(pop_name)) {
           plot.title = element_text(hjust = 0.5, size = 30)) +
     ggtitle(bquote(atop(.(featureNamePlot),
                         atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
-                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
+                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenbttestPvalChar)))))
 #                             "MWW test"  ~ italic("P") ~ .(UtestPvalChar)))))
   }
   
@@ -621,7 +624,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            y = 1.5, angle = 0,
 #           y = 0.21, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenttestPval)[x])) }) )
+           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenbttestPval)[x])) }) )
 #           label = lapply(seq_along(pop_name), function(x) { bquote("MWW" ~ italic("P") ~ .(unique(dataFrame1$UtestPval)[x])) }) )
 }
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,

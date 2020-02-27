@@ -5,14 +5,14 @@
 # with those for randomSets sets of randomly selected GO-term-annotated genes not in that ASY1 quantile
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_defense_response_GO_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
+# /applications/R/R-3.5.0/bin/Rscript quantile_DNA_repair_GO_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'DNA_repair_genes' '0006281' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#featureNamePlot <- "Defense_response_genes"
-#GO_ID <- "0006952"
+#featureNamePlot <- "DNA_repair_genes"
+#GO_ID <- "0006281"
 #region <- "bodies"
 #quantileNo <- 1
 #quantiles <- 4
@@ -46,7 +46,7 @@ library(WRS2)
 library(PairedData)
 library(ggplot2)
 library(ggbeeswarm)
-library(ggthemes)
+#library(ggthemes)
 library(grid)
 library(gridExtra)
 library(extrafont)
@@ -131,9 +131,7 @@ IDs_annoGOIDs <- as.character(anno[anno$`Gene-ID` %in% IDs,]$`GO-IDs-(Descriptio
 print(IDs_annoGOIDs)
 
 # Get subset corresponding to genes annotated with enriched GO_ID, and not in quantile quantileNo
-annoGOIDs <- anno[unique(c(which(grepl(pattern = "defense response",
-                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)),
-                           which(grepl(pattern = "regulation of systemic acquired resistance",
+annoGOIDs <- anno[unique(c(which(grepl(pattern = "repair",
                                        x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)))),]
 annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
 
@@ -168,7 +166,6 @@ for(x in seq_along(pop_name)) {
   ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
   ### REMOVING THEM MAKES PLOTS EASIER TO INTERPRET
-  ### SHOW MWW U TEST P-VALUES RATHER THAN YUEN T-TEST P-VALUES IF PRE-TRIMMING
   if(orderingFactor == "RozasR2") {
    featuresDF_IDsDF <-  featuresDF_IDsDF[featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                                  orderingFactor)] < 1,]
@@ -250,7 +247,7 @@ for(x in seq_along(pop_name)) {
 #  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
 #                       tr = trim, nboot = 10000, side = T)
   yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
-                       IDsDF_annoGOIDsDF$quantile, 
+                       IDsDF_annoGOIDsDF$quantile,
                        tr = trim, nboot = 10000, side = T)
   yuenbttestPval <- yuenbttest$p.value
   yuenbttestPval <- yuenbttestPval/2
@@ -636,7 +633,7 @@ ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               populationGroup = "population",
                                               featureGroup = "quantile",
                                               featureNamePlot = gsub("_", " ", featureNamePlot))
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+ggsave(paste0(substring(outDir[1], first = 1, last = 28),
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
               "_in_quantile", quantileNo, "_of_", quantiles,
               "_by_log2_", libName, "_control_in_", region, "_of_",
@@ -722,10 +719,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
               substring(featureName[1][1], first = 18),
-              "_ann_with_GO_BP_enrichment_GO:", GO_ID, ".pdf"),
-       plot = bp,
-       height = 8, width = 14)
-
+             
 #  # Define seed so that random selections are reproducible
 #  set.seed(453838430)
 #  
