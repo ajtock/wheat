@@ -95,6 +95,9 @@ makeTransparent <- function(thisColour, alpha = 180)
 }
 quantileColours <- makeTransparent(quantileColours)
 
+# Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+options(scipen = 100)
+
 # Load NLRs
 NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3", header = F)
 # Replace gene model ID decimal suffix (e.g., ".1")
@@ -137,10 +140,9 @@ for(x in seq_along(pop_name)) {
                                        featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
   featuresDF_annoGOIDsDF$quantile <- "Quantiles 3 & 4"
  
-  ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
+  ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
   ### REMOVING THEM MAKES PLOTS EASIER TO INTERPRET
-  ### SHOW MWW U TEST P-VALUES RATHER THAN YUEN T-TEST P-VALUES IF PRE-TRIMMING
   if(orderingFactor == "RozasR2") {
    featuresDF_IDsDF <-  featuresDF_IDsDF[featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                                  orderingFactor)] < 1,]
@@ -149,7 +151,7 @@ for(x in seq_along(pop_name)) {
    featuresDF_nonIDsDF <-  featuresDF_nonIDsDF[featuresDF_nonIDsDF[,which(colnames(featuresDF_nonIDsDF) ==
                                                                           orderingFactor)] < 1,]
   }
-  ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
+  ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
 
   featuresDF_IDs <- featuresDF_IDsDF$featureID
   featuresDF_nonIDs <- featuresDF_nonIDsDF$featureID
@@ -266,13 +268,13 @@ for(x in seq_along(pop_name)) {
     geom_point(shape = "-", size = 18, position = position_dodge(width = 0.2)) +
     geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
                                 ymax = mean+(lsd/2)),
-                  width = 0.3, size = 2, position = position_dodge(width = 0.2)) +
+                  width = 0.5, size = 1, position = position_dodge(width = 0.2)) +
     geom_beeswarm(data = IDsDF_annoGOIDsDF,
                   mapping = aes(x = get(featureGroup),
                                 y = get(orderingFactor),
                                 colour = get(featureGroup)),
                   priority = "ascending",
-                  cex = 0.4,
+                  cex = 1,
                   size = 1) +
     scale_colour_manual(values = quantileColours) +
     scale_y_continuous(
@@ -543,7 +545,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
   geom_point(shape = "-", size = 18, position = position_dodge(width = 0.6)) +
   geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
-                width = 0.3, size = 2, position = position_dodge(width = 0.6)) +
+                width = 0.5, size = 2, position = position_dodge(width = 0.6)) +
   geom_beeswarm(data = dataFrame2,
                 mapping = aes(x = get(populationGroup),
                               y = get(orderingFactor),
@@ -551,11 +553,11 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                 priority = "ascending",
                 groupOnX = T,
                 dodge.width = 0.6,
-                cex = 0.4,
+                cex = 0.2,
                 size = 1) +
   scale_colour_manual(values = quantileColours) +
-  scale_y_continuous(labels = function(x) sprintf("%3.0f", x)) +
-#  scale_y_continuous(labels = function(x) sprintf("%1.2f", x)) +
+#  scale_y_continuous(labels = function(x) sprintf("%4.0f", x)) +
+  scale_y_continuous(labels = function(x) sprintf("%1.2f", x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
@@ -575,6 +577,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
         axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
         axis.title = element_text(size = 26, colour = "black"),
         legend.text = element_text(size = 26),
+        legend.position = "bottom",
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
@@ -588,19 +591,22 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            size = 8,
            x = seq_along(pop_name),
 #           y = 220, angle = 0,
-           y = 1.8, angle = 0,
-#           y = 0.23, angle = 0,
+#           y = 4.1, angle = 0,
+           y = 0.26, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(unique(dataFrame1$ttestPval)[x])) }) ) +
+           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+                     function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(dataFrame1$ttestPval[x])) }) ) +
   annotate(geom = "text",
            size = 8,
            x = seq_along(pop_name),
 #           y = 205, angle = 0,
-           y = 1.5, angle = 0,
-#           y = 0.21, angle = 0,
+#           y = 3.5, angle = 0,
+           y = 0.23, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenttestPval)[x])) }) )
-#           label = lapply(seq_along(pop_name), function(x) { bquote("MWW" ~ italic("P") ~ .(unique(dataFrame1$UtestPval)[x])) }) )
+           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+                     function(x) { bquote("Yuen" ~ italic("P") ~ .(dataFrame1$yuenttestPval[x])) }) )
+#           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+#                     function(x) { bquote("MWW" ~ italic("P") ~ .(dataFrame1$UtestPval[x])) }) )
 }
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               dataFrame2 = IDsDF_annoGOIDsDF_stat_allpops,
@@ -618,7 +624,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 8, width = 39)
+       height = 9, width = 35)
 
 # Plot bar graph summarising permutation test results
 pt_list <- list()

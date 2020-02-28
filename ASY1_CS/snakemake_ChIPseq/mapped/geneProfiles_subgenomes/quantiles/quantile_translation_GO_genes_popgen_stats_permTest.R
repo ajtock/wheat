@@ -97,6 +97,9 @@ makeTransparent <- function(thisColour, alpha = 180)
 }
 quantileColours <- makeTransparent(quantileColours)
 
+# Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+options(scipen = 100)
+
 # Below is commented out in favour of comparison of a more exhaustive set of genes
 # with functional annotations related to GO_ID
 ## Load IDs of genes annotated with GO_ID in quantile quantileNo
@@ -186,10 +189,9 @@ for(x in seq_along(pop_name)) {
                                        featuresDF$quantile == paste0("Quantile ", quantiles),]
 #  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
 
-  ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
+  ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
   ### REMOVING THEM MAKES PLOTS EASIER TO INTERPRET
-  ### SHOW MWW U TEST P-VALUES RATHER THAN YUEN T-TEST P-VALUES IF PRE-TRIMMING
   if(orderingFactor == "RozasR2") {
    featuresDF_IDsDF <-  featuresDF_IDsDF[featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                                  orderingFactor)] < 1,]
@@ -198,7 +200,7 @@ for(x in seq_along(pop_name)) {
    featuresDF_nonIDsDF <-  featuresDF_nonIDsDF[featuresDF_nonIDsDF[,which(colnames(featuresDF_nonIDsDF) ==
                                                                           orderingFactor)] < 1,]
   }
-  ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
+  ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
 
   featuresDF_IDs <- featuresDF_IDsDF$featureID
   featuresDF_nonIDs <- featuresDF_nonIDsDF$featureID
@@ -268,18 +270,18 @@ for(x in seq_along(pop_name)) {
                    }
 
   trim <- 0.1
-#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+##  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+##                       tr = trim, nboot = 10000, side = T)
+#  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+#                       IDsDF_annoGOIDsDF$quantile,
 #                       tr = trim, nboot = 10000, side = T)
-  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
-                       IDsDF_annoGOIDsDF$quantile,
-                       tr = trim, nboot = 10000, side = T)
-  yuenbttestPval <- yuenbttest$p.value
-  yuenbttestPval <- yuenbttestPval/2
-  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
-                          "< 0.0001"
-                        } else {
-                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
-                        }
+#  yuenbttestPval <- yuenbttest$p.value
+#  yuenbttestPval <- yuenbttestPval/2
+#  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
+#                          "< 0.0001"
+#                        } else {
+#                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
+#                        }
   # Bootstrapped version above does not provide for one-tailed tests, so using yuen.t.test instead
   # Alternatively, could divide yuenbttestPval by 2
   yuenttest <- yuen.t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
@@ -297,7 +299,7 @@ for(x in seq_along(pop_name)) {
   estimates$UtestPval <- UtestPvalChar
   estimates$ttestPval <- ttestPvalChar
   estimates$yuenttestPval <- yuenttestPvalChar
-  estimates$yuenbttestPval <- yuenbttestPvalChar
+#  estimates$yuenbttestPval <- yuenbttestPvalChar
 
   # Combine estimates for each population into one dataframe 
   estimates_allpops <- rbind(estimates_allpops, estimates)
@@ -347,7 +349,7 @@ for(x in seq_along(pop_name)) {
           plot.title = element_text(hjust = 0.5, size = 30)) +
     ggtitle(bquote(atop(.(featureNamePlot),
                         atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
-                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenbttestPvalChar)))))
+                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
 #                             "MWW test"  ~ italic("P") ~ .(UtestPvalChar)))))
   }
   
@@ -592,7 +594,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
   geom_point(shape = "-", size = 18, position = position_dodge(width = 0.6)) +
   geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
-                width = 0.3, size = 2, position = position_dodge(width = 0.6)) +
+                width = 0.5, size = 2, position = position_dodge(width = 0.6)) +
   geom_beeswarm(data = dataFrame2,
                 mapping = aes(x = get(populationGroup),
                               y = get(orderingFactor),
@@ -601,9 +603,9 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                 groupOnX = T,
                 dodge.width = 0.6,
                 cex = 0.4,
-                size = 3,) +
+                size = 3) +
   scale_colour_manual(values = quantileColours) +
-  scale_y_continuous(labels = function(x) sprintf("%3.0f", x)) +
+  scale_y_continuous(labels = function(x) sprintf("%4.0f", x)) +
 #  scale_y_continuous(labels = function(x) sprintf("%1.2f", x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
@@ -624,6 +626,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
         axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
         axis.title = element_text(size = 26, colour = "black"),
         legend.text = element_text(size = 26),
+        legend.position = "bottom",
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
@@ -637,10 +640,11 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            size = 8,
            x = seq_along(pop_name),
 #           y = 220, angle = 0,
-           y = 1.8, angle = 0,
+           y = 1.9, angle = 0,
 #           y = 0.23, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(unique(dataFrame1$ttestPval)[x])) }) ) +
+           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+                     function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(dataFrame1$ttestPval[x])) }) ) +
   annotate(geom = "text",
            size = 8,
            x = seq_along(pop_name),
@@ -648,8 +652,10 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            y = 1.5, angle = 0,
 #           y = 0.21, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenbttestPval)[x])) }) )
-#           label = lapply(seq_along(pop_name), function(x) { bquote("MWW" ~ italic("P") ~ .(unique(dataFrame1$UtestPval)[x])) }) )
+           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+                     function(x) { bquote("Yuen" ~ italic("P") ~ .(dataFrame1$yuenttestPval[x])) }) )
+#           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
+#                     function(x) { bquote("MWW" ~ italic("P") ~ .(dataFrame1$UtestPval[x])) }) )
 }
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               dataFrame2 = IDsDF_annoGOIDsDF_stat_allpops,
@@ -667,7 +673,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 8, width = 39)
+       height = 9, width = 35)
 
 # Plot bar graph summarising permutation test results
 pt_list <- list()
