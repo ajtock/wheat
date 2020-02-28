@@ -132,10 +132,10 @@ for(x in seq_along(pop_name)) {
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
   featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs) &
-                                    featuresDF$quantile == paste0("Quantile ", quantiles),]
+                                    featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% IDs &
-                                       featuresDF$quantile == paste0("Quantile ", quantiles),]
-#  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
+                                       featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
+  featuresDF_annoGOIDsDF$quantile <- "Quantiles 3 & 4"
  
   ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
@@ -173,7 +173,7 @@ for(x in seq_along(pop_name)) {
   # Add the mean orderingFactor values to the dataframe
   estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
-                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),
+                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]))
   # Add the standard error of the difference between means to the estimates dataframe
   estimates$sed <- summary(lm1)$coefficients[2,2]
@@ -182,7 +182,7 @@ for(x in seq_along(pop_name)) {
   tQuantile1 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1] - 1)
   tQuantile4 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),])[1] - 1) 
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
 
   if(estimates$mean[1] < estimates$mean[2]) {
@@ -219,18 +219,18 @@ for(x in seq_along(pop_name)) {
                    }
 
   trim <- 0.1
-#  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+##  yuenbttest <- yuenbt(TajimaD ~ quantile, data = IDsDF_annoGOIDsDF,
+##                       tr = trim, nboot = 10000, side = T)
+#  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
+#                       IDsDF_annoGOIDsDF$quantile, 
 #                       tr = trim, nboot = 10000, side = T)
-  yuenbttest <- yuenbt(IDsDF_annoGOIDsDF[,which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)] ~
-                       IDsDF_annoGOIDsDF$quantile, 
-                       tr = trim, nboot = 10000, side = T)
-  yuenbttestPval <- yuenbttest$p.value
-  yuenbttestPval <- yuenbttestPval/2
-  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
-                          "< 0.0001"
-                        } else {
-                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
-                        }
+#  yuenbttestPval <- yuenbttest$p.value
+#  yuenbttestPval <- yuenbttestPval/2
+#  yuenbttestPvalChar <- if(yuenbttestPval < 0.0001) {
+#                          "< 0.0001"
+#                        } else {
+#                          paste0("= ", as.character(round(yuenbttestPval, digits = 4)))
+#                        }
   # Bootstrapped version above does not provide for one-tailed tests, so using yuen.t.test instead
   # Alternatively, could divide yuenbttestPval by 2
   yuenttest <- yuen.t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
@@ -248,7 +248,7 @@ for(x in seq_along(pop_name)) {
   estimates$UtestPval <- UtestPvalChar
   estimates$ttestPval <- ttestPvalChar
   estimates$yuenttestPval <- yuenttestPvalChar
-  estimates$yuenbttestPval <- yuenbttestPvalChar
+#  estimates$yuenbttestPval <- yuenbttestPvalChar
 
   # Combine estimates for each population into one dataframe 
   estimates_allpops <- rbind(estimates_allpops, estimates)
@@ -263,17 +263,17 @@ for(x in seq_along(pop_name)) {
                          y = mean,
                          colour = get(featureGroup))) +
     labs(colour = "") +
-    geom_point(shape = 19, size = 6, position = position_dodge(width = 0.2)) +
+    geom_point(shape = "-", size = 18, position = position_dodge(width = 0.2)) +
     geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
                                 ymax = mean+(lsd/2)),
-                  width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
+                  width = 0.3, size = 2, position = position_dodge(width = 0.2)) +
     geom_beeswarm(data = IDsDF_annoGOIDsDF,
                   mapping = aes(x = get(featureGroup),
                                 y = get(orderingFactor),
                                 colour = get(featureGroup)),
                   priority = "ascending",
-                  cex = 4,
-                  size = 3) +
+                  cex = 0.4,
+                  size = 1) +
     scale_colour_manual(values = quantileColours) +
     scale_y_continuous(
 #                       limits = c(summary_stats_min, summary_stats_max),
@@ -298,7 +298,7 @@ for(x in seq_along(pop_name)) {
           plot.title = element_text(hjust = 0.5, size = 30)) +
     ggtitle(bquote(atop(.(featureNamePlot),
                         atop(italic("t") * "-test" ~ italic("P") ~ .(ttestPvalChar),
-                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenbttestPvalChar)))))
+                             "Yuen's test (10% trimmed mean)"  ~ italic("P") ~ .(yuenttestPvalChar)))))
 #                             "MWW test"  ~ italic("P") ~ .(UtestPvalChar)))))
   }
   
@@ -552,7 +552,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                 groupOnX = T,
                 dodge.width = 0.6,
                 cex = 0.4,
-                size = 3,) +
+                size = 1) +
   scale_colour_manual(values = quantileColours) +
   scale_y_continuous(labels = function(x) sprintf("%3.0f", x)) +
 #  scale_y_continuous(labels = function(x) sprintf("%1.2f", x)) +
@@ -599,7 +599,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
            y = 1.5, angle = 0,
 #           y = 0.21, angle = 0,
            parse = T,
-           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenbttestPval)[x])) }) )
+           label = lapply(seq_along(pop_name), function(x) { bquote("Yuen" ~ italic("P") ~ .(unique(dataFrame1$yuenttestPval)[x])) }) )
 #           label = lapply(seq_along(pop_name), function(x) { bquote("MWW" ~ italic("P") ~ .(unique(dataFrame1$UtestPval)[x])) }) )
 }
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
