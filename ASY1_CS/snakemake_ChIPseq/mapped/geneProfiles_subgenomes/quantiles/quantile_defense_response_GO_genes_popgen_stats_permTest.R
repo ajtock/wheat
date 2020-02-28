@@ -1,8 +1,8 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Compare population genetics statistics (means) for GO-term-annotated genes in a given ASY1 quantile
-# with those for randomSets sets of randomly selected genes not in that ASY1 quantile, and
-# with those for randomSets sets of randomly selected GO-term-annotated genes not in that ASY1 quantile
+# Compare population genetics statistics for GO-term-annotated genes in a given ASY1 quantile
+# with 1) those for GO-term-annotated genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
+#      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not annotated with the given GO term (using permutation tests)
 
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript quantile_defense_response_GO_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Defense_response_genes' '0006952' bodies 1 4 TajimaD 'Tajima D' 10000 0.0001
@@ -41,7 +41,7 @@ minPval <- as.numeric(args[12])
 library(parallel)
 library(plotrix)
 #library(tidyr)
-#library(dplyr)
+library(dplyr)
 library(WRS2)
 library(PairedData)
 library(ggplot2)
@@ -97,24 +97,26 @@ makeTransparent <- function(thisColour, alpha = 180)
 }
 quantileColours <- makeTransparent(quantileColours)
 
-# Load IDs of genes annotated with GO_ID in quantile quantileNo
-IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_in_", region,
-                                      "/GO/featureIDs_quantile", quantileNo, "_of_", quantiles,
-                                      "_by_log2_", libName, "_control_in_", region, "_of_",
-                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                      paste0(substring(featureName, first = 10, last = 16),
-                                             collapse = "_"), "_",
-                                      substring(featureName[1][1], first = 18),
-                                      "_GO_BP/featureIDs_quantile", quantileNo, "_of_", quantiles,
-                                      "_by_log2_", libName, "_control_in_", region, "_of_",
-                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                      paste0(substring(featureName, first = 10, last = 16),
-                                             collapse = "_"), "_",
-                                      substring(featureName[1][1], first = 18),
-                                      "_GO_BP_enrichment_GO:", GO_ID, ".txt"),
-                               colClasses = c("NULL", NA), header = F)$V2)
-IDs <- unlist(strsplit(x = IDs,
-                       split = ","))
+# Below is commented out in favour of comparison of a more exhaustive set of genes
+# with functional annotations related to GO_ID
+## Load IDs of genes annotated with GO_ID in quantile quantileNo
+#IDs <- as.character(read.table(paste0("quantiles_by_log2_", libName, "_control_in_", region,
+#                                      "/GO/featureIDs_quantile", quantileNo, "_of_", quantiles,
+#                                      "_by_log2_", libName, "_control_in_", region, "_of_",
+#                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                                      paste0(substring(featureName, first = 10, last = 16),
+#                                             collapse = "_"), "_",
+#                                      substring(featureName[1][1], first = 18),
+#                                      "_GO_BP/featureIDs_quantile", quantileNo, "_of_", quantiles,
+#                                      "_by_log2_", libName, "_control_in_", region, "_of_",
+#                                      substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                                      paste0(substring(featureName, first = 10, last = 16),
+#                                             collapse = "_"), "_",
+#                                      substring(featureName[1][1], first = 18),
+#                                      "_GO_BP_enrichment_GO:", GO_ID, ".txt"),
+#                               colClasses = c("NULL", NA), header = F)$V2)
+#IDs <- unlist(strsplit(x = IDs,
+#                       split = ","))
 
 # Load table of functional annotations
 # (note this is old v1.0 and not new v1.1 gene annotation)
@@ -127,15 +129,37 @@ anno$`Gene-ID` <- sub(pattern = "\\.\\d+", replacement = "",
 # Replace "1G" with "2G" in gene IDs for consistency with v1.1
 anno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
                       x = anno$`Gene-ID`)
-IDs_annoGOIDs <- as.character(anno[anno$`Gene-ID` %in% IDs,]$`GO-IDs-(Description)-via-Interpro`)
-print(IDs_annoGOIDs)
+#IDs_annoGOIDs <- as.character(anno[anno$`Gene-ID` %in% IDs,]$`GO-IDs-(Description)-via-Interpro`)
+#print(IDs_annoGOIDs)
 
-# Get subset corresponding to genes annotated with enriched GO_ID, and not in quantile quantileNo
-annoGOIDs <- anno[unique(c(which(grepl(pattern = "defense response",
-                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)),
-                           which(grepl(pattern = "regulation of systemic acquired resistance",
-                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)))),]
-annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
+# Get subset corresponding to genes with annotations related to enriched GO_ID
+annoGOIDs <- as.character( ( anno %>%
+               dplyr::filter(
+                             grepl("defense response",
+                                   `Human-Readable-Description`) |
+                             grepl("defense response",
+                                   `Pfam-IDs-(Description)`) |
+                             grepl("defense response",
+                                   `Interpro-IDs-(Description)`) |
+                             grepl("defense response",
+                                   `GO-IDs-(Description)-via-Interpro`) |
+                             grepl("regulation of systemic acquired resistance",
+                                   `Human-Readable-Description`) |
+                             grepl("regulation of systemic acquired resistance",
+                                   `Pfam-IDs-(Description)`) |
+                             grepl("regulation of systemic acquired resistance",
+                                   `Interpro-IDs-(Description)`) |
+                             grepl("regulation of systemic acquired resistance",
+                                   `GO-IDs-(Description)-via-Interpro`)
+               ) %>%
+                 dplyr::select(`Gene-ID`) )[,1] )
+
+# Less exhaustive approach filtering only on `GO-IDs-(Description)-via-Interpro` column
+#annoGOIDs <- anno[unique(c(which(grepl(pattern = "defense response",
+#                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)),
+#                           which(grepl(pattern = "regulation of systemic acquired resistance",
+#                                       x = anno$`GO-IDs-(Description)-via-Interpro`, ignore.case = T)))),]
+#annoGOIDs <- annoGOIDs[!(annoGOIDs$`Gene-ID` %in% IDs),]$`Gene-ID`
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
@@ -156,15 +180,22 @@ for(x in seq_along(pop_name)) {
   # Retain rows that contain non-NA values of orderingFactor
   featuresDF <- featuresDF[!is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),]
   
-  # Get orderingFactor values for IDs
-  featuresDF_IDsDF <- featuresDF[featuresDF$featureID %in% IDs,]
-  #featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs),]
+  # Subset genes (GO-term-annotated genes in Quantile 1 [IDs],
+  # GO-term-annotated genes in, e.g., Quantile 4 (annoGOIDs), and
+  # genes not annotated with given GO term and in, e.g., Quantile 4 [nonIDs])
+  # Below is commented out in favour of comparison of a more exhaustive set of genes
+#  featuresDF_IDsDF <- featuresDF[featuresDF$featureID %in% IDs,]
+  featuresDF_IDsDF <- featuresDF[featuresDF$featureID %in% annoGOIDs &
+                                 featuresDF$quantile == paste0("Quantile ", quantileNo),]
+#  featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs),]
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
-  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
-  featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% annoGOIDs,]
-  featuresDF_annoGOIDsDF <- featuresDF_annoGOIDsDF[featuresDF_annoGOIDsDF$quantile == paste0("Quantile ", quantiles),]
+#  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
+  featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% annoGOIDs) &
+                                    featuresDF$quantile == paste0("Quantile ", quantiles),]
+  featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% annoGOIDs &
+                                       featuresDF$quantile == paste0("Quantile ", quantiles),]
 #  featuresDF_annoGOIDsDF$quantile <- "Not Quantile 1"
-
+ 
   ### NOTE THAT PRE-TRIMMING THE DATA WILL MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
   ### REMOVING THEM MAKES PLOTS EASIER TO INTERPRET
@@ -679,7 +710,7 @@ bp <- ggplot(data = bargraph_df,
   geom_point(mapping = aes(x = population,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey80", size = 10) +
+             shape = "-", colour  = "grey80", size = 20) +
   labs(y = bquote("Log"[2]*"(observed/expected)" ~ .(orderingFactorName))) +
 #  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "top") +
@@ -705,7 +736,7 @@ bp <- ggplot(data = bargraph_df,
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
-        plot.title = element_text(size = 12, colour = "black", hjust = 0.5)) +
+        plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
   ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~
                  "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
                  "(" * .(region) * ") in" ~
