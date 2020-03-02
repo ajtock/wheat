@@ -1,16 +1,29 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Extract accession IDs of hexaploid wheat accessions used in exome-derived SNP analysis
-# published in  He et al. (2019) Nat. Genet. 51: https://doi.org/10.1038/s41588-019-0382-2 ,
+# Extract accession IDs of hexaploid wheat, and wild and dommesticated emmer wheat accessions
+# used in exome-derived SNP analysis published in  He et al. (2019) Nat. Genet. 51: https://doi.org/10.1038/s41588-019-0382-2 ,
 # grouped by geographic region
 
 tblS1 <- read.table("Table_S1_41588_2019_382_MOESM3_ESM.tsv",
                     quote = "\"", sep = "\t", header = T,
                     check.names = T, stringsAsFactors = F)
 # Extract Triticum aestivum subsp. aestivum accessions only
-tblS1 <- tblS1[which(tblS1$Species == "Triticum aestivum subsp. aestivum"),]
+tblS1 <- rbind(tblS1[which(tblS1$Species == "Triticum aestivum subsp. aestivum"),],
+               tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "domesticatedE"),],
+               tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "wildE"),])
 # OR
 #tblS1 <- tblS1[which(tblS1$improvement.Status %in% c("cul", "lr", "unknown")),]
+
+# NOTE: this script removes 5 accessions, as was done in the above paper:
+# "On the basis of the patterns of clustering inconsistent with the clustering of wheat accessions
+# having the same improvement status (wild, domesticated, landrace, cultivar), we have removed
+# from analyses three wheat landraces (PI 345355, PI 131592, PI 534284) and
+# two accessions of wild and domesticated emmer (PI 467000, PI 415152)." (He et al. 2019 Nat. Genet. 51)
+tblS1 <- tblS1[-c(which(grepl("345355", tblS1$Accession_ID)),
+                  which(grepl("131592", tblS1$Accession_ID)),
+                  which(grepl("534284", tblS1$Accession_ID)),
+                  which(grepl("467000", tblS1$Accession_ID)),
+                  which(grepl("415152", tblS1$Accession_ID))),]
 
 pop <- sort(unique(tblS1$X21.populations.used.in.Admixture.analyses))
 pop <- pop[which(pop != "-")]
@@ -110,4 +123,14 @@ write.table(WesternEurope$internal_ID,
 Oceania <- tblS1[which(tblS1$Continent == "OCEANIA"),]
 write.table(Oceania$internal_ID,
             file = "Oceania_accessions.txt",
+            quote = F, row.names = F, col.names = F)
+
+DomesticatedEmmer <- tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "domesticatedE"),]
+write.table(DomesticatedEmmer$internal_ID,
+            file = "DomesticatedEmmer_accessions.txt",
+            quote = F, row.names = F, col.names = F)
+
+WildEmmer <- tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "wildE"),]
+write.table(WildEmmer$internal_ID,
+            file = "WildEmmer_accessions.txt",
             quote = F, row.names = F, col.names = F)
