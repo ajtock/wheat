@@ -122,16 +122,30 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
 })
 
 # Specify populations based on regional groupings of accessions
+#pop_name <- c(
+#              "MiddleEast",
+#              "NorthAfrica",
+#              "SubSaharanAfrica",
+#              "WesternEurope",
+#              "EasternEurope",
+#              "FormerSU",
+#              "CentralAsia",
+#              "SouthAsia",
+#              "EastAsia",
+#              "NorthAmerica",
+#              "CentralAmerica",
+#              "SouthAmerica",
+#              "Oceania",
+#              "DomesticatedEmmer",
+#              "WildEmmer"
+#             )
+
 pop_name <- c(
-              "MiddleEast",
-              "NorthAfrica",
-              "SubSaharanAfrica",
+              "Africa",
               "WesternEurope",
               "EasternEurope",
               "FormerSU",
-              "CentralAsia",
-              "SouthAsia",
-              "EastAsia",
+              "Asia",
               "NorthAmerica",
               "CentralAmerica",
               "SouthAmerica",
@@ -149,11 +163,11 @@ genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
                   pop_list, diploid = T)
 })
 
-genomeClass_list2 <- lapply(seq_along(genomeClass_list), function(x) {
+genomeClass_list2 <- mclapply(seq_along(genomeClass_list), function(x) {
   set.synnonsyn(genomeClass_list[[x]],
-                ref.chr = "/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/161010_Chinese_Spring_v1.0_pseudomolecules.fasta",
+                ref.chr = paste0("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/", chrs[x], ".fa"),
                 save.codons = F)
-})
+}, mc.cores = length(genomeClass_list), mc.preschedule = F)
 
 # Extact variants located within features
 genomeClassSplit_list <- mclapply(seq_along(genomeClass_list), function(x) {
