@@ -122,11 +122,12 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
 })
 
 # Specify populations based on regional groupings of accessions
-pop_name <- c("NorthAfrica",
+pop_name <- c(
+              "MiddleEast",
+              "NorthAfrica",
               "SubSaharanAfrica",
               "WesternEurope",
               "EasternEurope",
-              "MiddleEast",
               "FormerSU",
               "CentralAsia",
               "SouthAsia",
@@ -134,7 +135,10 @@ pop_name <- c("NorthAfrica",
               "NorthAmerica",
               "CentralAmerica",
               "SouthAmerica",
-              "Oceania")
+              "Oceania",
+              "DomesticatedEmmer",
+              "WildEmmer"
+             )
 
 pop_list <- lapply(seq_along(pop_name), function(x) {
   as.character(read.table(paste0(inDir, pop_name[x], "_accessions.txt"))[[1]])
@@ -143,6 +147,12 @@ pop_list <- lapply(seq_along(pop_name), function(x) {
 genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
   set.populations(genomeClass_list[[x]],
                   pop_list, diploid = T)
+})
+
+genomeClass_list2 <- lapply(seq_along(genomeClass_list), function(x) {
+  set.synnonsyn(genomeClass_list[[x]],
+                ref.chr = "/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/161010_Chinese_Spring_v1.0_pseudomolecules.fasta",
+                save.codons = F)
 })
 
 # Extact variants located within features
@@ -428,15 +438,21 @@ exonNoPerGene <- unlist(mclapply(seq_along(as.character(features$featureID)), fu
 # and sort by decreasing log2mat1RegionRowMeans
 ChIPNames <- c(
                "ASY1_CS_Rep1_ChIP",
-               "DMC1_Rep1_ChIP"
+               "DMC1_Rep1_ChIP",
+               "H3K4me3_Rep1_ChIP",
+               "H3K27me3_ChIP_SRR6350666"
               )
 ChIPNamesDir <- c(
                   "ASY1_CS",
-                  "DMC1"
+                  "DMC1",
+                  "H3K4me3",
+                  "H3K27me3"
                  )
 log2ChIPNamesPlot <- c(
                        "ASY1",
-                       "DMC1"
+                       "DMC1",
+                       "H3K4me3",
+                       "H3K27me3"
                       )
 ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
   if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
@@ -566,6 +582,25 @@ log2ChIP_featureMats_terminatorsRowMeans <- lapply(seq_along(log2ChIP_featureMat
   rowMeans(log2ChIP_featureMats_terminators[[x]], na.rm = T)
 })
 
+control_featureMats_promoters <- lapply(seq_along(control_featureMats), function(x) {
+  control_featureMats[[x]][,(((upstream-1000)/binSize)+1):(upstream/binSize)]
+})
+control_featureMats_bodies <- lapply(seq_along(control_featureMats), function(x) {
+  control_featureMats[[x]][,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
+})
+control_featureMats_terminators <- lapply(seq_along(control_featureMats), function(x) {
+  control_featureMats[[x]][,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
+})
+control_featureMats_promotersRowMeans <- lapply(seq_along(control_featureMats_promoters), function(x) {
+  rowMeans(control_featureMats_promoters[[x]], na.rm = T)
+})
+control_featureMats_bodiesRowMeans <- lapply(seq_along(control_featureMats_bodies), function(x) {
+  rowMeans(control_featureMats_bodies[[x]], na.rm = T)
+})
+control_featureMats_terminatorsRowMeans <- lapply(seq_along(control_featureMats_terminators), function(x) {
+  rowMeans(control_featureMats_terminators[[x]], na.rm = T)
+})
+
 # Combine feature coordinates and their corresponding population genetics statistics,
 # mean cM/Mb values, and intron and exon numbers
 featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
@@ -587,10 +622,19 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             FuLiD = popgen_stats_pop_list[[x]]$Fu.Li.D,
                             ASY1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[1]],
                             DMC1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[2]],
+                            H3K4me3_in_promoters = log2ChIP_featureMats_promotersRowMeans[[3]],
+                            H3K27me3_in_promoters = log2ChIP_featureMats_promotersRowMeans[[4]],
+                            MNase_in_promoters = control_featureMats_promotersRowMeans[[2]],
                             ASY1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[1]],
                             DMC1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[2]],
+                            H3K4me3_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[3]],
+                            H3K27me3_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[4]],
+                            MNase_in_bodies = control_featureMats_bodiesRowMeans[[2]],
                             ASY1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[1]],
                             DMC1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[2]],
+                            H3K4me3_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[3]],
+                            H3K27me3_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[4]],
+                            MNase_in_terminators = control_featureMats_terminatorsRowMeans[[2]],
                             cMMb = feature_cMMb,
                             exons = exonNoPerGene,
                             introns = intronNoPerGene)
@@ -757,7 +801,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
 quantiles <- 4
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[17:22]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[17:31]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
