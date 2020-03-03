@@ -122,36 +122,33 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
 })
 
 # Specify populations based on regional groupings of accessions
-#pop_name <- c(
-#              "MiddleEast",
-#              "NorthAfrica",
-#              "SubSaharanAfrica",
-#              "WesternEurope",
-#              "EasternEurope",
-#              "FormerSU",
-#              "CentralAsia",
-#              "SouthAsia",
-#              "EastAsia",
-#              "NorthAmerica",
-#              "CentralAmerica",
-#              "SouthAmerica",
-#              "Oceania",
-#              "DomesticatedEmmer",
-#              "WildEmmer"
-#             )
-
 pop_name <- c(
-              "Africa",
+              "MiddleEast",
+              "NorthAfrica",
+              "SubSaharanAfrica",
               "WesternEurope",
               "EasternEurope",
               "FormerSU",
-              "Asia",
+              "CentralAsia",
+              "SouthAsia",
+              "EastAsia",
               "NorthAmerica",
               "CentralAmerica",
               "SouthAmerica",
-              "Oceania",
-              "DomesticatedEmmer",
-              "WildEmmer"
+              "Oceania"
+             )
+
+pop_name <- c(
+              "Africa",
+              "MiddleEast",
+              "Asia",
+              "FormerSU",
+              "EasternEurope",
+              "WesternEurope",
+              "NorthAmerica",
+              "CentralAmerica",
+              "SouthAmerica",
+              "Oceania"
              )
 
 pop_list <- lapply(seq_along(pop_name), function(x) {
@@ -163,25 +160,36 @@ genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
                   pop_list, diploid = T)
 })
 
-genomeClass_list2 <- mclapply(seq_along(genomeClass_list), function(x) {
+# Assign to new object as mclapply may misbehave otherwise
+genomeClass_list_syn <- mclapply(seq_along(genomeClass_list), function(x) {
   set.synnonsyn(genomeClass_list[[x]],
                 ref.chr = paste0("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/", chrs[x], ".fa"),
                 save.codons = F)
 }, mc.cores = length(genomeClass_list), mc.preschedule = F)
+#genomeClass_list <- genomeClass_list2
+#rm(genomeClass_list2); gc()
 
 # Extact variants located within features
-genomeClassSplit_list <- mclapply(seq_along(genomeClass_list), function(x) {
-  splitting.data(genomeClass_list[[x]],
+genomeClassSplit_list <- mclapply(seq_along(genomeClass_list_syn), function(x) {
+  splitting.data(genomeClass_list_syn[[x]],
                  positions = lapply(which(features$V1 == chrs[x]), function(x) {
                                features[x,]$V4:features[x,]$V5 }),
                  type = 2)
-}, mc.cores = detectCores(), mc.preschedule = F)
+}, mc.cores = length(genomeClass_list_syn), mc.preschedule = F)
 
 # Get neutrality, diversity, and F_ST (fixation index) statistics
-genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
+genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   neutrality.stats(genomeClassSplit_list[[x]],
                    FAST = F, do.R2 = T)
-}, mc.cores = detectCores(), mc.preschedule = F)
+}, mc.cores = length(genomeClassSplit_list), mc.preschedule = F)
+genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list), function(x) {
+  neutrality.stats(genomeClassSplit_list[[x]],
+                   FAST = F, do.R2 = T, subsites = "syn")
+}, mc.cores = length(genomeClassSplit_list), mc.preschedule = F)
+genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list), function(x) {
+  neutrality.stats(genomeClassSplit_list[[x]],
+                   FAST = F, do.R2 = T, subsites = "nonsyn")
+}, mc.cores = length(genomeClassSplit_list), mc.preschedule = F)
 ## Below will extract stats for first population only
 #neutrality_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
 #  data.frame(get.neutrality(genomeClassSplit_list[[x]],
@@ -189,9 +197,17 @@ genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) 
 #             stringsAsFactors = F)
 #})
 
-genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
-  F_ST.stats(genomeClassSplit_list[[x]],
+genomeClassSplit_list_all <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
+  F_ST.stats(genomeClassSplit_list_all[[x]],
              detail = T, mode = "nucleotide", FAST = F)
+})
+genomeClassSplit_list_syn <- lapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  F_ST.stats(genomeClassSplit_list_syn[[x]],
+             detail = T, mode = "nucleotide", FAST = F, subsites = "syn")
+})
+genomeClassSplit_list_nonsyn <- lapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  F_ST.stats(genomeClassSplit_list_nonsyn[[x]],
+             detail = T, mode = "nucleotide", FAST = F, subsites = "nonsyn")
 })
 ## Below will extract stats for first population only
 #F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
@@ -209,10 +225,18 @@ genomeClassSplit_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
 # If Pi from Nei is needed, run diversity.stats with "keep.site.info = F"
 # (HOWEVER: Pi shouldn't be used when "include.unknown = T"
 #  is specified in Whop_readVCF function call, as above)
-genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) {
-  diversity.stats(genomeClassSplit_list[[x]],
+genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  diversity.stats(genomeClassSplit_list_all[[x]],
                   pi = T, keep.site.info = F)
-}, mc.cores = detectCores(), mc.preschedule = F)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  diversity.stats(genomeClassSplit_list_syn[[x]],
+                  pi = T, keep.site.info = F, subsites = "syn")
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  diversity.stats(genomeClassSplit_list_nonsyn[[x]],
+                  pi = T, keep.site.info = F, subsites = "nonsyn")
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 ## Below will extract stats for first population only
 #diversity_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
 #  data.frame(get.diversity(genomeClassSplit_list[[x]],
@@ -223,35 +247,35 @@ genomeClassSplit_list <- mclapply(seq_along(genomeClassSplit_list), function(x) 
 # For each population, combine statistics into one dataframe
 popgen_stats_pop_list <- mclapply(seq_along(pop_list), function(w) {
 #for(w in seq_along(pop_list)) {
-  popgen_stats_chr_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
+  popgen_stats_chr_list <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
     data.frame(chr = as.character(chrs[x]),
                start = as.integer(sub(pattern = " - \\d+", replacement = "",
-                                      x = genomeClassSplit_list[[x]]@region.names)),
+                                      x = genomeClassSplit_list_all[[x]]@region.names)),
                end = as.integer(sub(pattern = "\\d+ - ", replacement = "",
-                                    x = genomeClassSplit_list[[x]]@region.names)),
-               width = as.integer(genomeClassSplit_list[[x]]@n.sites),
+                                    x = genomeClassSplit_list_all[[x]]@region.names)),
+               width = as.integer(genomeClassSplit_list_all[[x]]@n.sites),
                ## OR
                #width = as.integer( ( as.integer(sub(pattern = "\\d+ - ", replacement = "",
-               #                                     x = genomeClassSplit_list[[x]]@region.names)) -
+               #                                     x = genomeClassSplit_list_all[[x]]@region.names)) -
                #                      as.integer(sub(pattern = " - \\d+", replacement = "",
-               #                                     x = genomeClassSplit_list[[x]]@region.names)) ) + 1 ),
+               #                                     x = genomeClassSplit_list_all[[x]]@region.names)) ) + 1 ),
                strand = as.character(features[features$V1 == chrs[x],]$V7),
                ID = as.character(features[features$V1 == chrs[x],]$V9),
-               nuc.diversity.within = as.numeric(genomeClassSplit_list[[x]]@nuc.diversity.within[,w]),
-               hap.diversity.within = as.numeric(genomeClassSplit_list[[x]]@hap.diversity.within[,w]),
-               Pi_Nei = as.numeric(genomeClassSplit_list[[x]]@Pi[,w]),
-               nuc.F_ST.vs.all = as.numeric(genomeClassSplit_list[[x]]@nuc.F_ST.vs.all[,w]),
-               nucleotide.F_ST = as.numeric(genomeClassSplit_list[[x]]@nucleotide.F_ST[,1]),
-               n.segregating.sites = as.numeric(genomeClassSplit_list[[x]]@n.segregating.sites[,w]),
-               Tajima.D = as.numeric(genomeClassSplit_list[[x]]@Tajima.D[,w]),
-               Rozas.R_2 = as.numeric(genomeClassSplit_list[[x]]@Rozas.R_2[,w]),
-               Fu.Li.F = as.numeric(genomeClassSplit_list[[x]]@Fu.Li.F[,w]),
-               Fu.Li.D = as.numeric(genomeClassSplit_list[[x]]@Fu.Li.D[,w]),
-               theta_Tajima = as.numeric(genomeClassSplit_list[[x]]@theta_Tajima[,w]),
-               theta_Watterson = as.numeric(genomeClassSplit_list[[x]]@theta_Watterson[,w]),
-               theta_Fu.Li = as.numeric(genomeClassSplit_list[[x]]@theta_Fu.Li[,w]),
-               theta_Achaz.Tajima = as.numeric(genomeClassSplit_list[[x]]@theta_Achaz.Tajima[,w]),
-               theta_Achaz.Watterson = as.numeric(genomeClassSplit_list[[x]]@theta_Achaz.Watterson[,w]),
+               nuc.diversity.within = as.numeric(genomeClassSplit_list_all[[x]]@nuc.diversity.within[,w]),
+               hap.diversity.within = as.numeric(genomeClassSplit_list_all[[x]]@hap.diversity.within[,w]),
+               Pi_Nei = as.numeric(genomeClassSplit_list_all[[x]]@Pi[,w]),
+               nuc.F_ST.vs.all = as.numeric(genomeClassSplit_list_all[[x]]@nuc.F_ST.vs.all[,w]),
+               nucleotide.F_ST = as.numeric(genomeClassSplit_list_all[[x]]@nucleotide.F_ST[,1]),
+               n.segregating.sites = as.numeric(genomeClassSplit_list_all[[x]]@n.segregating.sites[,w]),
+               Tajima.D = as.numeric(genomeClassSplit_list_all[[x]]@Tajima.D[,w]),
+               Rozas.R_2 = as.numeric(genomeClassSplit_list_all[[x]]@Rozas.R_2[,w]),
+               Fu.Li.F = as.numeric(genomeClassSplit_list_all[[x]]@Fu.Li.F[,w]),
+               Fu.Li.D = as.numeric(genomeClassSplit_list_all[[x]]@Fu.Li.D[,w]),
+               theta_Tajima = as.numeric(genomeClassSplit_list_all[[x]]@theta_Tajima[,w]),
+               theta_Watterson = as.numeric(genomeClassSplit_list_all[[x]]@theta_Watterson[,w]),
+               theta_Fu.Li = as.numeric(genomeClassSplit_list_all[[x]]@theta_Fu.Li[,w]),
+               theta_Achaz.Tajima = as.numeric(genomeClassSplit_list_all[[x]]@theta_Achaz.Tajima[,w]),
+               theta_Achaz.Watterson = as.numeric(genomeClassSplit_list_all[[x]]@theta_Achaz.Watterson[,w]),
                stringsAsFactors = F)
   })
   popgen_stats_pop <- do.call(rbind, popgen_stats_chr_list)
@@ -273,15 +297,15 @@ popgen_stats_pop_list <- mclapply(seq_along(pop_list), function(w) {
 #popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
 #  data.frame(chr = as.character(chrs[x]),
 #             start = as.integer(sub(pattern = " - \\d+", replacement = "",
-#                                    x = genomeClassSplit_list[[x]]@region.names)),
+#                                    x = genomeClassSplit_list_all[[x]]@region.names)),
 #             end = as.integer(sub(pattern = "\\d+ - ", replacement = "",
-#                                  x = genomeClassSplit_list[[x]]@region.names)),
+#                                  x = genomeClassSplit_list_all[[x]]@region.names)),
 #             width = as.integer( ( as.integer(sub(pattern = "\\d+ - ", replacement = "",
-#                                                  x = genomeClassSplit_list[[x]]@region.names)) -
+#                                                  x = genomeClassSplit_list_all[[x]]@region.names)) -
 #                                   as.integer(sub(pattern = " - \\d+", replacement = "",
-#                                                  x = genomeClassSplit_list[[x]]@region.names)) ) + 1 ),
+#                                                  x = genomeClassSplit_list_all[[x]]@region.names)) ) + 1 ),
 #             ## OR
-#             #width = as.integer(genomeClassSplit_list[[x]]@n.sites),
+#             #width = as.integer(genomeClassSplit_list_all[[x]]@n.sites),
 #             strand = as.character(features[features$V1 == chrs[x],]$V7),
 #             ID = as.character(features[features$V1 == chrs[x],]$V9),
 #             nuc.diversity.within = as.numeric(diversity_stats_df_list[[x]]$nuc.diversity.within),
