@@ -122,21 +122,21 @@ genomeClass_list <- lapply(seq_along(chrs), function(x) {
 })
 
 # Specify populations based on regional groupings of accessions
-pop_name <- c(
-              "MiddleEast",
-              "NorthAfrica",
-              "SubSaharanAfrica",
-              "WesternEurope",
-              "EasternEurope",
-              "FormerSU",
-              "CentralAsia",
-              "SouthAsia",
-              "EastAsia",
-              "NorthAmerica",
-              "CentralAmerica",
-              "SouthAmerica",
-              "Oceania"
-             )
+#pop_name <- c(
+#              "MiddleEast",
+#              "NorthAfrica",
+#              "SubSaharanAfrica",
+#              "WesternEurope",
+#              "EasternEurope",
+#              "FormerSU",
+#              "CentralAsia",
+#              "SouthAsia",
+#              "EastAsia",
+#              "NorthAmerica",
+#              "CentralAmerica",
+#              "SouthAmerica",
+#              "Oceania"
+#             )
 
 pop_name <- c(
               "Africa",
@@ -177,7 +177,8 @@ genomeClassSplit_list <- mclapply(seq_along(genomeClass_list_syn), function(x) {
                  type = 2)
 }, mc.cores = length(genomeClass_list_syn), mc.preschedule = F)
 
-# Get neutrality, diversity, and F_ST (fixation index) statistics
+# Get neutrality, diversity, F_ST (fixation index), site frequency spectrum (SFS),
+# composite-likelihood-ratio (CLR) test, and linkage disequilibrium statistics
 genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   neutrality.stats(genomeClassSplit_list[[x]],
                    FAST = F, do.R2 = T)
@@ -197,6 +198,7 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list), funct
 #             stringsAsFactors = F)
 #})
 
+# Test with mclapply next time (maybe I've tried this before and it didn't work)
 genomeClassSplit_list_all <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
   F_ST.stats(genomeClassSplit_list_all[[x]],
              detail = T, mode = "nucleotide", FAST = F)
@@ -243,6 +245,135 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
 #                           between = F)[[1]],
 #             stringsAsFactors = F)
 #})
+
+# Get site frequency spectrum (SFS) for each site
+genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  detail.stats(genomeClassSplit_list_all[[x]],
+               site.spectrum = T)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  detail.stats(genomeClassSplit_list_syn[[x]],
+               site.spectrum = T, subsites = "syn")
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  detail.stats(genomeClassSplit_list_nonsyn[[x]],
+               site.spectrum = T, subsites = "nonsyn")
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# Calculate mean SFS for each gene in each population
+# all
+SFSmeans_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  SFS_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    SFS_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@minor.allele.freqs, function(y) {
+      if(length(y) == 0) {
+        return(0)
+      } else {
+        return(mean(y[p,], na.rm = T))
+      }
+    })
+  SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
+  }
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  return(SFS_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+
+# syn
+SFSmeans_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  SFS_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    SFS_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@minor.allele.freqs, function(y) {
+      if(length(y) == 0) {
+        return(0)
+      } else {
+        return(mean(y[p,], na.rm = T))
+      }
+    })
+  SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
+  }
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  return(SFS_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+
+# nonsyn
+SFSmeans_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  SFS_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    SFS_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@minor.allele.freqs, function(y) {
+      if(length(y) == 0) {
+        return(0)
+      } else {
+        return(mean(y[p,], na.rm = T))
+      }
+    })
+  SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
+  }
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  return(SFS_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# Calculate composite-likelihood-ratio (CLR) tests from Nielsen
+# all
+genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  # Create a list in which each element is a table of frequencies of minor allele frequencies
+  # across all genes for the given population
+  MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
+    table( unlist(
+      sapply(genomeClassSplit_list_all[[x]]@region.stats@minor.allele.freqs, function(y) {
+        return(y[p,])
+      })
+    ))
+  })
+  # Use MAF_freqTable_list as input for CLR test
+  return(sweeps.stats(genomeClassSplit_list_all[[x]],
+                      freq.table = MAF_freqTable_list))
+})
+# syn
+genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  # Create a list in which each element is a table of frequencies of minor allele frequencies
+  # across all genes for the given population
+  MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
+    table( unlist(
+      sapply(genomeClassSplit_list_syn[[x]]@region.stats@minor.allele.freqs, function(y) {
+        return(y[p,])
+      })
+    ))
+  })
+  # Use MAF_freqTable_list as input for CLR test
+  return(sweeps.stats(genomeClassSplit_list_syn[[x]],
+                      freq.table = MAF_freqTable_list,
+                      subsites = "syn"))
+})
+# nonsyn
+genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  # Create a list in which each element is a table of frequencies of minor allele frequencies
+  # across all genes for the given population
+  MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
+    table( unlist(
+      sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@minor.allele.freqs, function(y) {
+        return(y[p,])
+      })
+    ))
+  })
+  # Use MAF_freqTable_list as input for CLR test
+  return(sweeps.stats(genomeClassSplit_list_nonsyn[[x]],
+                      freq.table = MAF_freqTable_list,
+                      subsites = "nonsyn"))
+})
+
+# Calculate linkage disequilibrium statistics
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  linkage.stats(genomeClassSplit_list_all[[x]],
+                detail = T, do.ZnS = T, do.WALL = T)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  linkage.stats(genomeClassSplit_list_syn[[x]],
+                detail = T, do.ZnS = T, do.WALL = T, subsites = "syn")
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  linkage.stats(genomeClassSplit_list_nonsyn[[x]],
+                detail = T, do.ZnS = T, do.WALL = T, subsites = "nonsyn")
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
 # For each population, combine statistics into one dataframe
 popgen_stats_pop_list <- mclapply(seq_along(pop_list), function(w) {
