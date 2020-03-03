@@ -103,6 +103,11 @@ write.table(MiddleEast$internal_ID,
             file = "MiddleEast_accessions.txt",
             quote = F, row.names = F, col.names = F)
 
+Asia <- rbind(CentralAsia, SouthAsia, EastAsia)
+write.table(Asia$internal_ID,
+            file = "Asia_accessions.txt",
+            quote = F, row.names = F, col.names = F)
+
 FormerSU <- tblS1[which(grepl(pattern = "SOVIETUNION",
                               x = tblS1$X21.populations.used.in.Admixture.analyses,
                               ignore.case = F, fixed = T)),]
