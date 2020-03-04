@@ -375,24 +375,279 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
 
 # Calculate mean LD statistics for each gene in each population
 # all
-Dmeans_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
-  D_pop_mat <- NULL
+d_raw_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  d_raw_pop_mat <- NULL
   for(p in 1:length(pop_name)) {
-    D_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
-      if(length(y) == 0) {
-        return(0)
+    d_raw_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
       } else if(length(y[p,1][[1]]) == 0) {
-        return(0)
+        return(NA)
       } else {
-        print(y) 
-        mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_raw",], na.rm = T)
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_raw",], na.rm = T))
       }
     })
-  D_pop_mat <- cbind(D_pop_mat, D_pop)
+  d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
   }
-  colnames(D_pop_mat) <- paste0("pop ", 1:10)
-  return(D_pop_mat)
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  return(d_raw_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+# syn
+d_raw_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  d_raw_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_raw_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_raw",], na.rm = T))
+      }
+    })
+  d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
+  }
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  return(d_raw_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+# nonsyn
+d_raw_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  d_raw_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_raw_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_raw",], na.rm = T))
+      }
+    })
+  d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
+  }
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  return(d_raw_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# all
+d_prime_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  d_prime_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_prime_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_prime",], na.rm = T))
+      }
+    })
+  d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
+  }
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  return(d_prime_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+# syn
+d_prime_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  d_prime_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_prime_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_prime",], na.rm = T))
+      }
+    })
+  d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
+  }
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  return(d_prime_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+# nonsyn
+d_prime_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  d_prime_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_prime_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_prime",], na.rm = T))
+      }
+    })
+  d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
+  }
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  return(d_prime_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# all
+d_dist_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  d_dist_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_dist_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_dist",], na.rm = T))
+      }
+    })
+  d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
+  }
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  return(d_dist_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+# syn
+d_dist_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  d_dist_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_dist_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_dist",], na.rm = T))
+      }
+    })
+  d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
+  }
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  return(d_dist_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+# nonsyn
+d_dist_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  d_dist_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    d_dist_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_dist",], na.rm = T))
+      }
+    })
+  d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
+  }
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  return(d_dist_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# all
+r2_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  r2_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r2_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r2",], na.rm = T))
+      }
+    })
+  r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
+  }
+  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  return(r2_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+# syn
+r2_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  r2_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r2_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r2",], na.rm = T))
+      }
+    })
+  r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
+  }
+  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  return(r2_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+# nonsyn
+r2_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  r2_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r2_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r2",], na.rm = T))
+      }
+    })
+  r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
+  }
+  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  return(r2_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# all
+r_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  r_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r",], na.rm = T))
+      }
+    })
+  r_pop_mat <- cbind(r_pop_mat, r_pop)
+  }
+  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  return(r_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+# syn
+r_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  r_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r_pop <- sapply(genomeClassSplit_list_syn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r",], na.rm = T))
+      }
+    })
+  r_pop_mat <- cbind(r_pop_mat, r_pop)
+  }
+  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  return(r_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+# nonsyn
+r_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  r_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    r_pop <- sapply(genomeClassSplit_list_nonsyn[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) <= 1) {
+        return(NA)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(NA)
+      } else {
+        return(mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "r",], na.rm = T))
+      }
+    })
+  r_pop_mat <- cbind(r_pop_mat, r_pop)
+  }
+  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  return(r_pop_mat)
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
 
 ## Calculate additional LD statistics (r2, Fisher exact test P-value, and distance)
