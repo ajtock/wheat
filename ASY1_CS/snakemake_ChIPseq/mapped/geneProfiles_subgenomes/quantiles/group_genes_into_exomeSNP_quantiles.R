@@ -277,7 +277,6 @@ SFSmeans_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) 
   colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
   return(SFS_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-
 # syn
 SFSmeans_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   SFS_pop_mat <- NULL
@@ -294,7 +293,6 @@ SFSmeans_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) 
   colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
   return(SFS_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-
 # nonsyn
 SFSmeans_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   SFS_pop_mat <- NULL
@@ -362,17 +360,30 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
 })
 
 # Calculate linkage disequilibrium statistics
-genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   linkage.stats(genomeClassSplit_list_all[[x]],
                 detail = T, do.ZnS = T, do.WALL = T)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   linkage.stats(genomeClassSplit_list_syn[[x]],
                 detail = T, do.ZnS = T, do.WALL = T, subsites = "syn")
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   linkage.stats(genomeClassSplit_list_nonsyn[[x]],
                 detail = T, do.ZnS = T, do.WALL = T, subsites = "nonsyn")
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+# Calculate linkage disequilibrium (r-squared) statistics
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  calc.R2(genomeClassSplit_list_all[[x]])
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+  calc.R2(genomeClassSplit_list_syn[[x]],
+          subsites = "syn")
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+  calc.R2(genomeClassSplit_list_nonsyn[[x]],
+          subsites = "nonsyn")
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
 # For each population, combine statistics into one dataframe

@@ -9,17 +9,17 @@
 # http://avrilomics.blogspot.co.uk/2015/07/using-topgo-to-test-for-go-term.html
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript ./topGO_gene_quantiles.R BP 0.1 'log2_ASY1_CS_Rep1_ChIP_control_in_promoters' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome'
+# /applications/R/R-3.5.0/bin/Rscript ./topGO_gene_quantiles.R BP 0.1 'log2_ASY1_CS_Rep1_ChIP_control_in_bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome'
 
 # Doesn't work with mclapply or dopar
 
 #ont <- "BP"
 #sigLevel <- 0.1
-#quantileBy <- "log2_ASY1_CS_Rep1_ChIP_control_in_promoters"
+#quantileBy <- "log2_ASY1_CS_Rep1_ChIP_control_in_bodies"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
-#genomeName <- "A"
+#genomeName <- "Agenome_Bgenome_Dgenome"
 
 #options(echo=TRUE) # if you want to see commands in output file
 
@@ -44,7 +44,7 @@ targets <- lapply(seq_along(quantileFirst:quantileLast), function(x) {
 })
 
 # Read in GO annotations for genes to define "gene universe"
-geneID2GO <- readMappings(file = paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_FunctionalAnnotation_v1/iwgsc_refseqv1.0_FunctionalAnnotation_v1__HCgenes_v1.0-repr.TEcleaned_in_",
+geneID2GO <- readMappings(file = paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzalez_2018_Science_GO_anno/RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_",
                                         genomeName, "_", region,
                                         "_GO_IDs_no_chrUn.tsv"))
 geneUniverse <- names(geneID2GO)
