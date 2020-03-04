@@ -359,7 +359,7 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
                       subsites = "nonsyn"))
 })
 
-# Calculate linkage disequilibrium statistics
+# Calculate linkage disequilibrium (LD) statistics
 genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   linkage.stats(genomeClassSplit_list_all[[x]],
                 detail = T, do.ZnS = T, do.WALL = T)
@@ -373,18 +373,40 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
                 detail = T, do.ZnS = T, do.WALL = T, subsites = "nonsyn")
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
-# Calculate linkage disequilibrium (r-squared) statistics
-genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
-  calc.R2(genomeClassSplit_list_all[[x]])
+# Calculate mean LD statistics for each gene in each population
+# all
+Dmeans_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+  D_pop_mat <- NULL
+  for(p in 1:length(pop_name)) {
+    D_pop <- sapply(genomeClassSplit_list_all[[x]]@region.stats@linkage.disequilibrium, function(y) {
+      if(length(y) == 0) {
+        return(0)
+      } else if(length(y[p,1][[1]]) == 0) {
+        return(0)
+      } else {
+        print(y) 
+        mean(y[p,1][[1]][rownames(y[p,1][[1]]) == "d_raw",], na.rm = T)
+      }
+    })
+  D_pop_mat <- cbind(D_pop_mat, D_pop)
+  }
+  colnames(D_pop_mat) <- paste0("pop ", 1:10)
+  return(D_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
-  calc.R2(genomeClassSplit_list_syn[[x]],
-          subsites = "syn")
-}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
-  calc.R2(genomeClassSplit_list_nonsyn[[x]],
-          subsites = "nonsyn")
-}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+
+## Calculate additional LD statistics (r2, Fisher exact test P-value, and distance)
+#genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+#  calc.R2(genomeClassSplit_list_all[[x]])
+#}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+#genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+#  calc.R2(genomeClassSplit_list_syn[[x]],
+#          subsites = "syn")
+#}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+#genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+#  calc.R2(genomeClassSplit_list_nonsyn[[x]],
+#          subsites = "nonsyn")
+#}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
 # For each population, combine statistics into one dataframe
 popgen_stats_pop_list <- mclapply(seq_along(pop_list), function(w) {
