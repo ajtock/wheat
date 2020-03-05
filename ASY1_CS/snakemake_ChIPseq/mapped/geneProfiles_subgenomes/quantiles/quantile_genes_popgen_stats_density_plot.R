@@ -34,32 +34,31 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-pop_name <- c("NorthAfrica",
-              "SubSaharanAfrica",
-              "WesternEurope",
-              "EasternEurope",
+pop_name <- c(
+              "Africa",
               "MiddleEast",
+              "Asia",
               "FormerSU",
-              "CentralAsia",
-              "SouthAsia",
-              "EastAsia",
+              "EasternEurope",
+              "WesternEurope",
               "NorthAmerica",
               "CentralAmerica",
               "SouthAmerica",
-              "Oceania")
-pop_name_plot <- c("North Africa",
-                   "Sub-Saharan Africa",
-                   "Western Europe",
-                   "Eastern Europe",
+              "Oceania"
+             )
+
+pop_name_plot <- c(
+                   "Africa",
                    "Middle East",
+                   "Asia",
                    "Former SU",
-                   "Central Asia",
-                   "South Asia",
-                   "East Asia",
+                   "Eastern Europe",
+                   "Western Europe",
                    "North America",
                    "Central America",
                    "South America",
-                   "Oceania")
+                   "Oceania"
+                  )
 
 outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                  "_in_", region, "/")
