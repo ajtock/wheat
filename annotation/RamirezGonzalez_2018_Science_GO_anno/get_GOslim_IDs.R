@@ -1,10 +1,10 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./get_GO_IDs.R genomewide "IWGSC+Stress"
+# ./get_GOslim_IDs.R genomewide "slim_IWGSC+Stress"
 
 #region <- "genomewide"
-#annoType <- "IWGSC+Stress"
+#annoType <- "slim_IWGSC+Stress"
 
 args <- commandArgs(trailingOnly = T)
 region <- args[1]
@@ -16,8 +16,8 @@ library(tidyr)
 library(tidyverse)
 
 # Redundant given conditional statement below
-e <- "Variable annoType is not one of 'GO', 'PO', 'TO', 'andrea_go', 'BUSCO', 'IWGSC+Stress'"
-tryCatch(stopifnot(annoType %in% c('GO', 'PO', 'TO', 'andrea_go', 'BUSCO', 'IWGSC+Stress')),
+e <- "Variable annoType is not one of 'slim_GO', 'slim_andrea_go', 'slim_BUSCO', 'slim_IWGSC+Stress'"
+tryCatch(stopifnot(annoType %in% c('slim_GO', 'slim_andrea_go', 'slim_BUSCO', 'slim_IWGSC+Stress')),
          error = function(e) stop(e))
 
 # Load table of functional annotations
@@ -65,7 +65,7 @@ anno <- anno[order(anno$geneID, decreasing = F),]
 anno <- anno[!grepl("CSU", anno$geneID),]
 write.table(anno,
             file = paste0("RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_Bgenome_Dgenome_",
-                          region, "_GO_IDs_no_chrUn.tsv"),
+                          region, "_GOslim_IDs_no_chrUn.tsv"),
             row.names = F, col.names = F, quote = F, sep = "\t")
 
 # Subset by subgenome and region
@@ -77,7 +77,7 @@ AgenesGFF <- sub(pattern = "\\.\\d+", replacement = "",
 annoA <- anno[anno$geneID %in% AgenesGFF,]
 write.table(annoA,
             file = paste0("RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_",
-                          region, "_GO_IDs_no_chrUn.tsv"),
+                          region, "_GOslim_IDs_no_chrUn.tsv"),
             row.names = F, col.names = F, quote = F, sep = "\t")
 # B
 BgenesGFF <- as.character(read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_Bgenome_",
@@ -87,7 +87,7 @@ BgenesGFF <- sub(pattern = "\\.\\d+", replacement = "",
 annoB <- anno[anno$geneID %in% BgenesGFF,]
 write.table(annoB,
             file = paste0("RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Bgenome_",
-                          region, "_GO_IDs_no_chrUn.tsv"),
+                          region, "_GOslim_IDs_no_chrUn.tsv"),
             row.names = F, col.names = F, quote = F, sep = "\t")
 # D
 DgenesGFF <- as.character(read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_mRNA_in_Dgenome_",
@@ -97,5 +97,5 @@ DgenesGFF <- sub(pattern = "\\.\\d+", replacement = "",
 annoD <- anno[anno$geneID %in% DgenesGFF,]
 write.table(annoD,
             file = paste0("RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Dgenome_",
-                          region, "_GO_IDs_no_chrUn.tsv"),
+                          region, "_GOslim_IDs_no_chrUn.tsv"),
             row.names = F, col.names = F, quote = F, sep = "\t")
