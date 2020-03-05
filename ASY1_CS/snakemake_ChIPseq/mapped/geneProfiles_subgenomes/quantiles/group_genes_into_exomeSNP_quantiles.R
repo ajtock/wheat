@@ -1037,6 +1037,14 @@ controlDirs <- sapply(seq_along(controlNames), function(x) {
   }
 })
 
+bodyLength <- 3500
+upstream <- 2000
+downstream <- 2000
+flankName <- "2kb"
+flankNamePlot <- "2 kb"
+binSize <- 20
+binName <- "20bp"
+
 ## control
 # feature
 control_featureMats <- mclapply(seq_along(controlNames), function(x) {
@@ -1044,7 +1052,7 @@ control_featureMats <- mclapply(seq_along(controlNames), function(x) {
     as.matrix(read.table(paste0(controlDirs[x],
                                 controlNames[x],
                                 "_MappedOn_wheat_v1.0_lowXM_both_sort_norm_",
-                                featureName[y], "_matrix_bin20bp_flank2kb.tab"),
+                                featureName[y], "_matrix_bin", binName, "_flank", flankName, ".tab"),
                          header = F, skip = 3))
   })
 }, mc.cores = length(controlNames))
@@ -1065,7 +1073,7 @@ ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
     as.matrix(read.table(paste0(ChIPDirs[x],
                                 ChIPNames[x],
                                 "_MappedOn_wheat_v1.0_lowXM_both_sort_norm_",
-                                featureName[y], "_matrix_bin20bp_flank2kb.tab"),
+                                featureName[y], "_matrix_bin", binName, "_flank", flankName, ".tab"),
                          header = F, skip = 3))
   })
 }, mc.cores = length(ChIPNames))
