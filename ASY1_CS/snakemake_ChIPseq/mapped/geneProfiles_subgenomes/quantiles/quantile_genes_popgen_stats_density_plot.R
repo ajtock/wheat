@@ -4,7 +4,7 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD 'Tajima D'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD_all 'Tajima D' 0.99
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -12,8 +12,9 @@
 #                               split = ","))
 #region <- "promoters"
 #quantiles <- 4
-#orderingFactor <- "TajimaD"
+#orderingFactor <- "TajimaD_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+#densityProp <- 0.99
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -23,6 +24,8 @@ featureName <- unlist(strsplit(args[3],
 region <- args[4]
 quantiles <- as.numeric(args[5])
 orderingFactor <- args[6]
+orderingFactorName <- args[7]
+densityProp <- as.numeric(args[8])
 
 library(parallel)
 library(tidyr)
@@ -276,11 +279,11 @@ summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_
 
 featuresDF <- featuresDF[which(featuresDF[,which(colnames(featuresDF) == orderingFactor)] <=
                                quantile(featuresDF[,which(colnames(featuresDF) == orderingFactor)],
-                                        probs = 0.99, na.rm = T)),]
+                                        probs = densityProp, na.rm = T)),]
 #                               featuresDF[,which(colnames(featuresDF) == orderingFactor)] != 0,]
 ranFeatsDF <- ranFeatsDF[which(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] <=
                                quantile(ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)],
-                                        probs = 0.99, na.rm = T)),]
+                                        probs = densityProp, na.rm = T)),]
 #                               ranFeatsDF[,which(colnames(ranFeatsDF) == orderingFactor)] != 0,]
 xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
