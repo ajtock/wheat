@@ -11,12 +11,11 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 100kb 200
+# /applications/R/R-3.4.0/bin/Rscript group_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 100kb 200
 
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
 #region <- "bodies"
-#quantiles <- 4
 #winName <- "100kb"
 #minMarkerDist <- 200
 
@@ -24,9 +23,8 @@ args <- commandArgs(trailingOnly = T)
 featureName <- unlist(strsplit(args[1],
                                split = ","))
 region <- args[2]
-quantiles <- as.numeric(args[3])
-winName <- args[4]
-minMarkerDist <-  as.numeric(args[5])
+winName <- args[3]
+minMarkerDist <-  as.numeric(args[4])
 
 library(PopGenome)
 library(WhopGenome)
@@ -979,19 +977,22 @@ ChIPNames <- c(
                "ASY1_CS_Rep1_ChIP",
                "DMC1_Rep1_ChIP",
                "H3K4me3_Rep1_ChIP",
-               "H3K27me3_ChIP_SRR6350666"
+               "H3K27me3_ChIP_SRR6350666",
+               "H2AZ_Rep1_ChIP"
               )
 ChIPNamesDir <- c(
                   "ASY1_CS",
                   "DMC1",
                   "H3K4me3",
-                  "H3K27me3"
+                  "H3K27me3",
+                  "H2AZ"
                  )
 log2ChIPNamesPlot <- c(
                        "ASY1",
                        "DMC1",
                        "H3K4me3",
-                       "H3K27me3"
+                       "H3K27me3",
+                       "H2AZ"
                       )
 ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
   if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
@@ -1151,34 +1152,110 @@ control_featureMats_terminatorsRowMeans <- lapply(seq_along(control_featureMats_
 featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
   featuresGR_pop <- GRanges(featuresGR,
                             featureID = featuresGR$featureID,
+                            # all
                             # Normalise by feature width (per 1 kb)
-                            nucleotideDiversity = popgen_stats_pop_list[[x]]$nuc.diversity.within/(popgen_stats_pop_list[[x]]$width/1e3),
+                            nucleotideDiversity_all = popgen_stats_pop_list[[x]]$nuc.diversity.within_all/(popgen_stats_pop_list[[x]]$width/1e3),
                             # The PopGenome developers advise that, where include.unknown = TRUE in the
                             # Whop_readVCF() function call, "diversity.stats: pi and haplotype diversity should not be used"
-                            haplotypeDiversity = popgen_stats_pop_list[[x]]$hap.diversity.within,
+                            haplotypeDiversity_all = popgen_stats_pop_list[[x]]$hap.diversity.within_all,
                             # Normalise by feature width (per 1 kb)
-                            Pi_Nei = popgen_stats_pop_list[[x]]$Pi_Nei/(popgen_stats_pop_list[[x]]$width/1e3),
-                            nucleotideF_STvAll = popgen_stats_pop_list[[x]]$nuc.F_ST.vs.all,
-                            nucleotideF_ST = popgen_stats_pop_list[[x]]$nucleotide.F_ST,
-                            nSegregatingSites = popgen_stats_pop_list[[x]]$n.segregating.sites/(popgen_stats_pop_list[[x]]$width/1e3),
-                            TajimaD = popgen_stats_pop_list[[x]]$Tajima.D,
-                            RozasR2 = popgen_stats_pop_list[[x]]$Rozas.R_2,
-                            FuLiF = popgen_stats_pop_list[[x]]$Fu.Li.F,
-                            FuLiD = popgen_stats_pop_list[[x]]$Fu.Li.D,
+                            Pi_Nei_all = popgen_stats_pop_list[[x]]$Pi_Nei_all/(popgen_stats_pop_list[[x]]$width/1e3),
+                            nucleotideFSTvAll_all = popgen_stats_pop_list[[x]]$nuc.F_ST.vs.all_all,
+                            nucleotideFST_all = popgen_stats_pop_list[[x]]$nucleotide.F_ST_all,
+                            nSegregatingSites_all = popgen_stats_pop_list[[x]]$n.segregating.sites_all/(popgen_stats_pop_list[[x]]$width/1e3),
+                            TajimaD_all = popgen_stats_pop_list[[x]]$Tajima.D_all,
+                            RozasR2_all = popgen_stats_pop_list[[x]]$Rozas.R_2_all,
+                            FuLiF_all = popgen_stats_pop_list[[x]]$Fu.Li.F_all,
+                            FuLiD_all = popgen_stats_pop_list[[x]]$Fu.Li.D_all,
+                            SFS_all = popgen_stats_pop_list[[x]]$SFS_all,
+                            CLR_all = popgen_stats_pop_list[[x]]$CLR_all,
+                            CL_all = popgen_stats_pop_list[[x]]$CL_all,
+                            KellyZnS_all = popgen_stats_pop_list[[x]]$Kelly.Z_nS_all,
+                            RozasZA_all = popgen_stats_pop_list[[x]]$Rozas.ZA_all,
+                            RozasZZ_all = popgen_stats_pop_list[[x]]$Rozas.ZZ_all,
+                            WallB_all = popgen_stats_pop_list[[x]]$Wall.B_all,
+                            WallQ_all = popgen_stats_pop_list[[x]]$Wall.Q_all,
+                            d_raw_all = popgen_stats_pop_list[[x]]$d_raw_all,
+                            d_prime_all = popgen_stats_pop_list[[x]]$d_prime_all,
+                            d_dist_all = popgen_stats_pop_list[[x]]$d_dist_all,
+                            r2_all = popgen_stats_pop_list[[x]]$r2_all,
+                            r_all = popgen_stats_pop_list[[x]]$r_all,
+
+                            # syn
+                            # Normalise by feature width (per 1 kb)
+                            nucleotideDiversity_syn = popgen_stats_pop_list[[x]]$nuc.diversity.within_syn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            # The PopGenome developers advise that, where include.unknown = TRUE in the
+                            # Whop_readVCF() function call, "diversity.stats: pi and haplotype diversity should not be used"
+                            haplotypeDiversity_syn = popgen_stats_pop_list[[x]]$hap.diversity.within_syn,
+                            # Normalise by feature width (per 1 kb)
+                            Pi_Nei_syn = popgen_stats_pop_list[[x]]$Pi_Nei_syn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            nucleotideFSTvAll_syn = popgen_stats_pop_list[[x]]$nuc.F_ST.vs.all_syn,
+                            nucleotideFST_syn = popgen_stats_pop_list[[x]]$nucleotide.F_ST_syn,
+                            nSegregatingSites_syn = popgen_stats_pop_list[[x]]$n.segregating.sites_syn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            TajimaD_syn = popgen_stats_pop_list[[x]]$Tajima.D_syn,
+                            RozasR2_syn = popgen_stats_pop_list[[x]]$Rozas.R_2_syn,
+                            FuLiF_syn = popgen_stats_pop_list[[x]]$Fu.Li.F_syn,
+                            FuLiD_syn = popgen_stats_pop_list[[x]]$Fu.Li.D_syn,
+                            SFS_syn = popgen_stats_pop_list[[x]]$SFS_syn,
+                            CLR_syn = popgen_stats_pop_list[[x]]$CLR_syn,
+                            CL_syn = popgen_stats_pop_list[[x]]$CL_syn,
+                            KellyZnS_syn = popgen_stats_pop_list[[x]]$Kelly.Z_nS_syn,
+                            RozasZA_syn = popgen_stats_pop_list[[x]]$Rozas.ZA_syn,
+                            RozasZZ_syn = popgen_stats_pop_list[[x]]$Rozas.ZZ_syn,
+                            WallB_syn = popgen_stats_pop_list[[x]]$Wall.B_syn,
+                            WallQ_syn = popgen_stats_pop_list[[x]]$Wall.Q_syn,
+                            d_raw_syn = popgen_stats_pop_list[[x]]$d_raw_syn,
+                            d_prime_syn = popgen_stats_pop_list[[x]]$d_prime_syn,
+                            d_dist_syn = popgen_stats_pop_list[[x]]$d_dist_syn,
+                            r2_syn = popgen_stats_pop_list[[x]]$r2_syn,
+                            r_syn = popgen_stats_pop_list[[x]]$r_syn,
+
+                            # nonsyn
+                            # Normalise by feature width (per 1 kb)
+                            nucleotideDiversity_nonsyn = popgen_stats_pop_list[[x]]$nuc.diversity.within_nonsyn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            # The PopGenome developers advise that, where include.unknown = TRUE in the
+                            # Whop_readVCF() function call, "diversity.stats: pi and haplotype diversity should not be used"
+                            haplotypeDiversity_nonsyn = popgen_stats_pop_list[[x]]$hap.diversity.within_nonsyn,
+                            # Normalise by feature width (per 1 kb)
+                            Pi_Nei_nonsyn = popgen_stats_pop_list[[x]]$Pi_Nei_nonsyn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            nucleotideFSTvAll_nonsyn = popgen_stats_pop_list[[x]]$nuc.F_ST.vs.all_nonsyn,
+                            nucleotideFST_nonsyn = popgen_stats_pop_list[[x]]$nucleotide.F_ST_nonsyn,
+                            nSegregatingSites_nonsyn = popgen_stats_pop_list[[x]]$n.segregating.sites_nonsyn/(popgen_stats_pop_list[[x]]$width/1e3),
+                            TajimaD_nonsyn = popgen_stats_pop_list[[x]]$Tajima.D_nonsyn,
+                            RozasR2_nonsyn = popgen_stats_pop_list[[x]]$Rozas.R_2_nonsyn,
+                            FuLiF_nonsyn = popgen_stats_pop_list[[x]]$Fu.Li.F_nonsyn,
+                            FuLiD_nonsyn = popgen_stats_pop_list[[x]]$Fu.Li.D_nonsyn,
+                            SFS_nonsyn = popgen_stats_pop_list[[x]]$SFS_nonsyn,
+                            CLR_nonsyn = popgen_stats_pop_list[[x]]$CLR_nonsyn,
+                            CL_nonsyn = popgen_stats_pop_list[[x]]$CL_nonsyn,
+                            KellyZnS_nonsyn = popgen_stats_pop_list[[x]]$Kelly.Z_nS_nonsyn,
+                            RozasZA_nonsyn = popgen_stats_pop_list[[x]]$Rozas.ZA_nonsyn,
+                            RozasZZ_nonsyn = popgen_stats_pop_list[[x]]$Rozas.ZZ_nonsyn,
+                            WallB_nonsyn = popgen_stats_pop_list[[x]]$Wall.B_nonsyn,
+                            WallQ_nonsyn = popgen_stats_pop_list[[x]]$Wall.Q_nonsyn,
+                            d_raw_nonsyn = popgen_stats_pop_list[[x]]$d_raw_nonsyn,
+                            d_prime_nonsyn = popgen_stats_pop_list[[x]]$d_prime_nonsyn,
+                            d_dist_nonsyn = popgen_stats_pop_list[[x]]$d_dist_nonsyn,
+                            r2_nonsyn = popgen_stats_pop_list[[x]]$r2_nonsyn,
+                            r_nonsyn = popgen_stats_pop_list[[x]]$r_nonsyn,
+
                             ASY1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[1]],
                             DMC1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[2]],
                             H3K4me3_in_promoters = log2ChIP_featureMats_promotersRowMeans[[3]],
                             H3K27me3_in_promoters = log2ChIP_featureMats_promotersRowMeans[[4]],
+                            H2AZ_in_promoters = log2ChIP_featureMats_promotersRowMeans[[5]],
                             MNase_in_promoters = control_featureMats_promotersRowMeans[[2]],
                             ASY1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[1]],
                             DMC1_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[2]],
                             H3K4me3_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[3]],
                             H3K27me3_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[4]],
+                            H2AZ_in_bodies = log2ChIP_featureMats_bodiesRowMeans[[5]],
                             MNase_in_bodies = control_featureMats_bodiesRowMeans[[2]],
                             ASY1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[1]],
                             DMC1_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[2]],
                             H3K4me3_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[3]],
                             H3K27me3_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[4]],
+                            H2AZ_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[5]],
                             MNase_in_terminators = control_featureMats_terminatorsRowMeans[[2]],
                             cMMb = feature_cMMb,
                             exons = exonNoPerGene,
@@ -1233,7 +1310,7 @@ ranLocsGR <- GRanges(ranLocsGR,
 # to be used for grouping genes into 2 quantiles
 # (3 quantiles can result in very uneven split of genes, or poor separation of values)
 quantiles <- 2
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[7:16]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[7:29]
 outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
@@ -1346,7 +1423,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
 quantiles <- 4
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[17:31]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[76:93]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
