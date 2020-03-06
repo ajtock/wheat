@@ -4,7 +4,11 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD_all 'Tajima D' 0.99
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
+
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 CLR_all "CLR" 0.90 0.0005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -14,7 +18,15 @@
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
+#orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
+#orderingFactorName <- unlist(strsplit("Tajima's D", split = " "))
+#orderingFactorName <- unlist(strsplit("Rozas' R 2", split = " "))
 #densityProp <- 0.99
+#maxDensityPlus <- 0.2
+#xDec <- "%1.1f"
+#yDec <- "%1.1f"
+#yDec2 <- "%1.2f"
+#legendLabX <- "0.65"
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -24,9 +36,20 @@ featureName <- unlist(strsplit(args[3],
 region <- args[4]
 quantiles <- as.numeric(args[5])
 orderingFactor <- args[6]
-orderingFactorName <- args[7]
+orderingFactorName <- unlist(strsplit(args[7], split = " "))
+if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
+} else if(grepl("Rozas' Z", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
+} else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
+}
 densityProp <- as.numeric(args[8])
-
+maxDensityPlus <- as.numeric(args[9])
+xDec <- as.character(args[10])
+yDec <- as.character(args[11])
+yDec2 <- as.character(args[12])
+legendLabX <- as.numeric(args[13])
 library(parallel)
 library(tidyr)
 library(dplyr)
@@ -291,7 +314,7 @@ xmax <- max(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
 minDensity <- 0
 maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",][,which(colnames(featuresDF) == orderingFactor)],
-                          na.rm = T)$y)+0.2
+                          na.rm = T)$y)+maxDensityPlus
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
@@ -303,17 +326,17 @@ maxDensity <- max(
                         na.rm = T)$y)))
      })
    )
-)+0.2
+)+maxDensityPlus
 
 # Define legend labels
 legendLabs_feature <- lapply(1:quantiles, function(x) {
   grobTree(textGrob(bquote(.(paste0("Quantile ", 1:quantiles)[x])),
-                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    x = legendLabX, y = 0.90-((x-1)*0.07), just = "left",
                     gp = gpar(col = quantileColours[x], fontsize = 22)))
 })
 legendLabs_ranFeat <- lapply(1:quantiles, function(x) {
   grobTree(textGrob(bquote(.(paste0("Random ", 1:quantiles)[x])),
-                    x = 0.65, y = 0.90-((x-1)*0.07), just = "left",
+                    x = legendLabX, y = 0.90-((x-1)*0.07), just = "left",
                     gp = gpar(col = quantileColours[x], fontsize = 22)))
 })
 
@@ -332,9 +355,9 @@ popgen_stats_plotFun <- function(lociDF,
   scale_colour_manual(values = rev(quantileColours)) +
   geom_density(size = 1.5) +
   scale_x_continuous(limits = c(xmin, xmax),
-                     labels = function(x) sprintf("%1.1f", x)) +
+                     labels = function(x) sprintf(xDec, x)) +
   scale_y_continuous(limits = c(minDensity, maxDensity),
-                     labels = function(x) sprintf("%1.1f", x)) +
+                     labels = function(x) sprintf(yDec, x)) +
   labs(x = parameterLab,
        y = "Density") +
   annotation_custom(legendLabs[[1]]) +
@@ -381,7 +404,7 @@ popgen_stats_meanCIs <- function(dataFrame,
                 width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
   scale_colour_manual(values = quantileColours) +
   scale_y_continuous(limits = c(summary_stats_min, summary_stats_max),
-                     labels = function(x) sprintf("%1.2f", x)) +
+                     labels = function(x) sprintf(yDec2, x)) +
 #  scale_x_discrete(breaks = as.vector(dataFrame$quantile),
 #                   labels = as.vector(dataFrame$quantile)) +
   labs(x = "",
@@ -437,12 +460,12 @@ ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat_mean,
                                  ncol = 2, as.table = F)
 ggsave(paste0(plotDir[x],
-              orderingFactor, "_around_", quantiles, "quantiles",
+              orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
               "_by_log2_", libName, "_control_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v140220.pdf"),
+              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v060320.pdf"),
        plot = ggObjGA_combined,
        height = 13, width = 14)
 

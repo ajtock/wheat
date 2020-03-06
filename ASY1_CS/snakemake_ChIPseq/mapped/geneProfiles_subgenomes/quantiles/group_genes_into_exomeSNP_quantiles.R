@@ -11,7 +11,7 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 100kb 200
+# /applications/R/R-3.5.0/bin/Rscript group_genes_into_exomeSNP_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 100kb 200
 
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
@@ -38,12 +38,6 @@ print("Currently registered parallel backend name, version and cores")
 print(getDoParName())
 print(getDoParVersion())
 print(getDoParWorkers())
-
-#outDir <- paste0("quantiles_by_nucleotideDiversity_in_",
-#                 region, "/")
-#plotDir <- paste0(outDir, "plots/")
-#system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
-#system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load features
 features <- lapply(seq_along(featureName), function(x) {
@@ -159,15 +153,15 @@ genomeClass_list <- lapply(seq_along(genomeClass_list), function(x) {
 })
 
 # Assign to new object as mclapply may misbehave otherwise
+print("set.synnonsyn")
 genomeClass_list_syn <- mclapply(seq_along(genomeClass_list), function(x) {
   set.synnonsyn(genomeClass_list[[x]],
                 ref.chr = paste0("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/", chrs[x], ".fa"),
                 save.codons = F)
 }, mc.cores = length(genomeClass_list), mc.preschedule = F)
-#genomeClass_list <- genomeClass_list2
-#rm(genomeClass_list2); gc()
 
 # Extact variants located within features
+print("splitting.data")
 genomeClassSplit_list <- mclapply(seq_along(genomeClass_list_syn), function(x) {
   splitting.data(genomeClass_list_syn[[x]],
                  positions = lapply(which(features$V1 == chrs[x]), function(x) {
@@ -177,6 +171,7 @@ genomeClassSplit_list <- mclapply(seq_along(genomeClass_list_syn), function(x) {
 
 # Get neutrality, diversity, F_ST (fixation index), site frequency spectrum (SFS),
 # composite-likelihood-ratio (CLR) test, and linkage disequilibrium statistics
+print("neutrality")
 genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list), function(x) {
   neutrality.stats(genomeClassSplit_list[[x]],
                    FAST = F, do.R2 = T)
@@ -197,24 +192,30 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list), funct
 #})
 
 # Test with mclapply next time (maybe I've tried this before and it didn't work)
-genomeClassSplit_list_all <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
+print("F_ST")
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   F_ST.stats(genomeClassSplit_list_all[[x]],
              detail = T, mode = "nucleotide", FAST = F)
-})
-genomeClassSplit_list_syn <- lapply(seq_along(genomeClassSplit_list_syn), function(x) {
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   F_ST.stats(genomeClassSplit_list_syn[[x]],
              detail = T, mode = "nucleotide", FAST = F, subsites = "syn")
-})
-genomeClassSplit_list_nonsyn <- lapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+}, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   F_ST.stats(genomeClassSplit_list_nonsyn[[x]],
              detail = T, mode = "nucleotide", FAST = F, subsites = "nonsyn")
-})
+}, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 ## Below will extract stats for first population only
 #F_ST_stats_df_list <- lapply(seq_along(genomeClassSplit_list), function(x) {
 #  data.frame(get.F_ST(genomeClassSplit_list[[x]],
 #             mode = "nucleotide"),
 #             stringsAsFactors = F)
 #})
+
+genomeClassSplit_list_all <- genomeClassSplit_list_all2
+genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
+genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
+rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
 
 # diversity.stats function generates error when applied to genomeClassSplit_list
 # consisting of multiple populations with "keep.site.info = T":
@@ -225,15 +226,16 @@ genomeClassSplit_list_nonsyn <- lapply(seq_along(genomeClassSplit_list_nonsyn), 
 # If Pi from Nei is needed, run diversity.stats with "keep.site.info = F"
 # (HOWEVER: Pi shouldn't be used when "include.unknown = T"
 #  is specified in Whop_readVCF function call, as above)
-genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+print("diversity")
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   diversity.stats(genomeClassSplit_list_all[[x]],
                   pi = T, keep.site.info = F)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   diversity.stats(genomeClassSplit_list_syn[[x]],
                   pi = T, keep.site.info = F, subsites = "syn")
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   diversity.stats(genomeClassSplit_list_nonsyn[[x]],
                   pi = T, keep.site.info = F, subsites = "nonsyn")
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
@@ -244,19 +246,30 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
 #             stringsAsFactors = F)
 #})
 
+genomeClassSplit_list_all <- genomeClassSplit_list_all2
+genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
+genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
+rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
+
 # Get site frequency spectrum (SFS) for each site
-genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+print("detail (SFS)")
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   detail.stats(genomeClassSplit_list_all[[x]],
                site.spectrum = T)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   detail.stats(genomeClassSplit_list_syn[[x]],
                site.spectrum = T, subsites = "syn")
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   detail.stats(genomeClassSplit_list_nonsyn[[x]],
                site.spectrum = T, subsites = "nonsyn")
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+genomeClassSplit_list_all <- genomeClassSplit_list_all2
+genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
+genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
+rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
 
 # Calculate mean SFS for each gene in each population
 # all
@@ -272,7 +285,7 @@ SFS_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x)
     })
   SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
   }
-  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(SFS_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -288,7 +301,7 @@ SFS_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x)
     })
   SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
   }
-  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(SFS_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -304,13 +317,14 @@ SFS_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), funct
     })
   SFS_pop_mat <- cbind(SFS_pop_mat, SFS_pop)
   }
-  colnames(SFS_pop_mat) <- paste0("pop ", 1:10)
+  colnames(SFS_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(SFS_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
 # Calculate composite-likelihood-ratio (CLR) tests from Nielsen
+print("CLR")
 # all
-genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   # Create a list in which each element is a table of frequencies of minor allele frequencies
   # across all genes for the given population
   MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
@@ -325,7 +339,7 @@ genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), func
                       freq.table = MAF_freqTable_list))
 })
 # syn
-genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   # Create a list in which each element is a table of frequencies of minor allele frequencies
   # across all genes for the given population
   MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
@@ -341,7 +355,7 @@ genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), func
                       subsites = "syn"))
 })
 # nonsyn
-genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   # Create a list in which each element is a table of frequencies of minor allele frequencies
   # across all genes for the given population
   MAF_freqTable_list <- lapply(seq_along(pop_name), function(p) {
@@ -357,19 +371,30 @@ genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn)
                       subsites = "nonsyn"))
 })
 
+genomeClassSplit_list_all <- genomeClassSplit_list_all2
+genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
+genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
+rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
+
 # Calculate linkage disequilibrium (LD) statistics
-genomeClassSplit_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+print("linkage")
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
   linkage.stats(genomeClassSplit_list_all[[x]],
                 detail = T, do.ZnS = T, do.WALL = T)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
-genomeClassSplit_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
+genomeClassSplit_list_syn2 <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
   linkage.stats(genomeClassSplit_list_syn[[x]],
                 detail = T, do.ZnS = T, do.WALL = T, subsites = "syn")
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
-genomeClassSplit_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
+genomeClassSplit_list_nonsyn2 <- mclapply(seq_along(genomeClassSplit_list_nonsyn), function(x) {
   linkage.stats(genomeClassSplit_list_nonsyn[[x]],
                 detail = T, do.ZnS = T, do.WALL = T, subsites = "nonsyn")
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
+
+genomeClassSplit_list_all <- genomeClassSplit_list_all2
+genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
+genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
+rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
 
 # Calculate mean LD statistics for each gene in each population
 # all
@@ -387,7 +412,7 @@ d_raw_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(
     })
   d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
   }
-  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_raw_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -405,7 +430,7 @@ d_raw_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(
     })
   d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
   }
-  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_raw_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -423,7 +448,7 @@ d_raw_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), fun
     })
   d_raw_pop_mat <- cbind(d_raw_pop_mat, d_raw_pop)
   }
-  colnames(d_raw_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_raw_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_raw_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
@@ -442,7 +467,7 @@ d_prime_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), functio
     })
   d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
   }
-  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_prime_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -460,7 +485,7 @@ d_prime_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), functio
     })
   d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
   }
-  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_prime_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -478,7 +503,7 @@ d_prime_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), f
     })
   d_prime_pop_mat <- cbind(d_prime_pop_mat, d_prime_pop)
   }
-  colnames(d_prime_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_prime_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_prime_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
@@ -497,7 +522,7 @@ d_dist_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function
     })
   d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
   }
-  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_dist_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -515,7 +540,7 @@ d_dist_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function
     })
   d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
   }
-  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_dist_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -533,7 +558,7 @@ d_dist_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), fu
     })
   d_dist_pop_mat <- cbind(d_dist_pop_mat, d_dist_pop)
   }
-  colnames(d_dist_pop_mat) <- paste0("pop ", 1:10)
+  colnames(d_dist_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(d_dist_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
@@ -552,7 +577,7 @@ r2_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) 
     })
   r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
   }
-  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r2_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r2_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -570,7 +595,7 @@ r2_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) 
     })
   r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
   }
-  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r2_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r2_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -588,7 +613,7 @@ r2_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), functi
     })
   r2_pop_mat <- cbind(r2_pop_mat, r2_pop)
   }
-  colnames(r2_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r2_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r2_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
@@ -607,7 +632,7 @@ r_means_list_all <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
     })
   r_pop_mat <- cbind(r_pop_mat, r_pop)
   }
-  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
 # syn
@@ -625,7 +650,7 @@ r_means_list_syn <- mclapply(seq_along(genomeClassSplit_list_syn), function(x) {
     })
   r_pop_mat <- cbind(r_pop_mat, r_pop)
   }
-  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_syn), mc.preschedule = F)
 # nonsyn
@@ -643,7 +668,7 @@ r_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), functio
     })
   r_pop_mat <- cbind(r_pop_mat, r_pop)
   }
-  colnames(r_pop_mat) <- paste0("pop ", 1:10)
+  colnames(r_pop_mat) <- paste0("pop ", 1:length(pop_name))
   return(r_pop_mat)
 }, mc.cores = length(genomeClassSplit_list_nonsyn), mc.preschedule = F)
 
@@ -666,6 +691,7 @@ r_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), functio
 popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
 #for(w in seq_along(pop_name)) {
   popgen_stats_chr_list <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
+    print(x)
     data.frame(chr = as.character(chrs[x]),
                start = as.integer(sub(pattern = " - \\d+", replacement = "",
                                       x = genomeClassSplit_list_all[[x]]@region.names)),
@@ -1322,19 +1348,19 @@ plotDir_list <- lapply(seq_along(outDir), function(w) {
     paste0(outDir_list[[w]][x], "plots/")
   })
 })
-sapply(seq_along(outDir), function(w) {
- system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
-})
-sapply(seq_along(outDir), function(w) {
-  mclapply(seq_along(pop_name), function(x) {
-    system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
-  }, mc.cores = length(pop_name), mc.preschedule = F)
-})
-sapply(seq_along(outDir), function(w) {
-  mclapply(seq_along(pop_name), function(x) {
-    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
-  }, mc.cores = length(pop_name), mc.preschedule = F)
-})
+#sapply(seq_along(outDir), function(w) {
+# system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
+#})
+#sapply(seq_along(outDir), function(w) {
+#  mclapply(seq_along(pop_name), function(x) {
+#    system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
+#  }, mc.cores = length(pop_name), mc.preschedule = F)
+#})
+#sapply(seq_along(outDir), function(w) {
+#  mclapply(seq_along(pop_name), function(x) {
+#    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
+#  }, mc.cores = length(pop_name), mc.preschedule = F)
+#})
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
 for(x in 1:length(featuresGR_pop_list)) {
@@ -1423,7 +1449,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
 quantiles <- 4
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[76:93]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[76:94]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
@@ -1435,19 +1461,19 @@ plotDir_list <- lapply(seq_along(outDir), function(w) {
     paste0(outDir_list[[w]][x], "plots/")
   })
 })
-sapply(seq_along(outDir), function(w) {
- system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
-})
-sapply(seq_along(outDir), function(w) {
-  mclapply(seq_along(pop_name), function(x) {
-    system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
-  }, mc.cores = length(pop_name), mc.preschedule = F)
-})
-sapply(seq_along(outDir), function(w) {
-  mclapply(seq_along(pop_name), function(x) {
-    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
-  }, mc.cores = length(pop_name), mc.preschedule = F)
-})
+#sapply(seq_along(outDir), function(w) {
+# system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
+#})
+#sapply(seq_along(outDir), function(w) {
+#  mclapply(seq_along(pop_name), function(x) {
+#    system(paste0("[ -d ", outDir_list[[w]][x], " ] || mkdir ", outDir_list[[w]][x]))
+#  }, mc.cores = length(pop_name), mc.preschedule = F)
+#})
+#sapply(seq_along(outDir), function(w) {
+#  mclapply(seq_along(pop_name), function(x) {
+#    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
+#  }, mc.cores = length(pop_name), mc.preschedule = F)
+#})
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
 for(x in 1:length(featuresGR_pop_list)) {
