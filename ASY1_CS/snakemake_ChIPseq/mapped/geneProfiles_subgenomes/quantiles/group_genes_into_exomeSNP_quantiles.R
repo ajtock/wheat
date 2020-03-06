@@ -1474,6 +1474,15 @@ plotDir_list <- lapply(seq_along(outDir), function(w) {
 #    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
 #  }, mc.cores = length(pop_name), mc.preschedule = F)
 #})
+## THIS WILL BE REDUNDANT - DELETE
+system(paste0("[ -d ", outDir[19], " ] || mkdir ", outDir[19]))
+mclapply(seq_along(pop_name), function(x) {
+  system(paste0("[ -d ", outDir_list[[19]][x], " ] || mkdir ", outDir_list[[19]][x]))
+}, mc.cores = length(pop_name), mc.preschedule = F)
+mclapply(seq_along(pop_name), function(x) {
+  system(paste0("[ -d ", plotDir_list[[19]][x], " ] || mkdir ", plotDir_list[[19]][x]))
+}, mc.cores = length(pop_name), mc.preschedule = F)
+
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
 for(x in 1:length(featuresGR_pop_list)) {
