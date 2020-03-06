@@ -691,7 +691,6 @@ r_means_list_nonsyn <- mclapply(seq_along(genomeClassSplit_list_nonsyn), functio
 popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
 #for(w in seq_along(pop_name)) {
   popgen_stats_chr_list <- lapply(seq_along(genomeClassSplit_list_all), function(x) {
-    print(x)
     data.frame(chr = as.character(chrs[x]),
                start = as.integer(sub(pattern = " - \\d+", replacement = "",
                                       x = genomeClassSplit_list_all[[x]]@region.names)),
@@ -809,14 +808,17 @@ popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
     stop("popgen_stats end coordinates are not identical to those in features data.frame!")
   }
   return(popgen_stats_pop)
-  write.table(popgen_stats_pop,
+}, mc.cores = length(pop_list), mc.preschedule = F)
+
+for(w in seq_along(pop_name)) {
+  write.table(popgen_stats_pop_list[[w]],
               file = paste0("PopGenome_stats_",
                             substring(featureName[1][1], first = 1, last = 5), "_in_",
                             paste0(substring(featureName, first = 10, last = 16),
                                    collapse = "_"), "_",
                             substring(featureName[1][1], first = 18), "_", pop_name[w], ".txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
-}, mc.cores = length(pop_list), mc.preschedule = F)
+}
 
 ## For when working with a single population:  
 #popgen_stats_df_list <- lapply(seq_along(neutrality_stats_df_list), function(x) {
