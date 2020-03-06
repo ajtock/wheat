@@ -8,9 +8,9 @@ tblS1 <- read.table("Table_S1_41588_2019_382_MOESM3_ESM.tsv",
                     quote = "\"", sep = "\t", header = T,
                     check.names = T, stringsAsFactors = F)
 # Extract Triticum aestivum subsp. aestivum accessions only
-tblS1 <- rbind(tblS1[which(tblS1$Species == "Triticum aestivum subsp. aestivum"),],
-               tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "domesticatedE"),],
-               tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "wildE"),])
+tblS1_DWemmer <- rbind(tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "domesticatedE"),],
+                       tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "wildE"),])
+tblS1 <- tblS1[which(tblS1$Species == "Triticum aestivum subsp. aestivum"),]
 # OR
 #tblS1 <- tblS1[which(tblS1$improvement.Status %in% c("cul", "lr", "unknown")),]
 
@@ -21,9 +21,9 @@ tblS1 <- rbind(tblS1[which(tblS1$Species == "Triticum aestivum subsp. aestivum")
 # two accessions of wild and domesticated emmer (PI 467000, PI 415152)." (He et al. 2019 Nat. Genet. 51)
 tblS1 <- tblS1[-c(which(grepl("345355", tblS1$Accession_ID)),
                   which(grepl("131592", tblS1$Accession_ID)),
-                  which(grepl("534284", tblS1$Accession_ID)),
-                  which(grepl("467000", tblS1$Accession_ID)),
-                  which(grepl("415152", tblS1$Accession_ID))),]
+                  which(grepl("534284", tblS1$Accession_ID))),]
+tblS1_DWemmer <- tblS1_DWemmer[-c(which(grepl("467000", tblS1_DWemmer$Accession_ID)),
+                                  which(grepl("415152", tblS1_DWemmer$Accession_ID))),]
 
 pop <- sort(unique(tblS1$X21.populations.used.in.Admixture.analyses))
 pop <- pop[which(pop != "-")]
@@ -130,12 +130,12 @@ write.table(Oceania$internal_ID,
             file = "Oceania_accessions.txt",
             quote = F, row.names = F, col.names = F)
 
-DomesticatedEmmer <- tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "domesticatedE"),]
+DomesticatedEmmer <- tblS1_DWemmer[which(tblS1_DWemmer$X21.populations.used.in.Admixture.analyses == "domesticatedE"),]
 write.table(DomesticatedEmmer$internal_ID,
             file = "DomesticatedEmmer_accessions.txt",
             quote = F, row.names = F, col.names = F)
 
-WildEmmer <- tblS1[which(tblS1$X21.populations.used.in.Admixture.analyses == "wildE"),]
+WildEmmer <- tblS1_DWemmer[which(tblS1_DWemmer$X21.populations.used.in.Admixture.analyses == "wildE"),]
 write.table(WildEmmer$internal_ID,
             file = "WildEmmer_accessions.txt",
             quote = F, row.names = F, col.names = F)
