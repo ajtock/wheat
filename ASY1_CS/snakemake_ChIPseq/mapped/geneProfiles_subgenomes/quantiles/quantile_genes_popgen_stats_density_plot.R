@@ -43,6 +43,8 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
+} else {
+  orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
 densityProp <- as.numeric(args[8])
 maxDensityPlus <- as.numeric(args[9])
@@ -99,7 +101,7 @@ plotDir <- paste0(outDir, "plots/")
 
 # Define plot titles
 if(libName %in% "cMMb") {
-  featureNamePlot <- paste0("cM/Mb",
+  featureNamePlot <- paste0("cM/Mb ",
                             substr(featureName[1], start = 1, stop = 4),
                             " quantiles")
 } else {
