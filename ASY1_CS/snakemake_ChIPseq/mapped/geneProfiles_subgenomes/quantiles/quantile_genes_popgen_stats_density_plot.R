@@ -86,17 +86,27 @@ pop_name_plot <- c(
                    "Oceania"
                   )
 
-outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                 "_in_", region, "/")
+if(libName %in% "cMMb") {
+  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName), "/")
+} else {
+  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                   "_in_", region, "/")
+}
 outDir <- sapply(seq_along(pop_name), function(x) {
   paste0(outDir, pop_name[x], "/")
 })
 plotDir <- paste0(outDir, "plots/")
 
 # Define plot titles
-featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
-                          substr(featureName[1], start = 1, stop = 4),
-                          " quantiles (", region, ")")
+if(libName %in% "cMMb") {
+  featureNamePlot <- paste0("cM/Mb",
+                            substr(featureName[1], start = 1, stop = 4),
+                            " quantiles")
+} else {
+  featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
+                            substr(featureName[1], start = 1, stop = 4),
+                            " quantiles (", region, ")")
+}
 ranFeatNamePlot <- paste0("Random ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles")
@@ -123,14 +133,24 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
 mclapply(seq_along(pop_name), function(x) {
-featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
-                                "_by_", sub("_\\w+", "", libName), "_in_",
-                                region, "_of_",
-                                substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                paste0(substring(featureName, first = 10, last = 16),
-                                       collapse = "_"), "_",
-                                substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
-                         header = T, sep = "\t")
+if(libName %in% "cMMb") {
+  featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
+                                  "_by_", libName, "_of_",
+                                  substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                  paste0(substring(featureName, first = 10, last = 16),
+                                         collapse = "_"), "_",
+                                  substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                           header = T, sep = "\t")
+} else {
+  featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
+                                  "_by_", sub("_\\w+", "", libName), "_in_",
+                                  region, "_of_",
+                                  substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                  paste0(substring(featureName, first = 10, last = 16),
+                                         collapse = "_"), "_",
+                                  substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                           header = T, sep = "\t")
+}
 ## Load table of ranLocs grouped according to feature quantiles
 #ranLocsDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
 #                               "_by_", sub("_\\w+", "", libName), "_in_",
@@ -459,16 +479,27 @@ ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
                                  ggObjGA_ranFeat_mean,
                                  ncol = 2, as.table = F)
-ggsave(paste0(plotDir[x],
-              orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_", pop_name[x], "_v060320.pdf"),
-       plot = ggObjGA_combined,
-       height = 13, width = 14)
-
+if(libName %in% "cMMb") {
+  ggsave(paste0(plotDir[x],
+                orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v070320.pdf"),
+         plot = ggObjGA_combined,
+         height = 13, width = 14)
+} else {  
+  ggsave(paste0(plotDir[x],
+                orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v070320.pdf"),
+         plot = ggObjGA_combined,
+         height = 13, width = 14)
+}
 }, mc.cores = length(pop_name), mc.preschedule = F)
 
 
