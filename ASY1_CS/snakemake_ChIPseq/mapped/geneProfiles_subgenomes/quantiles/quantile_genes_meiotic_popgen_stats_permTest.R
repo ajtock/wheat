@@ -1,17 +1,17 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Compare population genetics statistics for NLR-encoding genes in a given ASY1 quantile
-# with 1) those for NLR-encoding genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
-#      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
+# Compare population genetics statistics for meiotic genes in a given ASY1 quantile
+# with 1) those for meiotic genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
+#      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not among the meiotic genes (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%1.2f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#featureNamePlot <- "NLR_encoding_genes"
+#featureNamePlot <- "Meiotic_genes"
 #region <- "bodies"
 #quantileNo <- 1
 #quantiles <- 4
@@ -121,12 +121,15 @@ quantileColours <- makeTransparent(quantileColours)
 # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
 options(scipen = 100)
 
-# Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3", header = F)
-# Replace gene model ID decimal suffix (e.g., ".1")
-NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
-               x = NLRs$V9)
-IDs <- as.character(NLRs$V9)
+# Load meio
+# Note: these two sets of meiotic genes share 271 common genes that are assigned to a chromosome
+meio1 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
+                    header = T, stringsAsFactors = F)
+genome_meio1 <- as.character(meio1$Gene.ID)
+meio2 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
+                    header = T, sep = "\t", stringsAsFactors = F)
+genome_meio2 <- as.character(meio2$Gene.ID)
+IDs <- union(genome_meio1, genome_meio2)
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
