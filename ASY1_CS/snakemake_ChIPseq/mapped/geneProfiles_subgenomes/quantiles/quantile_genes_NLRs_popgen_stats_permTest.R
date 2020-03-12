@@ -17,6 +17,7 @@
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
+#orderingFactor <- "CLR_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
 #orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
 #orderingFactorName <- unlist(strsplit("Tajima's D", split = " "))
@@ -29,7 +30,9 @@
 # For Rozas' R2
 #yDec <- "%1.2f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
-#xAnn <- as.numeric(unlist(strsplit("220,205", split = ",")))
+# For CLR
+#yDec <- "%4.0f"
+#xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
