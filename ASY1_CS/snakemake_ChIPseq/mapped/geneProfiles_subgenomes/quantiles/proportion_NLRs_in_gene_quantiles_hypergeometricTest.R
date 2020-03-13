@@ -31,7 +31,6 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
-
 #libName <- "ASY1_CS_Rep1_ChIP"
 #featRegion <- "bodies"
 #quantileFirst <- 1
@@ -49,7 +48,12 @@ region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
 
-outDir <- paste0("quantiles_by_", sub("_\\w+$", "", libName), "_in_", featRegion, "/hypergeometricTests/")
+if(libName %in% "cMMb") {
+  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
+} else {
+  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                   "_in_", featRegion, "/hypergeometricTests/")
+}
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -67,11 +71,20 @@ makeTransparent <- function(thisColour, alpha = 180)
 quantileColours <- makeTransparent(quantileColours)
 
 # Load feature quantiles
-featuresDF <- read.table(paste0("quantiles_by_", sub("_\\w+$", "", libName), "_in_", featRegion,
-                                "/WesternEurope/features_", quantileLast, "quantiles_by_",
-                                sub("_\\w+$", "", libName), "_in_", featRegion, "_of_genes_in_",
-                                genomeName, "_", region, "_WesternEurope.txt"),
-                         header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
+if(libName %in% "cMMb") {
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/", "", outDir),
+                                  "/WesternEurope/features_", quantileLast, "quantiles_by_",
+                                  sub("_\\w+$", "", libName), "_of_genes_in_",
+                                  genomeName, "_", region, "_WesternEurope.txt"),
+                           header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
+} else {
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/", "", outDir),
+                                  "/WesternEurope/features_", quantileLast, "quantiles_by_",
+                                  sub("_\\w+$", "", libName), "_in_", featRegion, "_of_genes_in_",
+                                  genomeName, "_", region, "_WesternEurope.txt"),
+                           header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
+
+}
 featuresDF$featureID <- sub(pattern = "\\.\\d+", replacement = "",
                             x = featuresDF$featureID)
 genome_genes <- featuresDF$featureID
@@ -87,15 +100,6 @@ NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc
 NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
                x = NLRs$V9)
 genome_NLRs <- as.character(NLRs$V9)
-
-#NLRs <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
-#                   header = T, stringsAsFactors = F)
-#genome_NLRs <- as.character(NLRs$Gene.ID)
-#NLRs <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
-#                   header = T, stringsAsFactors = F)
-#genome_NLRs <- as.character(NLRs$Gene.ID)
-# Get the intersection of genome_NLRs and genome_genes
-# (this excludes NLRs not assigned to a chromosome)
 
 genome_NLRs <- intersect(genome_NLRs, genome_genes)
 
@@ -181,18 +185,34 @@ for(z in seq_along(quantile_genes_list)) {
                        proportion_of_quantile = length(quantile_NLRs) / length(quantile_genes),
                        random_proportions_of_quantile = hgDist / length(quantile_genes),
                        hypergeomDist = hgDist)
+  if(libName %in% "cMMb") {
+  save(hgTestResults,
+       file = paste0(outDir,
+                     "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
+                     "_by_", libName, "_of_genes_in_",
+                     genomeName, "_", region, "_hypergeomTestRes.RData"))
+  } else {
   save(hgTestResults,
        file = paste0(outDir,
                      "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
                      "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
                      genomeName, "_", region, "_hypergeomTestRes.RData"))
+  }
 
   # Generate histogram
+  if(libName %in% "cMMb") {
+  pdf(paste0(plotDir,
+             "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
+             "_by_", libName, "_of_genes_in_",
+             genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
+             height = 4.5, width = 5)
+  } else {
   pdf(paste0(plotDir,
              "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
              "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
              genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
              height = 4.5, width = 5)
+  }
   par(mar = c(3.1, 3.1, 4.1, 1.1),
       mgp = c(1.85, 0.75, 0))
   ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
@@ -282,11 +302,17 @@ options(scipen = 100)
 # Plot bar graph summarising permutation test results
 pt_list <- list()
 for(z in quantileFirst:quantileLast) {
-  load(
-       paste0(outDir,
+  if(libName %in% "cMMb") {
+  load(paste0(outDir,
+              "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
+              "_by_", libName, "_of_genes_in_",
+              genomeName, "_", region, "_hypergeomTestRes.RData"))
+  } else {
+  load(paste0(outDir,
               "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
               "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
               genomeName, "_", region, "_hypergeomTestRes.RData"))
+  }
   pt_list <- c(pt_list, hgTestResults)
 }
 bargraph_df <- data.frame(Quantile = paste0("Quantile ", quantileFirst:quantileLast),
@@ -340,10 +366,18 @@ bp <- ggplot(data = bargraph_df,
                  "(" * .(prettyNum(samplesNum,
                                    big.mark = ",",
                                    trim = T)) ~ " samples)"))
+if(libName %in% "cMMb") {
+ggsave(paste0(plotDir,
+              "bargraph_NLR_gene_representation_among_", quantileLast,
+              "quantiles_by_", libName, "_of_genes_in_",
+              genomeName, "_", region, "_hypergeomTestRes.pdf"),
+       plot = bp,
+       height = 8, width = 12)
+} else {
 ggsave(paste0(plotDir,
               "bargraph_NLR_gene_representation_among_", quantileLast,
               "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
               genomeName, "_", region, "_hypergeomTestRes.pdf"),
        plot = bp,
        height = 8, width = 12)
-
+}

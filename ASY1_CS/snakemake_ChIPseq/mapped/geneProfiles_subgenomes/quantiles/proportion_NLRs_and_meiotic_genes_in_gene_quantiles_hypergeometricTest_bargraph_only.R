@@ -48,7 +48,12 @@ region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
 
-outDir <- paste0("quantiles_by_", sub("_\\w+$", "", libName), "_in_", featRegion, "/hypergeometricTests/")
+if(libName %in% "cMMb") {
+  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
+} else {
+  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                   "_in_", featRegion, "/hypergeometricTests/")
+}
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -70,20 +75,32 @@ options(scipen = 100)
 # Plot bar graph summarising permutation test results
 pt_list_NLRs <- list()
 for(z in quantileFirst:quantileLast) {
-  load(
-       paste0(outDir,
+  if(libName %in% "cMMb") {
+  load(paste0(outDir,
+              "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
+              "_by_", libName, "_of_genes_in_",
+              genomeName, "_", region, "_hypergeomTestRes.RData"))
+  } else {
+  load(paste0(outDir,
               "NLR_gene_representation_among_quantile", z, "_of_", quantileLast,
               "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
               genomeName, "_", region, "_hypergeomTestRes.RData"))
+  }
   pt_list_NLRs <- c(pt_list_NLRs, hgTestResults)
 }
 pt_list_meio <- list()
 for(z in quantileFirst:quantileLast) {
-  load(
-       paste0(outDir,
+  if(libName %in% "cMMb") {
+  load(paste0(outDir,
+              "meiotic_gene_representation_among_quantile", z, "_of_", quantileLast,
+              "_by_", libName, "_of_genes_in_",
+              genomeName, "_", region, "_hypergeomTestRes.RData"))
+  } else {
+  load(paste0(outDir,
               "meiotic_gene_representation_among_quantile", z, "_of_", quantileLast,
               "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
               genomeName, "_", region, "_hypergeomTestRes.RData"))
+  }
   pt_list_meio <- c(pt_list_meio, hgTestResults)
 }
 bargraph_df <- data.frame(Feature = rep(c("NLR-encoding genes", "Meiotic genes"), each = quantileLast),
@@ -129,13 +146,13 @@ bp <- ggplot(data = bargraph_df,
         panel.grid = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
-        legend.position = "none",
+        #legend.position = "none",
         #legend.position = c(0.05, 0.30),
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
-        plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
+        plot.title = element_text(size = 13, colour = "black", hjust = 0.5)) +
   ggtitle(bquote("NLR-encoding and meiotic genes in" ~
                  .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                  "(" * .(featRegion) * ") in" ~
@@ -143,10 +160,18 @@ bp <- ggplot(data = bargraph_df,
                  "(" * .(prettyNum(samplesNum,
                                    big.mark = ",",
                                    trim = T)) ~ " samples)"))
+if(libName %in% "cMMb") {
+ggsave(paste0(plotDir,
+              "bargraph_NLR_and_meiotic_gene_representation_among_", quantileLast,
+              "quantiles_by_", libName, "_of_genes_in_",
+              genomeName, "_", region, "_hypergeomTestRes.pdf"),
+       plot = bp,
+       height = 8, width = 12)
+} else {
 ggsave(paste0(plotDir,
               "bargraph_NLR_and_meiotic_gene_representation_among_", quantileLast,
               "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
               genomeName, "_", region, "_hypergeomTestRes.pdf"),
        plot = bp,
        height = 8, width = 12)
-
+}

@@ -376,6 +376,11 @@ genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
 genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
 rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
 
+# Calculate recombination statistics
+genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
+   recomb.stats(genomeClassSplit_list_all[[x]])
+}, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
+
 # Calculate linkage disequilibrium (LD) statistics
 print("linkage")
 genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {

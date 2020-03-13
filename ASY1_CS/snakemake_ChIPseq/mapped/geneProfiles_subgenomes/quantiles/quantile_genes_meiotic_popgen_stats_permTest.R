@@ -17,6 +17,7 @@
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
+#orderingFactor <- "CLR_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
 #orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
 #orderingFactorName <- unlist(strsplit("Tajima's D", split = " "))
@@ -29,7 +30,9 @@
 # For Rozas' R2
 #yDec <- "%1.2f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
-#xAnn <- as.numeric(unlist(strsplit("220,205", split = ",")))
+# For CLR
+#yDec <- "%4.0f"
+#xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -225,7 +228,7 @@ for(x in seq_along(pop_name)) {
   Utest <- wilcox.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                    orderingFactor)],
                        y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
-                                                   orderingFactor)],
+                                                         orderingFactor)],
                        alternative = altHyp)
   UtestPval <- Utest$p.value
   UtestPvalChar <- if(UtestPval < 0.0001) {
@@ -237,7 +240,7 @@ for(x in seq_along(pop_name)) {
   ttest <- stats::t.test(x = featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
                                                      orderingFactor)],
                          y = featuresDF_annoGOIDsDF[,which(colnames(featuresDF_annoGOIDsDF) ==                  
-                                                     orderingFactor)],
+                                                           orderingFactor)],
                          alternative = altHyp)
   ttestPval <- ttest$p.value
   ttestPvalChar <- if(ttestPval < 0.0001) {
@@ -464,7 +467,9 @@ for(x in seq_along(pop_name)) {
   #options(scipen = 100)
   # Calculate max density
   maxDensityPlus <- max(density(nonIDs_permTestResults@permuted)$y)*1.2
-  if(orderingFactor %in% c("TajimaD", "FuLiF", "FuLiD")) {
+  if(orderingFactor %in% c("TajimaD_all", "TajimaD_syn", "TajimaD_nonsysn",
+                           "FuLiF_all", "FuLiF_syn", "FuLiF_nonsyn",
+                           "FuLiD_all", "FuLiD_syn", "FuLiD_nonsyn")) {
     if(nonIDs_permTestResults@alternative == "MoreThanRandom") {
       xlim <- c(pmin(-1, min(nonIDs_permTestResults@permuted)*1.2),
                 pmax(nonIDs_permTestResults@observed/1.2, nonIDs_permTestResults@alpha0.05/1.2))
