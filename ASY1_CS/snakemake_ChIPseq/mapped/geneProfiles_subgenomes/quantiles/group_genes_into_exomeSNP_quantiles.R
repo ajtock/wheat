@@ -376,7 +376,7 @@ genomeClassSplit_list_syn <- genomeClassSplit_list_syn2
 genomeClassSplit_list_nonsyn <- genomeClassSplit_list_nonsyn2
 rm(genomeClassSplit_list_all2, genomeClassSplit_list_syn2, genomeClassSplit_list_nonsyn2); gc()
 
-# Calculate recombination statistics
+# Calculate recombination statistics (Hudson's RM)
 genomeClassSplit_list_all2 <- mclapply(seq_along(genomeClassSplit_list_all), function(x) {
    recomb.stats(genomeClassSplit_list_all[[x]])
 }, mc.cores = length(genomeClassSplit_list_all), mc.preschedule = F)
@@ -751,6 +751,7 @@ popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
                d_dist_all = as.numeric(d_dist_means_list_all[[x]][,w]),
                r2_all = as.numeric(r2_means_list_all[[x]][,w]),
                r_all = as.numeric(r_means_list_all[[x]][,w]),
+               Hudson.RM_all = as.numeric(genomeClassSplit_list_all[[x]]@RM[,w]),
                # syn
                nuc.diversity.within_syn = as.numeric(genomeClassSplit_list_syn[[x]]@nuc.diversity.within[,w]),
                hap.diversity.within_syn = as.numeric(genomeClassSplit_list_syn[[x]]@hap.diversity.within[,w]),
@@ -780,6 +781,7 @@ popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
                d_dist_syn = as.numeric(d_dist_means_list_syn[[x]][,w]),
                r2_syn = as.numeric(r2_means_list_syn[[x]][,w]),
                r_syn = as.numeric(r_means_list_syn[[x]][,w]),
+               Hudson.RM_syn = as.numeric(genomeClassSplit_list_syn[[x]]@RM[,w]),
                # nonsyn
                nuc.diversity.within_nonsyn = as.numeric(genomeClassSplit_list_nonsyn[[x]]@nuc.diversity.within[,w]),
                hap.diversity.within_nonsyn = as.numeric(genomeClassSplit_list_nonsyn[[x]]@hap.diversity.within[,w]),
@@ -809,6 +811,7 @@ popgen_stats_pop_list <- mclapply(seq_along(pop_name), function(w) {
                d_dist_nonsyn = as.numeric(d_dist_means_list_nonsyn[[x]][,w]),
                r2_nonsyn = as.numeric(r2_means_list_nonsyn[[x]][,w]),
                r_nonsyn = as.numeric(r_means_list_nonsyn[[x]][,w]),
+               Hudson.RM_nonsyn = as.numeric(genomeClassSplit_list_nonsyn[[x]]@RM[,w]),
 
                stringsAsFactors = F)
   })
@@ -1226,6 +1229,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_all = popgen_stats_pop_list[[x]]$d_dist_all,
                             r2_all = popgen_stats_pop_list[[x]]$r2_all,
                             r_all = popgen_stats_pop_list[[x]]$r_all,
+                            HudsonRM_all = popgen_stats_pop_list[[x]]$Hudson.RM_all,
 
                             # syn
                             # Normalise by feature width (per 1 kb)
@@ -1255,6 +1259,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_syn = popgen_stats_pop_list[[x]]$d_dist_syn,
                             r2_syn = popgen_stats_pop_list[[x]]$r2_syn,
                             r_syn = popgen_stats_pop_list[[x]]$r_syn,
+                            HudsonRM_syn = popgen_stats_pop_list[[x]]$Hudson.RM_syn,
 
                             # nonsyn
                             # Normalise by feature width (per 1 kb)
@@ -1284,6 +1289,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_nonsyn = popgen_stats_pop_list[[x]]$d_dist_nonsyn,
                             r2_nonsyn = popgen_stats_pop_list[[x]]$r2_nonsyn,
                             r_nonsyn = popgen_stats_pop_list[[x]]$r_nonsyn,
+                            HudsonRM_nonsyn = popgen_stats_pop_list[[x]]$Hudson.RM_nonsyn,
 
                             ASY1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[1]],
                             DMC1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[2]],
@@ -1356,7 +1362,7 @@ ranLocsGR <- GRanges(ranLocsGR,
 # to be used for grouping genes into 2 quantiles
 # (3 quantiles can result in very uneven split of genes, or poor separation of values)
 quantiles <- 2
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[7:29]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[7:30]
 outDir <- paste0("quantiles_by_", orderingFactor, "_in_", region, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
@@ -1469,7 +1475,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
 quantiles <- 4
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[76:94]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[79:97]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
@@ -1494,15 +1500,6 @@ plotDir_list <- lapply(seq_along(outDir), function(w) {
 #    system(paste0("[ -d ", plotDir_list[[w]][x], " ] || mkdir ", plotDir_list[[w]][x]))
 #  }, mc.cores = length(pop_name), mc.preschedule = F)
 #})
-## THIS WILL BE REDUNDANT - DELETE
-system(paste0("[ -d ", outDir[19], " ] || mkdir ", outDir[19]))
-mclapply(seq_along(pop_name), function(x) {
-  system(paste0("[ -d ", outDir_list[[19]][x], " ] || mkdir ", outDir_list[[19]][x]))
-}, mc.cores = length(pop_name), mc.preschedule = F)
-mclapply(seq_along(pop_name), function(x) {
-  system(paste0("[ -d ", plotDir_list[[19]][x], " ] || mkdir ", plotDir_list[[19]][x]))
-}, mc.cores = length(pop_name), mc.preschedule = F)
-
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
 for(x in 1:length(featuresGR_pop_list)) {
