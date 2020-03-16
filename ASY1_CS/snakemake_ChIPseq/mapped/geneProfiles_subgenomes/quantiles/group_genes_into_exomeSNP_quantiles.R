@@ -1474,8 +1474,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
-quantiles <- 4
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[79:97]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[c(30, 79:97)]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
@@ -1502,6 +1501,7 @@ plotDir_list <- lapply(seq_along(outDir), function(w) {
 #})
 
 # For each population, divide features into quantiles based on decreasing orderingFactor
+# all subgenomes
 for(x in 1:length(featuresGR_pop_list)) {
   print(pop_name[x])
   featuresDF <- data.frame(featuresGR_pop_list[[x]],
@@ -1509,18 +1509,37 @@ for(x in 1:length(featuresGR_pop_list)) {
                            stringsAsFactors = F)
   mclapply(seq_along(orderingFactor), function(w) {
     print(orderingFactor[w])
-    featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
+    # Assign 0s to NA values only for coverage data
+    if(grepl("_in_", orderingFactor[w])) {
+      featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
+    }
+    if(grepl("HudsonRM", orderingFactor[w])) {
+      quantiles <- 3
+    } else {
+      quantiles <- 4
+    }
     quantilesStats <- data.frame()
     for(k in 1:quantiles) {
-      if(k < quantiles) {
       # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+      if(k < quantiles) {
+        featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
+                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
                     percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
       } else {
       # Final quantile should span 0 to, e.g., 0.25 proportions of features
-        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+        featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
+                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
                     percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
       }
+#      if(k < quantiles) {
+#      # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
+#        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+#                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+#      } else {
+#      # Final quantile should span 0 to, e.g., 0.25 proportions of features
+#        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+#                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+#      }
       write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
                   file = paste0(outDir_list[[w]][x],
                                 "quantile", k, "_of_", quantiles,
@@ -1580,4 +1599,96 @@ for(x in 1:length(featuresGR_pop_list)) {
                               substring(featureName[1][1], first = 18), "_", pop_name[x], "_ranLocs.txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
   }, mc.cores = length(orderingFactor), mc.preschedule = F)
+}
+
+# each subgenome (sg)
+for(sg in 1:length(featureName)) {
+  for(x in 1:length(featuresGR_pop_list)) {
+    print(pop_name[x])
+    featuresDF <- data.frame(featuresGR_pop_list[[x]],
+                             quantile = as.character(""),
+                             stringsAsFactors = F)
+    featuresDF <- featuresDF[grepl(paste0("TraesCS\\d",
+                                          substring(featureName, first = 10, last = 10)[sg]),
+                                   featuresDF$featureID),]
+    mclapply(seq_along(orderingFactor), function(w) {
+      print(orderingFactor[w])
+      # Assign 0s to NA values only for coverage data
+      if(grepl("_in_", orderingFactor[w])) {
+        featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
+      }
+      if(grepl("HudsonRM", orderingFactor[w])) {
+        quantiles <- 3
+      } else {
+        quantiles <- 4
+      }
+      quantilesStats <- data.frame()
+      for(k in 1:quantiles) {
+        # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
+        if(k < quantiles) {
+          featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
+                      percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                      percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+        } else {
+        # Final quantile should span 0 to, e.g., 0.25 proportions of features
+          featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
+                      percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                      percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+        }
+        write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
+                    file = paste0(outDir_list[[w]][x],
+                                  "quantile", k, "_of_", quantiles,
+                                  "_by_", orderingFactor[w],
+                                  "_of_",
+                                  substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                  substring(featureName, first = 10, last = 16)[sg], "_",
+                                  substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                    quote = FALSE, sep = "\t", row.names = FALSE)
+        stats <- data.frame(quantile = as.integer(k),
+                            n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
+                            mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
+                            total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
+                            mean_orderingFactor = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),][,which(colnames(featuresDF) == orderingFactor[w])], na.rm = T)))
+        quantilesStats <- rbind(quantilesStats, stats)
+      }
+      write.table(quantilesStats,
+                  file = paste0(outDir_list[[w]][x],
+                                "summary_", quantiles, "quantiles_by_", orderingFactor[w],
+                                "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                substring(featureName, first = 10, last = 16)[sg], "_",
+                                substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                  quote = FALSE, sep = "\t", row.names = FALSE)
+      write.table(featuresDF,
+                  file = paste0(outDir_list[[w]][x],
+                                "features_", quantiles, "quantiles",
+                                "_by_", orderingFactor[w],
+                                "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                substring(featureName, first = 10, last = 16)[sg], "_",
+                                substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                  quote = FALSE, sep = "\t", row.names = FALSE)
+  
+      # Divide ranLocs into quantiles based on feature quantile indices
+      ranLocsDF <- data.frame(ranLocsGR,
+                              random = as.character(""),
+                              stringsAsFactors = F)
+      # Get row indices for each feature quantile
+      quantileIndices <- lapply(1:quantiles, function(k) {
+        which(featuresDF$quantile == paste0("Quantile ", k))
+      })
+      for(k in 1:quantiles) {
+        ranLocsDF[quantileIndices[[k]],]$random <- paste0("Random ", k)
+      }
+      write.table(ranLocsDF,
+                  file = paste0(outDir_list[[w]][x],
+                                "features_", quantiles, "quantiles",
+                                "_by_", orderingFactor[w],
+                                "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                substring(featureName, first = 10, last = 16)[sg], "_",
+                                substring(featureName[1][1], first = 18), "_", pop_name[x], "_ranLocs.txt"),
+                  quote = FALSE, sep = "\t", row.names = FALSE)
+    }, mc.cores = length(orderingFactor), mc.preschedule = F)
+  }
 }
