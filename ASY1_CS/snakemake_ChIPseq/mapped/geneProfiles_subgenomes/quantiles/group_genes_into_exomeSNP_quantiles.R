@@ -1229,7 +1229,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_all = popgen_stats_pop_list[[x]]$d_dist_all,
                             r2_all = popgen_stats_pop_list[[x]]$r2_all,
                             r_all = popgen_stats_pop_list[[x]]$r_all,
-                            HudsonRM_all = popgen_stats_pop_list[[x]]$Hudson.RM_all,
+                            HudsonRM_all = popgen_stats_pop_list[[x]]$Hudson.RM_all/(popgen_stats_pop_list[[x]]$width/1e3),
 
                             # syn
                             # Normalise by feature width (per 1 kb)
@@ -1259,7 +1259,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_syn = popgen_stats_pop_list[[x]]$d_dist_syn,
                             r2_syn = popgen_stats_pop_list[[x]]$r2_syn,
                             r_syn = popgen_stats_pop_list[[x]]$r_syn,
-                            HudsonRM_syn = popgen_stats_pop_list[[x]]$Hudson.RM_syn,
+                            HudsonRM_syn = popgen_stats_pop_list[[x]]$Hudson.RM_syn/(popgen_stats_pop_list[[x]]$width/1e3),
 
                             # nonsyn
                             # Normalise by feature width (per 1 kb)
@@ -1289,7 +1289,7 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             d_dist_nonsyn = popgen_stats_pop_list[[x]]$d_dist_nonsyn,
                             r2_nonsyn = popgen_stats_pop_list[[x]]$r2_nonsyn,
                             r_nonsyn = popgen_stats_pop_list[[x]]$r_nonsyn,
-                            HudsonRM_nonsyn = popgen_stats_pop_list[[x]]$Hudson.RM_nonsyn,
+                            HudsonRM_nonsyn = popgen_stats_pop_list[[x]]$Hudson.RM_nonsyn/(popgen_stats_pop_list[[x]]$width/1e3),
 
                             ASY1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[1]],
                             DMC1_in_promoters = log2ChIP_featureMats_promotersRowMeans[[2]],

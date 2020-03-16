@@ -4,18 +4,18 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
+#libName <- "HudsonRM_all"
+#dirName <- "HudsonRM_all"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#region <- "promoters"
-#quantiles <- 4
+#region <- "bodies"
+#quantiles <- 2
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
@@ -89,8 +89,8 @@ pop_name_plot <- c(
                    "Oceania"
                   )
 
-if(libName %in% "cMMb") {
-  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName), "/")
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  outDir <- paste0("quantiles_by_", libName, "/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                    "_in_", region, "/")
@@ -105,6 +105,10 @@ if(libName %in% "cMMb") {
   featureNamePlot <- paste0("cM/Mb ",
                             substr(featureName[1], start = 1, stop = 4),
                             " quantiles")
+} else if(libName %in% c("HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  featureNamePlot <- bquote(italic("R")[m] ~
+                            .(substr(featureName[1], start = 1, stop = 4)) *
+                            " quantiles (" * .(region) * ")")
 } else {
   featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
                             substr(featureName[1], start = 1, stop = 4),
@@ -116,7 +120,7 @@ ranFeatNamePlot <- paste0("Random ",
 #ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
-quantileColours <- c("red", "purple", "blue", "navy")
+quantileColours <- c("red", "navy")
 makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
@@ -136,7 +140,7 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
 mclapply(seq_along(pop_name), function(x) {
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
                                   "_by_", libName, "_of_",
                                   substring(featureName[1][1], first = 1, last = 5), "_in_",
@@ -336,8 +340,6 @@ xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
 xmax <- max(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
 minDensity <- 0
-maxDensity <- max(density(featuresDF[featuresDF$quantile == "Quantile 4",][,which(colnames(featuresDF) == orderingFactor)],
-                          na.rm = T)$y)+maxDensityPlus
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
@@ -385,8 +387,6 @@ popgen_stats_plotFun <- function(lociDF,
        y = "Density") +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
-  annotation_custom(legendLabs[[3]]) +
-  annotation_custom(legendLabs[[4]]) +
   theme_bw() +
   theme(axis.line.y = element_line(size = 2.0, colour = "black"),
         axis.line.x = element_line(size = 2.0, colour = "black"),
