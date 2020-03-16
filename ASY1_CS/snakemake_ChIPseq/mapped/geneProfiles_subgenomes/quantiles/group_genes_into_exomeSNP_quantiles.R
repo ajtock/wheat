@@ -1514,7 +1514,7 @@ for(x in 1:length(featuresGR_pop_list)) {
       featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
     }
     if(grepl("HudsonRM", orderingFactor[w])) {
-      quantiles <- 3
+      quantiles <- 2
     } else {
       quantiles <- 4
     }
@@ -1531,15 +1531,6 @@ for(x in 1:length(featuresGR_pop_list)) {
                     percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
                     percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
       }
-#      if(k < quantiles) {
-#      # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-#        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
-#                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
-#      } else {
-#      # Final quantile should span 0 to, e.g., 0.25 proportions of features
-#        featuresDF[ percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
-#                    percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
-#      }
       write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
                   file = paste0(outDir_list[[w]][x],
                                 "quantile", k, "_of_", quantiles,
@@ -1618,7 +1609,7 @@ for(sg in 1:length(featureName)) {
         featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
       }
       if(grepl("HudsonRM", orderingFactor[w])) {
-        quantiles <- 3
+        quantiles <- 2
       } else {
         quantiles <- 4
       }
