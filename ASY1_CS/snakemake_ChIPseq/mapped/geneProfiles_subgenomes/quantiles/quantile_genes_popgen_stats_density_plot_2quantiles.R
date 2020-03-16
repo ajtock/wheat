@@ -108,7 +108,7 @@ if(libName %in% "cMMb") {
 } else if(libName %in% c("HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   featureNamePlot <- bquote(italic("R")[m] ~
                             .(substr(featureName[1], start = 1, stop = 4)) *
-                            " quantiles (" * .(region) * ")")
+                            " quantiles")
 } else {
   featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
                             substr(featureName[1], start = 1, stop = 4),
@@ -466,23 +466,23 @@ ggObjGA_ranFeat <- popgen_stats_plotFun(lociDF = ranFeatsDF[grepl("Random ", ran
                                         quantileColours = quantileColours
                                        )
 ggObjGA_feature_mean <- popgen_stats_meanCIs(dataFrame = featuresDF_summary_stats,
-                                        parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
-                                        featureGroup = "quantile",
-                                        featureNamePlot = featureNamePlot,
-                                        quantileColours = quantileColours
-                                       )
+                                             parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
+                                             featureGroup = "quantile",
+                                             featureNamePlot = featureNamePlot,
+                                             quantileColours = quantileColours
+                                            )
 ggObjGA_ranFeat_mean <- popgen_stats_meanCIs(dataFrame = ranFeatsDF_summary_stats,
-                                        parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
-                                        featureGroup = "random",
-                                        featureNamePlot = ranFeatNamePlot,
-                                        quantileColours = quantileColours
-                                       )
+                                             parameterLab = bquote(.(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
+                                             featureGroup = "random",
+                                             featureNamePlot = ranFeatNamePlot,
+                                             quantileColours = quantileColours
+                                            )
 ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_feature_mean,
                                  ggObjGA_ranFeat,
                                  ggObjGA_ranFeat_mean,
                                  ncol = 2, as.table = F)
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   ggsave(paste0(plotDir[x],
                 orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
                 "_by_", libName, "_of_",

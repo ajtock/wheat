@@ -44,6 +44,8 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
+} else if(grepl("Hudson's R", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.character(orderingFactorName[3]))])
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
