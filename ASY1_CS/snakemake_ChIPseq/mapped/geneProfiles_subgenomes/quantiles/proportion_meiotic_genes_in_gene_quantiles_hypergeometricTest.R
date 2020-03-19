@@ -98,9 +98,20 @@ rm(featuresDF); gc()
 meio1 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
                     header = T, stringsAsFactors = F)
 genome_meio1 <- as.character(meio1$Gene.ID)
+genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
+# Subset meio1 to only those within a given subgenome
+if(length(genomeLetter) == 1) {
+  genome_meio1 <- genome_meio1[grepl(paste0("TraesCS\\d", genomeLetter, "02G"), genome_meio1)]
+}
+
 meio2 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
                     header = T, sep = "\t", stringsAsFactors = F)
 genome_meio2 <- as.character(meio2$Gene.ID)
+genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
+# Subset meio2 to only those within a given subgenome
+if(length(genomeLetter) == 1) {
+  genome_meio2 <- genome_meio2[grepl(paste0("TraesCS\\d", genomeLetter, "02G"), genome_meio2)]
+}
 
 genome_meio <- union(genome_meio1, genome_meio2)
 

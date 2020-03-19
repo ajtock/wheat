@@ -98,7 +98,6 @@ if(length(genomeLetter) == 1) {
   chrs <- chrs[grepl(genomeLetter, chrs)]
   NLRs <- NLRs[NLRs$V1 %in% chrs,]
 }
-print(dim(NLRs))
 
 # Replace gene model ID decimal suffix (e.g., ".1")
 NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",

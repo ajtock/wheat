@@ -15,6 +15,7 @@
 # length(genome_NLRs) [m] + ( length(genome_genes) - length(genome_NLRs)) [n]
 
 # Usage 
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' NLR 'NLR-encoding' 100000 'navy,dodgerblue4,deepskyblue'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'darkgreen,seagreen,springgreen'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'red4,red,tomato'
 
