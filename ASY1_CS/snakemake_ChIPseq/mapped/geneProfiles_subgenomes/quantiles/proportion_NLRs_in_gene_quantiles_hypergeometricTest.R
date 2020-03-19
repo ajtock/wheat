@@ -12,13 +12,6 @@
 # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
 # length(genome_NLRs) [m] + ( length(genome_genes) - length(genome_NLRs)) [n]
 
-### Perform hypergeometric test to determine whether a significant proportion of 
-### elements belonging to each transposon family are differentially expressed in kyp suvh5 suvh6
-
-# P-value is the probability of drawing >= length(DE_TEfamIDs) [x] TEs
-# in a sample size of length(DE_TEIDs) [k] from a total TE set consisting of
-# length(TAIR10_TEfamIDs) [m] + (length(TAIR10_TEIDs)-length(TAIR10_TEfamIDs)) [n]
-
 # Usage 
 # ./proportion_NLRs_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
@@ -94,8 +87,19 @@ quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
 rm(featuresDF); gc()
 
 # Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3",
+NLRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+                          "NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3"),
                    header = F, stringsAsFactors = F)
+chrs <- paste0(rep("chr", 21), rep(1:7, 3),
+               c(rep("A", 7), rep("B", 7), rep("D", 7)))
+genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
+# Subset NLRs to only those within a given subgenome
+if(length(genomeLetter) == 1) {
+  chrs <- chrs[grepl(genomeLetter, chrs)]
+  NLRs <- NLRs[NLRs$V1 %in% chrs,]
+}
+print(dim(NLRs))
+
 # Replace gene model ID decimal suffix (e.g., ".1")
 NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
                x = NLRs$V9)

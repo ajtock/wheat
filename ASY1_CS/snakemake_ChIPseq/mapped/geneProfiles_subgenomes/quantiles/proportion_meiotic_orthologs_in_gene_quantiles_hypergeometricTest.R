@@ -12,13 +12,6 @@
 # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
 # length(genome_meioOrthologs) [m] + ( length(genome_genes) - length(genome_meioOrthologs)) [n]
 
-### Perform hypergeometric test to determine whether a significant proportion of 
-### elements belonging to each transposon family are differentially expressed in kyp suvh5 suvh6
-
-# P-value is the probability of drawing >= length(DE_TEfamIDs) [x] TEs
-# in a sample size of length(DE_TEIDs) [k] from a total TE set consisting of
-# length(TAIR10_TEfamIDs) [m] + (length(TAIR10_TEIDs)-length(TAIR10_TEfamIDs)) [n]
-
 # Usage 
 # ./proportion_meiotic_orthologs_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
