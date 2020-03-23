@@ -106,7 +106,7 @@ if(libName %in% "cMMb") {
                             substr(featureName[1], start = 1, stop = 4),
                             " quantiles")
 } else if(libName %in% c("HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
-  featureNamePlot <- bquote(italic("R")[m] ~
+  featureNamePlot <- bquote("Hudson's" ~ italic("R"[M]) ~
                             .(substr(featureName[1], start = 1, stop = 4)) *
                             " quantiles")
 } else {

@@ -1,6 +1,6 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Plot boxplots and violin plots of population genetics statistics for each gene quantile; e.g.,
+# Plot density profiles and  boxplots of population genetics statistics for each gene quantile; e.g.,
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
@@ -9,6 +9,8 @@
 #/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
 #/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -45,7 +47,7 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
 } else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
 } else if(grepl("Hudson's R", paste(orderingFactorName, collapse = " "))) {
-  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.character(orderingFactorName[3]))])
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])[.(as.character(orderingFactorName[3]))]))
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }

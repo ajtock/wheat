@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%1.2f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -348,214 +348,214 @@ for(x in seq_along(pop_name)) {
          plot = ggObjGA_feature_mean,
          height = 8, width = 7)
 
-  # Calculate mean orderingFactor value for genes annotated with GO_ID in quantile quantileNo
-  IDs_mean <- mean(featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
-                                           orderingFactor)],
-                   na.rm = T)
-  
-  # Function to randomly select n feature IDs not present in IDs (from featuresDF_nonIDs or featuresDF_annoGOIDs)
-  ran_nonIDs_select <- function(nonIDsChr, n) {
-    sample(x = nonIDsChr,
-           size = n,
-           replace = FALSE)
-  }
-  
-  # Define seed so that random selections are reproducible
-  set.seed(453838430)
-  
-  # Apply ran_nonIDs_select() function on a per-chromosome basis to generate randomSets random sets
-  # of IDs from featuresDF_nonIDs for which to calculate randomSets mean orderingFactor values
-  ran_nonIDs_perm_means <- unlist(mclapply(1:randomSets, function(y) {
-    ran_nonIDs <- NULL
-    for(i in 1:length(unique(featuresDF_IDsDF$seqnames))) {
-      IDsChr <- featuresDF_IDs[grepl(paste0("TraesCS",
-                                            sub("chr", "", unique(featuresDF_IDsDF$seqnames))[i]),
-                                     featuresDF_IDs)]
-      nonIDsChr <- featuresDF_nonIDs[grepl(paste0("TraesCS",
-                                                  sub("chr", "", unique(featuresDF_IDsDF$seqnames))[i]),
-                                           featuresDF_nonIDs)]
-      ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-                                         n = length(IDsChr))
-      ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
-    }
-    return(mean(featuresDF_nonIDsDF[featuresDF_nonIDsDF$featureID %in%
-                                    ran_nonIDs,][,which(colnames(featuresDF_nonIDsDF) ==
-                                                        orderingFactor)],
-                na.rm = T))
-  }, mc.cores = detectCores(), mc.preschedule = T))
-  
-  # Set class for permutation test results object
-  setClass("permTest_popgen_stats",
-           representation(alternative = "character",
-                          alpha0.05 = "numeric",
-                          pval = "numeric",
-                          observed = "numeric",
-                          permuted = "numeric",
-                          expected = "numeric",
-                          log2obsexp = "numeric",
-                          log2alpha = "numeric",
-                          GOgenesInQuantile = "numeric",
-                          GOgenesNotInQuantile = "numeric",
-                          genesNotInQuantile = "numeric"))
-  
-  # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
-  options(scipen = 100)
-  
-  # Determine whether mean orderingFactor values for genes annotated with GO_ID in quantile quantileNo
-  # are lower than or higher than those for genes randomly selected from featuresDF_nonIDs and featuresDF_annoGOIDs
-  IDs_lessThan_nonIDs_Bool <- IDs_mean < ran_nonIDs_perm_means
-  IDs_moreThan_nonIDs_Bool <- IDs_mean > ran_nonIDs_perm_means
-  
-  # Calculate P-values and significance levels
-  if(IDs_mean < mean(ran_nonIDs_perm_means)) {
-    nonIDs_pval <- 1 - ( sum(IDs_lessThan_nonIDs_Bool) / length(ran_nonIDs_perm_means) )
-    if(nonIDs_pval == 0) {
-      nonIDs_pval <- minPval
-    }
-    nonIDs_MoreOrLessThanRandom <- "LessThanRandom"
-    nonIDs_alpha0.05 <- quantile(ran_nonIDs_perm_means, probs = 0.05)[[1]]
-  } else {
-    nonIDs_pval <- 1 - ( sum(IDs_moreThan_nonIDs_Bool) / length(ran_nonIDs_perm_means) )
-    if(nonIDs_pval == 0) {
-      nonIDs_pval <- minPval
-    }
-    nonIDs_MoreOrLessThanRandom <- "MoreThanRandom"
-    nonIDs_alpha0.05 <- quantile(ran_nonIDs_perm_means, probs = 0.95)[[1]]
-  }
-  
-  # Create permutation test results object
-  nonIDs_permTestResults <- new("permTest_popgen_stats",
-                                alternative = nonIDs_MoreOrLessThanRandom,
-                                alpha0.05 = nonIDs_alpha0.05,
-                                pval = nonIDs_pval,
-                                observed = IDs_mean,
-                                permuted = ran_nonIDs_perm_means,
-                                expected = mean(ran_nonIDs_perm_means),
-                                log2obsexp = log2(IDs_mean / mean(ran_nonIDs_perm_means)),
-                                log2alpha = log2(nonIDs_alpha0.05 / mean(ran_nonIDs_perm_means)),
-                                GOgenesInQuantile = length(featuresDF_IDs),
-                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
-                                genesNotInQuantile = length(featuresDF_nonIDs))
-  save(nonIDs_permTestResults,
-       file = paste0(outDir[x],
-                     orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
-                     "_in_quantile", quantileNo, "_of_", quantiles,
-                     "_by_log2_", libName, "_control_in_", region, "_of_",
-                     substring(featureName[1][1], first = 1, last = 5), "_in_",
-                     paste0(substring(featureName, first = 10, last = 16),
-                            collapse = "_"), "_",
-                     substring(featureName[1][1], first = 18),
-                     ".RData"))
-
-  # Generate histogram
-  pdf(paste0(plotDir[x],
-             orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
-             "_in_quantile", quantileNo, "_of_", quantiles,
-             "_by_log2_", libName, "_control_in_", region, "_of_",
-             substring(featureName[1][1], first = 1, last = 5), "_in_",
-             paste0(substring(featureName, first = 10, last = 16),
-                    collapse = "_"), "_",
-             substring(featureName[1][1], first = 18),
-             "_hist_v120320.pdf"), 
-             height = 4.5, width = 5)
-  par(mar = c(3.1, 3.1, 4.1, 1.1),
-      mgp = c(1.85, 0.75, 0))
-  ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
-  #options(scipen = 100)
-  # Calculate max density
-  maxDensityPlus <- max(density(nonIDs_permTestResults@permuted)$y)*1.2
-  if(orderingFactor %in% c("TajimaD_all", "TajimaD_syn", "TajimaD_nonsysn",
-                           "FuLiF_all", "FuLiF_syn", "FuLiF_nonsyn",
-                           "FuLiD_all", "FuLiD_syn", "FuLiD_nonsyn")) {
-    if(nonIDs_permTestResults@alternative == "MoreThanRandom") {
-      xlim <- c(pmin(-1, min(nonIDs_permTestResults@permuted)*1.2),
-                pmax(nonIDs_permTestResults@observed/1.2, nonIDs_permTestResults@alpha0.05/1.2))
-      textX1 <- quantile(xlim, 0.25)[[1]]
-#      textX1 <- min(nonIDs_permTestResults@permuted)*1.15
-    } else {
-      xlim <- c(pmin(-1, nonIDs_permTestResults@observed*1.2),
-                max(nonIDs_permTestResults@permuted)/1.2)
-      textX1 <- quantile(xlim, 0.75)[[1]]
-#      textX1 <- min(nonIDs_permTestResults@permuted)*1.15
-    }
-  } else {
-    if(nonIDs_permTestResults@alternative == "MoreThanRandom") {
-      xlim <- c(pmin(0, min(nonIDs_permTestResults@permuted)/1.2),
-                pmax(nonIDs_permTestResults@observed*1.2, nonIDs_permTestResults@alpha0.05*1.2))
-      textX1 <- quantile(xlim, 0.25)[[1]]
-#      textX1 <- min(nonIDs_permTestResults@permuted)/1.15
-    } else {
-      xlim <- c(pmin(0, nonIDs_permTestResults@observed/1.2),
-                max(nonIDs_permTestResults@permuted)*1.2)
-      textX1 <- quantile(xlim, 0.75)[[1]]
-#      textX1 <- min(nonIDs_permTestResults@permuted)/1.15
-    }
-  }
-  hist(nonIDs_permTestResults@permuted,
-       breaks = 50,
-       freq = FALSE,
-       col = "dodgerblue",
-       border = NA,
-       lwd = 2,
-       xlim = c(pretty(xlim)[1],
-                pretty(xlim)[length(pretty(xlim))]),
-       ylim = c(0,
-                maxDensityPlus),
-       xaxt = "n", yaxt = "n",
-       xlab = "", ylab = "", main = "",
-       axes = FALSE)
-  axis(side = 2,
-       at = pretty(density(nonIDs_permTestResults@permuted)$y),
-       lwd = 2)
-  mtext(side = 2,
-        text = "Density",
-        line = 1.85)
-  axis(side = 1,
-       at = pretty(xlim),
-       lwd = 2)
-  mtext(side = 1,
-        text = bquote("Mean" ~ .(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
-        line = 1.85)
-  titleText <- list(bquote(.(gsub("_", " ", featureNamePlot)) ~
-                           "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
-                           "(" * .(region) * ") in" ~
-                           .(paste0(substring(featureName, first = 10, last = 16),
-                                    collapse = " ")) ~ 
-                           .(substring(featureName[1][1], first = 18))),
-                    bquote(italic("P")*" = "*
-                           .(as.character(round(nonIDs_permTestResults@pval,
-                                                digits = 6)))),
-                    bquote("Permutations = "*.(prettyNum(length(nonIDs_permTestResults@permuted),
-                                                         big.mark = ",",
-                                                         trim = T))))
-  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
-  lines(density(nonIDs_permTestResults@permuted),
-        col = "dodgerblue3",
-        lwd = 1.5)
-  ablineclip(v = nonIDs_permTestResults@expected,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2)
-  ablineclip(v = nonIDs_permTestResults@observed,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, col = "forestgreen")
-  ablineclip(v = nonIDs_permTestResults@alpha0.05,
-             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, lty = 5, col = "red")
-  text(x = c(textX1,
-             nonIDs_permTestResults@expected,
-             nonIDs_permTestResults@observed,
-             nonIDs_permTestResults@alpha0.05),
-       y = c(maxDensityPlus*.95,
-             maxDensityPlus,
-             maxDensityPlus,
-             maxDensityPlus*.95),
-       labels = c("Permuted",
-                  "Expected",
-                  "Observed",
-                  expression(alpha*" = 0.05")),
-       col = c("dodgerblue",
-               "black",
-               "forestgreen",
-               "red"),
-       cex = 0.8)
-  dev.off()
+#  # Calculate mean orderingFactor value for genes annotated with GO_ID in quantile quantileNo
+#  IDs_mean <- mean(featuresDF_IDsDF[,which(colnames(featuresDF_IDsDF) ==
+#                                           orderingFactor)],
+#                   na.rm = T)
+#  
+#  # Function to randomly select n feature IDs not present in IDs (from featuresDF_nonIDs or featuresDF_annoGOIDs)
+#  ran_nonIDs_select <- function(nonIDsChr, n) {
+#    sample(x = nonIDsChr,
+#           size = n,
+#           replace = FALSE)
+#  }
+#  
+#  # Define seed so that random selections are reproducible
+#  set.seed(453838430)
+#  
+#  # Apply ran_nonIDs_select() function on a per-chromosome basis to generate randomSets random sets
+#  # of IDs from featuresDF_nonIDs for which to calculate randomSets mean orderingFactor values
+#  ran_nonIDs_perm_means <- unlist(mclapply(1:randomSets, function(y) {
+#    ran_nonIDs <- NULL
+#    for(i in 1:length(unique(featuresDF_IDsDF$seqnames))) {
+#      IDsChr <- featuresDF_IDs[grepl(paste0("TraesCS",
+#                                            sub("chr", "", unique(featuresDF_IDsDF$seqnames))[i]),
+#                                     featuresDF_IDs)]
+#      nonIDsChr <- featuresDF_nonIDs[grepl(paste0("TraesCS",
+#                                                  sub("chr", "", unique(featuresDF_IDsDF$seqnames))[i]),
+#                                           featuresDF_nonIDs)]
+#      ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
+#                                         n = length(IDsChr))
+#      ran_nonIDs <- c(ran_nonIDs, ran_nonIDsChr)
+#    }
+#    return(mean(featuresDF_nonIDsDF[featuresDF_nonIDsDF$featureID %in%
+#                                    ran_nonIDs,][,which(colnames(featuresDF_nonIDsDF) ==
+#                                                        orderingFactor)],
+#                na.rm = T))
+#  }, mc.cores = detectCores(), mc.preschedule = T))
+#  
+#  # Set class for permutation test results object
+#  setClass("permTest_popgen_stats",
+#           representation(alternative = "character",
+#                          alpha0.05 = "numeric",
+#                          pval = "numeric",
+#                          observed = "numeric",
+#                          permuted = "numeric",
+#                          expected = "numeric",
+#                          log2obsexp = "numeric",
+#                          log2alpha = "numeric",
+#                          GOgenesInQuantile = "numeric",
+#                          GOgenesNotInQuantile = "numeric",
+#                          genesNotInQuantile = "numeric"))
+#  
+#  # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+#  options(scipen = 100)
+#  
+#  # Determine whether mean orderingFactor values for genes annotated with GO_ID in quantile quantileNo
+#  # are lower than or higher than those for genes randomly selected from featuresDF_nonIDs and featuresDF_annoGOIDs
+#  IDs_lessThan_nonIDs_Bool <- IDs_mean < ran_nonIDs_perm_means
+#  IDs_moreThan_nonIDs_Bool <- IDs_mean > ran_nonIDs_perm_means
+#  
+#  # Calculate P-values and significance levels
+#  if(IDs_mean < mean(ran_nonIDs_perm_means)) {
+#    nonIDs_pval <- 1 - ( sum(IDs_lessThan_nonIDs_Bool) / length(ran_nonIDs_perm_means) )
+#    if(nonIDs_pval == 0) {
+#      nonIDs_pval <- minPval
+#    }
+#    nonIDs_MoreOrLessThanRandom <- "LessThanRandom"
+#    nonIDs_alpha0.05 <- quantile(ran_nonIDs_perm_means, probs = 0.05)[[1]]
+#  } else {
+#    nonIDs_pval <- 1 - ( sum(IDs_moreThan_nonIDs_Bool) / length(ran_nonIDs_perm_means) )
+#    if(nonIDs_pval == 0) {
+#      nonIDs_pval <- minPval
+#    }
+#    nonIDs_MoreOrLessThanRandom <- "MoreThanRandom"
+#    nonIDs_alpha0.05 <- quantile(ran_nonIDs_perm_means, probs = 0.95)[[1]]
+#  }
+#  
+#  # Create permutation test results object
+#  nonIDs_permTestResults <- new("permTest_popgen_stats",
+#                                alternative = nonIDs_MoreOrLessThanRandom,
+#                                alpha0.05 = nonIDs_alpha0.05,
+#                                pval = nonIDs_pval,
+#                                observed = IDs_mean,
+#                                permuted = ran_nonIDs_perm_means,
+#                                expected = mean(ran_nonIDs_perm_means),
+#                                log2obsexp = log2(IDs_mean / mean(ran_nonIDs_perm_means)),
+#                                log2alpha = log2(nonIDs_alpha0.05 / mean(ran_nonIDs_perm_means)),
+#                                GOgenesInQuantile = length(featuresDF_IDs),
+#                                GOgenesNotInQuantile = length(featuresDF_annoGOIDs),
+#                                genesNotInQuantile = length(featuresDF_nonIDs))
+#  save(nonIDs_permTestResults,
+#       file = paste0(outDir[x],
+#                     orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
+#                     "_in_quantile", quantileNo, "_of_", quantiles,
+#                     "_by_log2_", libName, "_control_in_", region, "_of_",
+#                     substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                     paste0(substring(featureName, first = 10, last = 16),
+#                            collapse = "_"), "_",
+#                     substring(featureName[1][1], first = 18),
+#                     ".RData"))
+#
+#  # Generate histogram
+#  pdf(paste0(plotDir[x],
+#             orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
+#             "_in_quantile", quantileNo, "_of_", quantiles,
+#             "_by_log2_", libName, "_control_in_", region, "_of_",
+#             substring(featureName[1][1], first = 1, last = 5), "_in_",
+#             paste0(substring(featureName, first = 10, last = 16),
+#                    collapse = "_"), "_",
+#             substring(featureName[1][1], first = 18),
+#             "_hist_v120320.pdf"), 
+#             height = 4.5, width = 5)
+#  par(mar = c(3.1, 3.1, 4.1, 1.1),
+#      mgp = c(1.85, 0.75, 0))
+#  ## Disable scientific notation (e.g., 0.0001 rather than 1e-04)
+#  #options(scipen = 100)
+#  # Calculate max density
+#  maxDensityPlus <- max(density(nonIDs_permTestResults@permuted)$y)*1.2
+#  if(orderingFactor %in% c("TajimaD_all", "TajimaD_syn", "TajimaD_nonsysn",
+#                           "FuLiF_all", "FuLiF_syn", "FuLiF_nonsyn",
+#                           "FuLiD_all", "FuLiD_syn", "FuLiD_nonsyn")) {
+#    if(nonIDs_permTestResults@alternative == "MoreThanRandom") {
+#      xlim <- c(pmin(-1, min(nonIDs_permTestResults@permuted)*1.2),
+#                pmax(nonIDs_permTestResults@observed/1.2, nonIDs_permTestResults@alpha0.05/1.2))
+#      textX1 <- quantile(xlim, 0.25)[[1]]
+##      textX1 <- min(nonIDs_permTestResults@permuted)*1.15
+#    } else {
+#      xlim <- c(pmin(-1, nonIDs_permTestResults@observed*1.2),
+#                max(nonIDs_permTestResults@permuted)/1.2)
+#      textX1 <- quantile(xlim, 0.75)[[1]]
+##      textX1 <- min(nonIDs_permTestResults@permuted)*1.15
+#    }
+#  } else {
+#    if(nonIDs_permTestResults@alternative == "MoreThanRandom") {
+#      xlim <- c(pmin(0, min(nonIDs_permTestResults@permuted)/1.2),
+#                pmax(nonIDs_permTestResults@observed*1.2, nonIDs_permTestResults@alpha0.05*1.2))
+#      textX1 <- quantile(xlim, 0.25)[[1]]
+##      textX1 <- min(nonIDs_permTestResults@permuted)/1.15
+#    } else {
+#      xlim <- c(pmin(0, nonIDs_permTestResults@observed/1.2),
+#                max(nonIDs_permTestResults@permuted)*1.2)
+#      textX1 <- quantile(xlim, 0.75)[[1]]
+##      textX1 <- min(nonIDs_permTestResults@permuted)/1.15
+#    }
+#  }
+#  hist(nonIDs_permTestResults@permuted,
+#       breaks = 50,
+#       freq = FALSE,
+#       col = "dodgerblue",
+#       border = NA,
+#       lwd = 2,
+#       xlim = c(pretty(xlim)[1],
+#                pretty(xlim)[length(pretty(xlim))]),
+#       ylim = c(0,
+#                maxDensityPlus),
+#       xaxt = "n", yaxt = "n",
+#       xlab = "", ylab = "", main = "",
+#       axes = FALSE)
+#  axis(side = 2,
+#       at = pretty(density(nonIDs_permTestResults@permuted)$y),
+#       lwd = 2)
+#  mtext(side = 2,
+#        text = "Density",
+#        line = 1.85)
+#  axis(side = 1,
+#       at = pretty(xlim),
+#       lwd = 2)
+#  mtext(side = 1,
+#        text = bquote("Mean" ~ .(orderingFactorName) ~ "(" * .(pop_name_plot[x]) * ")"),
+#        line = 1.85)
+#  titleText <- list(bquote(.(gsub("_", " ", featureNamePlot)) ~
+#                           "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
+#                           "(" * .(region) * ") in" ~
+#                           .(paste0(substring(featureName, first = 10, last = 16),
+#                                    collapse = " ")) ~ 
+#                           .(substring(featureName[1][1], first = 18))),
+#                    bquote(italic("P")*" = "*
+#                           .(as.character(round(nonIDs_permTestResults@pval,
+#                                                digits = 6)))),
+#                    bquote("Permutations = "*.(prettyNum(length(nonIDs_permTestResults@permuted),
+#                                                         big.mark = ",",
+#                                                         trim = T))))
+#  mtext(do.call(expression, titleText), side = 3, line = 3:1, cex = c(0.7, 1, 1))
+#  lines(density(nonIDs_permTestResults@permuted),
+#        col = "dodgerblue3",
+#        lwd = 1.5)
+#  ablineclip(v = nonIDs_permTestResults@expected,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2)
+#  ablineclip(v = nonIDs_permTestResults@observed,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, col = "forestgreen")
+#  ablineclip(v = nonIDs_permTestResults@alpha0.05,
+#             y1 = 0, y2 = maxDensityPlus*.92, lwd = 2, lty = 5, col = "red")
+#  text(x = c(textX1,
+#             nonIDs_permTestResults@expected,
+#             nonIDs_permTestResults@observed,
+#             nonIDs_permTestResults@alpha0.05),
+#       y = c(maxDensityPlus*.95,
+#             maxDensityPlus,
+#             maxDensityPlus,
+#             maxDensityPlus*.95),
+#       labels = c("Permuted",
+#                  "Expected",
+#                  "Observed",
+#                  expression(alpha*" = 0.05")),
+#       col = c("dodgerblue",
+#               "black",
+#               "forestgreen",
+#               "red"),
+#       cex = 0.8)
+#  dev.off()
 }
 
 # Plot orderingFactor means and LSDs for IDs vs annoGOIDs for all populations
@@ -650,80 +650,80 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
        plot = ggObjGA_feature_mean,
        height = 9, width = 35)
 
-# Plot bar graph summarising permutation test results
-pt_list <- list()
-for(x in seq_along(pop_name)) {
-  load(paste0(outDir[x],
-              orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
-              "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18),
-              ".RData"))
-  pt_list <- c(pt_list, nonIDs_permTestResults)
-}
-bargraph_df <- data.frame(population = pop_name_plot,
-                          log2ObsExp = sapply(seq_along(pt_list), function(x) { pt_list[[x]]@log2obsexp }),
-                          log2alpha0.05 = sapply(seq_along(pt_list), function(x) { pt_list[[x]]@log2alpha }))
-bargraph_df$population <- factor(bargraph_df$population,
-                                 levels = pop_name_plot)
-bp <- ggplot(data = bargraph_df,
-             mapping = aes(x = population,
-                           y = log2ObsExp,
-                           fill = " ")) +
-  geom_bar(stat = "identity",
-           position = position_dodge()) +
-  scale_fill_manual(name = "",
-                    values = c("dodgerblue3"),
-                    labels = " ") +
-  geom_point(mapping = aes(x = population,
-                           y = log2alpha0.05),
-             position = position_dodge(0.9),
-             shape = "-", colour  = "grey80", size = 20) +
-  labs(y = bquote("Log"[2]*"(observed/expected)" ~ .(orderingFactorName))) +
-#  scale_y_continuous(limits = c(-1.5, 1.5)) +
-  scale_x_discrete(position = "top") +
-  guides(fill = guide_legend(direction = "horizontal",
-                             label.position = "top",
-                             label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
-                             nrow = 1,
-                             byrow = TRUE)) +
-  theme_bw() +
-  theme(axis.line.y = element_line(size = 1, colour = "black"),
-        axis.ticks.y = element_line(size = 1, colour = "black"),
-        axis.text.y = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
-        axis.title.y = element_text(size = 20, colour = "black"),
-        axis.ticks.x = element_blank(),
-        axis.text.x = element_text(size = 20, colour = "black", hjust = 0, vjust = 0.5, angle = 90),
-        axis.title.x = element_blank(),
-        panel.grid = element_blank(),
-        panel.border = element_blank(),
-        panel.background = element_blank(),
-        legend.position = "none",
-        #legend.position = c(0.05, 0.30),
-        legend.background = element_rect(fill = "transparent"),
-        legend.key = element_rect(colour = "transparent",
-                                  fill = "transparent"),
-        plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
-        plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
-  ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~
-                 "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
-                 "(" * .(region) * ") in" ~
-                 .(paste0(substring(featureName, first = 10, last = 16),
-                          collapse = " ")) ~
-                 .(substring(featureName[1][1], first = 18)) ~
-                 "(" * .(prettyNum(as.character(randomSets),
-                                   big.mark = ",", trim = "T")) ~ "permutations)"))
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
-              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
-              "_in_quantile", quantileNo, "_of_", quantiles,
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18),
-              "_v120320.pdf"),
-       plot = bp,
-       height = 8, width = 14)
+## Plot bar graph summarising permutation test results
+#pt_list <- list()
+#for(x in seq_along(pop_name)) {
+#  load(paste0(outDir[x],
+#              orderingFactor, "_", pop_name[x], "_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
+#              "_in_quantile", quantileNo, "_of_", quantiles,
+#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
+#              paste0(substring(featureName, first = 10, last = 16),
+#                     collapse = "_"), "_",
+#              substring(featureName[1][1], first = 18),
+#              ".RData"))
+#  pt_list <- c(pt_list, nonIDs_permTestResults)
+#}
+#bargraph_df <- data.frame(population = pop_name_plot,
+#                          log2ObsExp = sapply(seq_along(pt_list), function(x) { pt_list[[x]]@log2obsexp }),
+#                          log2alpha0.05 = sapply(seq_along(pt_list), function(x) { pt_list[[x]]@log2alpha }))
+#bargraph_df$population <- factor(bargraph_df$population,
+#                                 levels = pop_name_plot)
+#bp <- ggplot(data = bargraph_df,
+#             mapping = aes(x = population,
+#                           y = log2ObsExp,
+#                           fill = " ")) +
+#  geom_bar(stat = "identity",
+#           position = position_dodge()) +
+#  scale_fill_manual(name = "",
+#                    values = c("dodgerblue3"),
+#                    labels = " ") +
+#  geom_point(mapping = aes(x = population,
+#                           y = log2alpha0.05),
+#             position = position_dodge(0.9),
+#             shape = "-", colour  = "grey80", size = 20) +
+#  labs(y = bquote("Log"[2]*"(observed/expected)" ~ .(orderingFactorName))) +
+##  scale_y_continuous(limits = c(-1.5, 1.5)) +
+#  scale_x_discrete(position = "top") +
+#  guides(fill = guide_legend(direction = "horizontal",
+#                             label.position = "top",
+#                             label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
+#                             nrow = 1,
+#                             byrow = TRUE)) +
+#  theme_bw() +
+#  theme(axis.line.y = element_line(size = 1, colour = "black"),
+#        axis.ticks.y = element_line(size = 1, colour = "black"),
+#        axis.text.y = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
+#        axis.title.y = element_text(size = 20, colour = "black"),
+#        axis.ticks.x = element_blank(),
+#        axis.text.x = element_text(size = 20, colour = "black", hjust = 0, vjust = 0.5, angle = 90),
+#        axis.title.x = element_blank(),
+#        panel.grid = element_blank(),
+#        panel.border = element_blank(),
+#        panel.background = element_blank(),
+#        legend.position = "none",
+#        #legend.position = c(0.05, 0.30),
+#        legend.background = element_rect(fill = "transparent"),
+#        legend.key = element_rect(colour = "transparent",
+#                                  fill = "transparent"),
+#        plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
+#        plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
+#  ggtitle(bquote(.(gsub("_", " ", featureNamePlot)) ~
+#                 "in" ~ .(sub("_\\w+", "", libName)) ~ "Quantile" ~ .(as.character(quantileNo)) ~
+#                 "(" * .(region) * ") in" ~
+#                 .(paste0(substring(featureName, first = 10, last = 16),
+#                          collapse = " ")) ~
+#                 .(substring(featureName[1][1], first = 18)) ~
+#                 "(" * .(prettyNum(as.character(randomSets),
+#                                   big.mark = ",", trim = "T")) ~ "permutations)"))
+#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+#              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
+#              "_in_quantile", quantileNo, "_of_", quantiles,
+#              "_by_log2_", libName, "_control_in_", region, "_of_",
+#              substring(featureName[1][1], first = 1, last = 5), "_in_",
+#              paste0(substring(featureName, first = 10, last = 16),
+#                     collapse = "_"), "_",
+#              substring(featureName[1][1], first = 18),
+#              "_v120320.pdf"),
+#       plot = bp,
+#       height = 8, width = 14)
