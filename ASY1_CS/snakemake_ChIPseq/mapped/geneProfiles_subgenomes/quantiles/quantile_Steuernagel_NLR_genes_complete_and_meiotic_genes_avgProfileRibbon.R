@@ -234,6 +234,7 @@ ran_nonIDs_select <- function(nonIDsChr, n, replaceBool) {
 # Apply ran_nonIDs_select() function on a per-chromosome basis
 # and create growing vector of feature IDs called ran_nonIDs
 set.seed(9237452)
+set.seed(3710475)
 subcat1_ran_nonIDs <- NULL
 for(i in 1:length(levels(features$V1))) {
   IDsChr <- c(subcat1_IDs)[grepl(paste0("TraesCS",
@@ -249,26 +250,12 @@ for(i in 1:length(levels(features$V1))) {
 }
 subcat1_ran_nonID_indices <- which(featureIDs %in% subcat1_ran_nonIDs)
 set.seed(9237452)
+set.seed(3710475)
 subcat2_ran_nonIDs <- NULL
 for(i in 1:length(levels(features$V1))) {
   IDsChr <- c(subcat2_IDs)[grepl(paste0("TraesCS",
                                         sub("chr", "", levels(features$V1))[i]),
                                  c(subcat2_IDs))]
-  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
-                                   sub("chr", "", levels(features$V1))[i]),
-                            nonIDs)]
-  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-                                     n = length(IDsChr),
-                                     replaceBool = FALSE)
-  subcat2_ran_nonIDs <- c(subcat2_ran_nonIDs, ran_nonIDsChr)
-}
-subcat2_ran_nonID_indices <- which(featureIDs %in% subcat2_ran_nonIDs)
-set.seed(9237452)
-subcat3_ran_nonIDs <- NULL
-for(i in 1:length(levels(features$V1))) {
-  IDsChr <- c(subcat3_IDs)[grepl(paste0("TraesCS",
-                                        sub("chr", "", levels(features$V1))[i]),
-                                 c(subcat3_IDs))]
   nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
                                    sub("chr", "", levels(features$V1))[i]),
                             nonIDs)]
@@ -281,6 +268,22 @@ for(i in 1:length(levels(features$V1))) {
                                        n = length(IDsChr),
                                        replaceBool = TRUE)
   }
+  subcat2_ran_nonIDs <- c(subcat2_ran_nonIDs, ran_nonIDsChr)
+}
+subcat2_ran_nonID_indices <- which(featureIDs %in% subcat2_ran_nonIDs)
+set.seed(9237452)
+set.seed(3710475)
+subcat3_ran_nonIDs <- NULL
+for(i in 1:length(levels(features$V1))) {
+  IDsChr <- c(subcat3_IDs)[grepl(paste0("TraesCS",
+                                        sub("chr", "", levels(features$V1))[i]),
+                                 c(subcat3_IDs))]
+  nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
+                                   sub("chr", "", levels(features$V1))[i]),
+                            nonIDs)]
+  ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
+                                     n = length(IDsChr),
+                                     replaceBool = FALSE)
   subcat3_ran_nonIDs <- c(subcat3_ran_nonIDs, ran_nonIDsChr)
 }
 subcat3_ran_nonID_indices <- which(featureIDs %in% subcat3_ran_nonIDs)
@@ -305,6 +308,7 @@ subcat3_quantileIndices <- lapply(seq_along(quantileIndices), function(k) {
 # and create growing vector of feature IDs called ran_nonIDs
 subcat1_randomPCIndices <- lapply(seq_along(subcat1_quantileIndices), function(k) {
   set.seed(9237452)
+  set.seed(3710475)
   subcat1_ran_nonIDs <- NULL
   for(i in 1:length(levels(features$V1))) {
     IDsChr <- featureIDs[subcat1_quantileIndices[[k]]][grepl(paste0("TraesCS",
@@ -323,29 +327,12 @@ subcat1_randomPCIndices <- lapply(seq_along(subcat1_quantileIndices), function(k
 })
 subcat2_randomPCIndices <- lapply(seq_along(subcat2_quantileIndices), function(k) {
   set.seed(9237452)
+  set.seed(3710475)
   subcat2_ran_nonIDs <- NULL
   for(i in 1:length(levels(features$V1))) {
     IDsChr <- featureIDs[subcat2_quantileIndices[[k]]][grepl(paste0("TraesCS",
                                                                     sub("chr", "", levels(features$V1))[i]),
                                                              featureIDs[subcat2_quantileIndices[[k]]])]
-    nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
-                                     sub("chr", "", levels(features$V1))[i]),
-                              nonIDs)]
-    ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
-                                       n = length(IDsChr),
-                                       replaceBool = FALSE)
-    subcat2_ran_nonIDs <- c(subcat2_ran_nonIDs, ran_nonIDsChr)
-  }
-  subcat2_ran_nonID_indices <- which(featureIDs %in% subcat2_ran_nonIDs)
-  return(subcat2_ran_nonID_indices)
-})
-subcat3_randomPCIndices <- lapply(seq_along(subcat3_quantileIndices), function(k) {
-  set.seed(9237452)
-  subcat3_ran_nonIDs <- NULL
-  for(i in 1:length(levels(features$V1))) {
-    IDsChr <- featureIDs[subcat3_quantileIndices[[k]]][grepl(paste0("TraesCS",
-                                                                    sub("chr", "", levels(features$V1))[i]),
-                                                             featureIDs[subcat3_quantileIndices[[k]]])]
     nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
                                      sub("chr", "", levels(features$V1))[i]),
                               nonIDs)]
@@ -358,6 +345,25 @@ subcat3_randomPCIndices <- lapply(seq_along(subcat3_quantileIndices), function(k
                                          n = length(IDsChr),
                                          replaceBool = TRUE)
     }
+    subcat2_ran_nonIDs <- c(subcat2_ran_nonIDs, ran_nonIDsChr)
+  }
+  subcat2_ran_nonID_indices <- which(featureIDs %in% subcat2_ran_nonIDs)
+  return(subcat2_ran_nonID_indices)
+})
+subcat3_randomPCIndices <- lapply(seq_along(subcat3_quantileIndices), function(k) {
+  set.seed(9237452)
+  set.seed(3710475)
+  subcat3_ran_nonIDs <- NULL
+  for(i in 1:length(levels(features$V1))) {
+    IDsChr <- featureIDs[subcat3_quantileIndices[[k]]][grepl(paste0("TraesCS",
+                                                                    sub("chr", "", levels(features$V1))[i]),
+                                                             featureIDs[subcat3_quantileIndices[[k]]])]
+    nonIDsChr <- nonIDs[grepl(paste0("TraesCS",
+                                     sub("chr", "", levels(features$V1))[i]),
+                              nonIDs)]
+    ran_nonIDsChr <- ran_nonIDs_select(nonIDsChr = nonIDsChr,
+                                       n = length(IDsChr),
+                                       replaceBool = FALSE)
     subcat3_ran_nonIDs <- c(subcat3_ran_nonIDs, ran_nonIDsChr)
   }
   subcat3_ran_nonID_indices <- which(featureIDs %in% subcat3_ran_nonIDs)
