@@ -66,8 +66,12 @@ library(gridExtra)
 library(extrafont)
 library(GenomicRanges)
 
-outDir <- paste0("quantiles_by_log2_", libName,
-                 "_control_in_", region, "/")
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  outDir <- paste0("quantiles_by_", libName, "/")
+} else {
+  outDir <- paste0("quantiles_by_log2_", libName,
+                   "_control_in_", region, "/")
+}
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -108,14 +112,24 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
-featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
-                                "_by_log2_", libName, "_control_in_",
-                                region, "_of_",
-                                substring(featureName[1][1], first = 1, last = 5), "_in_",
-                                paste0(substring(featureName, first = 10, last = 16),
-                                       collapse = "_"), "_",
-                                substring(featureName[1][1], first = 18), ".txt"),
-                         header = T, sep = "\t")
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  featuresDF <- read.table(paste0(outDir, "WesternEurope/features_", quantiles, "quantiles",
+                                  "_by_", libName, "_of_",
+                                  substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                  paste0(substring(featureName, first = 10, last = 16),
+                                         collapse = "_"), "_",
+                                  substring(featureName[1][1], first = 18), "_WesternEurope.txt"),
+                           header = T, sep = "\t")
+} else {
+  featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
+                                  "_by_log2_", libName, "_control_in_",
+                                  region, "_of_",
+                                  substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                  paste0(substring(featureName, first = 10, last = 16),
+                                         collapse = "_"), "_",
+                                  substring(featureName[1][1], first = 18), ".txt"),
+                           header = T, sep = "\t")
+}
 
 # Load features to confirm feature (row) ordering in "featuresDF" is the same
 # as in "features" (which was used for generating the coverage matrices)
@@ -152,7 +166,7 @@ subcat1_ID_indices <- which(featureIDs %in% subcat1_IDs)
 # Load subcat1b (to be used for extracting defense response genes not corresponding to NLRs)
 subcat1b <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
                               "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_representative_mRNA.gff3"),
-                      header = F)
+                       header = F)
 # Subset features to only those corresponding to subcat1
 features_subcat1b <- features[features$V9 %in% subcat1b$V9,]
 # Get NLR IDs
@@ -1476,15 +1490,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(log2ChIPNamesPlot))*7)+1):(length(c(log2ChIPNamesPlot))*8),
                                                        ((length(c(log2ChIPNamesPlot))*8)+1):(length(c(log2ChIPNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -2316,15 +2342,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(otherNamesPlot))*7)+1):(length(c(otherNamesPlot))*8),
                                                        ((length(c(otherNamesPlot))*8)+1):(length(c(otherNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "other_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "other_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "other_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -3149,15 +3187,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(sRNANamesPlot))*7)+1):(length(c(sRNANamesPlot))*8),
                                                        ((length(c(sRNANamesPlot))*8)+1):(length(c(sRNANamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "sRNA_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "sRNA_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "sRNA_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -3983,15 +4033,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(DNAmethNamesPlot))*7)+1):(length(c(DNAmethNamesPlot))*8),
                                                        ((length(c(DNAmethNamesPlot))*8)+1):(length(c(DNAmethNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -4845,15 +4907,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(SNPclassNamesPlot))*7)+1):(length(c(SNPclassNamesPlot))*8),
                                                        ((length(c(SNPclassNamesPlot))*8)+1):(length(c(SNPclassNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "SNPclass_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "SNPclass_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "SNPclass_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -5722,15 +5796,27 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(superfamNamesPlot))*7)+1):(length(c(superfamNamesPlot))*8),
                                                        ((length(c(superfamNamesPlot))*8)+1):(length(c(superfamNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
+}
 
 #### Free up memory by removing no longer required objects
 rm(
@@ -5811,13 +5897,24 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                        ((length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*7)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*8),
                                                        ((length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*8)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*9)
                                                       ))
-ggsave(paste0(plotDir,
-              "combined_avgProfiles_around_", quantiles, "quantiles",
-              "_by_log2_", libName, "_control_in_", region, "_of_",
-              substring(featureName[1][1], first = 1, last = 5), "_in_",
-              paste0(substring(featureName, first = 10, last = 16),
-                     collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
-       plot = ggObjGA_combined,
-       height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
-
+if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  ggsave(paste0(plotDir,
+                "combined_avgProfiles_around_", quantiles, "quantiles",
+                "_by_", libName, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
+} else {
+  ggsave(paste0(plotDir,
+                "combined_avgProfiles_around_", quantiles, "quantiles",
+                "_by_log2_", libName, "_control_in_", region, "_of_",
+                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                paste0(substring(featureName, first = 10, last = 16),
+                       collapse = "_"), "_",
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v300320.pdf"),
+         plot = ggObjGA_combined,
+         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
+}
