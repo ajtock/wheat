@@ -240,15 +240,24 @@ ranLocsGR_ext <- GRanges(seqnames = seqnames(ranLocsGR),
 print(ranLocsGR_ext)
 
 # Convert windowed recombination rate into GRanges
+#cMMb <- read.table(paste0(
+#                   "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/",
+#                   "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
+#                   as.character(minMarkerDist), "bp_", winName, ".txt"))
+#cMMbGR <- GRanges(seqnames = cMMb$chr,
+#                  ranges = IRanges(start = cMMb$windowStart,
+#                                   end = cMMb$windowEnd),
+#                  strand = "*",
+#                  cMMb = cMMb$cMMb)
 cMMb <- read.table(paste0(
-                   "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/",
-                   "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                   as.character(minMarkerDist), "bp_", winName, ".txt"))
-cMMbGR <- GRanges(seqnames = cMMb$chr,
-                  ranges = IRanges(start = cMMb$windowStart,
-                                   end = cMMb$windowEnd),
+                   "/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_recombination_rate_analysis/",
+                   "iwgsc_refseqv1.0_recombination_rate.txt"),
+                   header = T)
+cMMbGR <- GRanges(seqnames = cMMb$chromosome,
+                  ranges = IRanges(start = cMMb$intervalStart,
+                                   end = cMMb$intervalEnd),
                   strand = "*",
-                  cMMb = cMMb$cMMb)
+                  cMMb = cMMb$recombinationRate)
 
 # Obtain winName-scaled cMMb values for each feature between promoter and terminator
 # Where features overlap more than one winName window, calculate mean cMMb
