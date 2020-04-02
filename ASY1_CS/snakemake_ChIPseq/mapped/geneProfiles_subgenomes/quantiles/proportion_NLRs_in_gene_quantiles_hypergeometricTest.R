@@ -87,8 +87,11 @@ quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
 rm(featuresDF); gc()
 
 # Load NLRs
+#NLRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+#                          "NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3"),
+#                   header = F, stringsAsFactors = F)
 NLRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
-                          "NLRs_Krasileva/NB_ARC_genes_IWGSC_v1_Ksenia_Krasileva_representative_mRNA.gff3"),
+                          "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_complete_representative_mRNA.gff3"),
                    header = F, stringsAsFactors = F)
 chrs <- paste0(rep("chr", 21), rep(1:7, 3),
                c(rep("A", 7), rep("B", 7), rep("D", 7)))
