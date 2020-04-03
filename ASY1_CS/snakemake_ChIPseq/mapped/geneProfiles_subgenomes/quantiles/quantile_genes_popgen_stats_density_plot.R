@@ -12,6 +12,8 @@
 
 #/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 nucleotideDiversity_all "Diversity pi" 0.80 0.2 '%1.2f' '%3.0f' '%1.3f' 0.65
+
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
@@ -48,6 +50,8 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
 } else if(grepl("Hudson's R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])[.(as.character(orderingFactorName[3]))]))
+} else if(grepl("Diversity", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ "(" * .(as.symbol(orderingFactorName[2])) * ")")
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
@@ -57,6 +61,7 @@ xDec <- as.character(args[10])
 yDec <- as.character(args[11])
 yDec2 <- as.character(args[12])
 legendLabX <- as.numeric(args[13])
+
 library(parallel)
 library(tidyr)
 library(dplyr)
