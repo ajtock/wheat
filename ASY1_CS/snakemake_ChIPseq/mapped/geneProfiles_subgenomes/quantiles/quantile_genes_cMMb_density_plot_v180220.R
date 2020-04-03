@@ -386,6 +386,6 @@ ggsave(paste0(plotDir,
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v180220.pdf"),
+              substring(featureName[1][1], first = 18), "_v030420.pdf"),
        plot = ggObjGA_combined,
        height = 13, width = 14)
