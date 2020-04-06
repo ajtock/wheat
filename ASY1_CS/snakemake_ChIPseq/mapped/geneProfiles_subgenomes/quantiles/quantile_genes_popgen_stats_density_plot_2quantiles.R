@@ -10,6 +10,8 @@
 
 #/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.2f' 0.65
+
 #libName <- "HudsonRM_all"
 #dirName <- "HudsonRM_all"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
@@ -44,6 +46,8 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
+} else if(grepl("Diversity", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ "(" * .(as.symbol(orderingFactorName[2])) * ")")
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }

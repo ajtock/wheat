@@ -12,7 +12,7 @@
 
 #/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 nucleotideDiversity_all "Diversity pi" 0.80 0.2 '%1.2f' '%3.0f' '%1.3f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.3f' 0.65
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
