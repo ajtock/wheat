@@ -4,7 +4,7 @@
 # gene quantile is over-represented or under-represented for
 # genes overlapping selective sweep regions associated with modern wheat improvement
 # (MIR-overlapping genes) (regions as identified by He et al. 2019 Nat. Genet. 51)
-# (i.e., is the propotion of MIR-overlapping genes
+# (i.e., is the proportion of MIR-overlapping genes
 # contained within each gene quantile significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 

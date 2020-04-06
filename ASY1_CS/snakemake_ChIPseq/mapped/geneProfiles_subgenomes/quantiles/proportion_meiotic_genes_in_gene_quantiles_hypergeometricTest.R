@@ -4,7 +4,7 @@
 # gene quantile is over-represented or under-represented for
 # Meiotic genes (as defined by Ksenia Krasileva) and, separately,
 # meiotic-module genes (as defined in Alabdullah et al. 2019 Front. Plant Sci.)
-# (i.e., is the propotion of Meiotic genes or meiotic-module genes
+# (i.e., is the proportion of Meiotic genes or meiotic-module genes
 # contained within each gene quantile significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 

@@ -5,7 +5,7 @@
 # genes overlapping shared genomic regions
 # (SGR-overlapping genes) (genomic regions shared by all three scans for
 # introgression, XP-CLR and Bayenv as identified by He et al. 2019 Nat. Genet. 51)
-# (i.e., is the propotion of SGR-overlapping genes
+# (i.e., is the proportion of SGR-overlapping genes
 # contained within each gene quantile significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
