@@ -15,10 +15,10 @@
 # length(genome_NLRs) [m] + ( length(genome_genes) - length(genome_NLRs)) [n]
 
 # Usage 
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' NLR 'NLR-encoding' 100000 'navy,dodgerblue4,deepskyblue'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' meiotic 'Meiotic' 100000 'purple4,purple,magenta'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'darkgreen,seagreen,springgreen'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' NLR 'NLR-encoding' 100000 'black,navy,dodgerblue4,deepskyblue'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' meiotic 'Meiotic' 100000 'black,purple4,purple,magenta'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'black,darkgreen,seagreen,springgreen'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only_HudsonRM.R 'HudsonRM_all' 'bodies' 1 2 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'black,red4,red,tomato'
 
 library(methods)
 library(plotrix)
@@ -37,7 +37,7 @@ library(extrafont)
 #featCat <- "NLR_overlapping"
 #featCatPlot <- "NLR-overlapping"
 #samplesNum <- 100000
-#genomeColours <- unlist(strsplit('darkgreen,seagreen,springgreen', split = ",")) 
+#genomeColours <- unlist(strsplit('black,darkgreen,seagreen,springgreen', split = ",")) 
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -72,7 +72,7 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 options(scipen = 100)
 
 # Plot bar graph summarising permutation test results
-genomeNames <- c("Agenome", "Bgenome", "Dgenome")
+genomeNames <- c("Agenome_Bgenome_Dgenome", "Agenome", "Bgenome", "Dgenome")
 for(p in 1:length(pop_name)) {
 hg_list <- lapply(seq_along(genomeNames), function(y) {
   hg_list_quantile <- list() 
@@ -85,8 +85,8 @@ hg_list <- lapply(seq_along(genomeNames), function(y) {
   }
   return(hg_list_quantile)
 })
-bargraph_df <- data.frame(Subgenome = rep(c("A genome", "B genome", "D genome"), each = quantileLast),
-                          Quantile = rep(paste0("Quantile ", quantileFirst:quantileLast), 3),
+bargraph_df <- data.frame(Subgenome = rep(c("All genomes", "A genome", "B genome", "D genome"), each = quantileLast),
+                          Quantile = rep(paste0("Quantile ", quantileFirst:quantileLast), 4),
                           log2ObsExp = c(sapply(seq_along(genomeNames), function(y) {
                                            sapply(seq_along(hg_list[[y]]), function(x) {
                                              hg_list[[y]][[x]]@log2obsexp
@@ -100,7 +100,7 @@ bargraph_df <- data.frame(Subgenome = rep(c("A genome", "B genome", "D genome"),
 bargraph_df$Quantile <- factor(bargraph_df$Quantile,
                                levels = paste0("Quantile ", quantileFirst:quantileLast))
 bargraph_df$Subgenome <- factor(bargraph_df$Subgenome,
-                                levels = c("A genome", "B genome", "D genome"))
+                                levels = c("All genomes", "A genome", "B genome", "D genome"))
 bp <- ggplot(data = bargraph_df,
              mapping = aes(x = Quantile,
                            y = log2ObsExp,
@@ -115,7 +115,7 @@ bp <- ggplot(data = bargraph_df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-#  scale_y_continuous(limits = c(-1.5, 1.5)) +
+  scale_y_continuous(limits = c(-0.6, 0.3)) +
   scale_x_discrete(position = "top") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
@@ -151,5 +151,5 @@ ggsave(paste0(plotDir,
               "quantiles_by_", libName, "_of_genes_in_each_subgenome_",
               region, "_hypergeomTestRes_", pop_name[p], ".pdf"),
        plot = bp,
-       height = 8, width = 12)
+       height = 8, width = 16)
 }

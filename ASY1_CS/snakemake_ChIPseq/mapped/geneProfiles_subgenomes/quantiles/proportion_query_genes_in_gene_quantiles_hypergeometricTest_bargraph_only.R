@@ -37,7 +37,7 @@ library(extrafont)
 #featCat <- "LAR_overlapping"
 #featCatPlot <- "LAR-overlapping"
 #samplesNum <- 100000
-#genomeColours <- unlist(strsplit('darkgreen,seagreen,springgreen', split = ",")) 
+#genomeColours <- unlist(strsplit('black,darkgreen,seagreen,springgreen', split = ",")) 
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -50,7 +50,7 @@ featCatPlot <- args[7]
 samplesNum <- as.numeric(args[8])
 genomeColours <- unlist(strsplit(args[9], split = ","))
 
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "HudsonRM_all")) {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
@@ -67,7 +67,7 @@ genomeNames <- c("Agenome_Bgenome_Dgenome", "Agenome", "Bgenome", "Dgenome")
 hg_list <- lapply(seq_along(genomeNames), function(y) {
   hg_list_quantile <- list() 
   for(z in quantileFirst:quantileLast) {
-    if(libName %in% "cMMb") {
+    if(libName %in% c("cMMb", "HudsonRM_all")) {
     load(paste0(outDir,
                 featCat, "_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_genes_in_", genomeNames[y], "_",
@@ -112,8 +112,8 @@ bp <- ggplot(data = bargraph_df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-#  scale_y_continuous(limits = c(-1.5, 1.5)) +
-  scale_x_discrete(position = "top") +
+  scale_y_continuous(limits = c(-0.6, 0.8)) +
+  scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
                              label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
@@ -125,7 +125,7 @@ bp <- ggplot(data = bargraph_df,
         axis.text.y = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
         axis.title.y = element_text(size = 20, colour = "black"),
         axis.ticks.x = element_blank(),
-        axis.text.x = element_text(size = 20, colour = "black", hjust = 0, vjust = 0.5, angle = 90),
+        axis.text.x = element_text(size = 30, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
         axis.title.x = element_blank(),
         panel.grid = element_blank(),
         panel.border = element_blank(),
@@ -143,7 +143,7 @@ bp <- ggplot(data = bargraph_df,
                  "(" * .(prettyNum(samplesNum,
                                    big.mark = ",",
                                    trim = T)) ~ "samples)"))
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "HudsonRM_all")) {
 ggsave(paste0(plotDir,
               "bargraph_", featCat, "_gene_representation_among_", quantileLast,
               "quantiles_by_", libName, "_of_genes_in_each_subgenome_",
