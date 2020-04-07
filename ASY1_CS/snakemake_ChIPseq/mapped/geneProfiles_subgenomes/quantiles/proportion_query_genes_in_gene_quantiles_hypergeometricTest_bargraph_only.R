@@ -112,7 +112,7 @@ bp <- ggplot(data = bargraph_df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-0.6, 0.8)) +
+  scale_y_continuous(limits = c(-0.8, 0.8)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
@@ -122,10 +122,10 @@ bp <- ggplot(data = bargraph_df,
   theme_bw() +
   theme(axis.line.y = element_line(size = 1, colour = "black"),
         axis.ticks.y = element_line(size = 1, colour = "black"),
-        axis.text.y = element_text(size = 20, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
-        axis.title.y = element_text(size = 20, colour = "black"),
+        axis.text.y = element_text(size = 25, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
+        axis.title.y = element_text(size = 25, colour = "black"),
         axis.ticks.x = element_blank(),
-        axis.text.x = element_text(size = 30, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
+        axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
         axis.title.x = element_blank(),
         panel.grid = element_blank(),
         panel.border = element_blank(),
@@ -136,7 +136,7 @@ bp <- ggplot(data = bargraph_df,
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 40.5, 5.5), "pt"),
-        plot.title = element_text(size = 18, colour = "black", hjust = 0.5)) +
+        plot.title = element_text(size = 24, colour = "black", hjust = 0.5)) +
   ggtitle(bquote(.(featCatPlot) ~ "genes in" ~
                  .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                  "(" * .(featRegion) * ")" ~

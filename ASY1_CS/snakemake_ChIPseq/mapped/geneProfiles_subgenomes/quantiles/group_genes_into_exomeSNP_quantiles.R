@@ -1176,6 +1176,9 @@ log2ChIP_featureMats_bodies <- lapply(seq_along(log2ChIP_featureMats), function(
 log2ChIP_featureMats_terminators <- lapply(seq_along(log2ChIP_featureMats), function(x) {
   log2ChIP_featureMats[[x]][,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 })
+log2ChIP_featureMats_genes <- lapply(seq_along(log2ChIP_featureMats), function(x) {
+  log2ChIP_featureMats[[x]][,(((upstream-1000)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
+})
 log2ChIP_featureMats_promotersRowMeans <- lapply(seq_along(log2ChIP_featureMats_promoters), function(x) {
   rowMeans(log2ChIP_featureMats_promoters[[x]], na.rm = T)
 })
@@ -1184,6 +1187,9 @@ log2ChIP_featureMats_bodiesRowMeans <- lapply(seq_along(log2ChIP_featureMats_bod
 })
 log2ChIP_featureMats_terminatorsRowMeans <- lapply(seq_along(log2ChIP_featureMats_terminators), function(x) {
   rowMeans(log2ChIP_featureMats_terminators[[x]], na.rm = T)
+})
+log2ChIP_featureMats_genesRowMeans <- lapply(seq_along(log2ChIP_featureMats_genes), function(x) {
+  rowMeans(log2ChIP_featureMats_genes[[x]], na.rm = T)
 })
 
 control_featureMats_promoters <- lapply(seq_along(control_featureMats), function(x) {
@@ -1195,6 +1201,9 @@ control_featureMats_bodies <- lapply(seq_along(control_featureMats), function(x)
 control_featureMats_terminators <- lapply(seq_along(control_featureMats), function(x) {
   control_featureMats[[x]][,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 })
+control_featureMats_genes <- lapply(seq_along(control_featureMats), function(x) {
+  control_featureMats[[x]][,(((upstream-1000)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
+})
 control_featureMats_promotersRowMeans <- lapply(seq_along(control_featureMats_promoters), function(x) {
   rowMeans(control_featureMats_promoters[[x]], na.rm = T)
 })
@@ -1203,6 +1212,9 @@ control_featureMats_bodiesRowMeans <- lapply(seq_along(control_featureMats_bodie
 })
 control_featureMats_terminatorsRowMeans <- lapply(seq_along(control_featureMats_terminators), function(x) {
   rowMeans(control_featureMats_terminators[[x]], na.rm = T)
+})
+control_featureMats_genesRowMeans <- lapply(seq_along(control_featureMats_genes), function(x) {
+  rowMeans(control_featureMats_genes[[x]], na.rm = T)
 })
 
 # Combine feature coordinates and their corresponding population genetics statistics,
@@ -1318,6 +1330,12 @@ featuresGR_pop_list <- mclapply(seq_along(popgen_stats_pop_list), function(x) {
                             H3K27me3_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[4]],
                             H2AZ_in_terminators = log2ChIP_featureMats_terminatorsRowMeans[[5]],
                             MNase_in_terminators = control_featureMats_terminatorsRowMeans[[2]],
+                            ASY1_in_genes = log2ChIP_featureMats_genesRowMeans[[1]],
+                            DMC1_in_genes = log2ChIP_featureMats_genesRowMeans[[2]],
+                            H3K4me3_in_genes = log2ChIP_featureMats_genesRowMeans[[3]],
+                            H3K27me3_in_genes = log2ChIP_featureMats_genesRowMeans[[4]],
+                            H2AZ_in_genes = log2ChIP_featureMats_genesRowMeans[[5]],
+                            MNase_in_genes = control_featureMats_genesRowMeans[[2]],
                             cMMb = feature_cMMb,
                             exons = exonNoPerGene,
                             introns = intronNoPerGene)
@@ -1483,7 +1501,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 
 # Define second set of ordering factors (log2(ChIP/input) in gene promoters, bodies and terminators)
 # to be used for grouping genes into 4 quantiles
-orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[c(30, 79:97)]
+orderingFactor <- colnames(data.frame(featuresGR_pop_list[[1]]))[c(30, 79:103)]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
