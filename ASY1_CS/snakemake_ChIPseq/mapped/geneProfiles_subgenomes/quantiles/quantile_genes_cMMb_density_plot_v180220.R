@@ -215,13 +215,13 @@ summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_
 # Take top 95% of data to aid visualisation in density plots
 featuresDF <- featuresDF[which(featuresDF$cMMb <=
                                quantile(featuresDF$cMMb,
-                                        probs = 0.95, na.rm = T)),]
+                                        probs = 0.99, na.rm = T)),]
 ranFeatsDF <- ranFeatsDF[which(ranFeatsDF$cMMb <=
                                quantile(ranFeatsDF$cMMb,
-                                        probs = 0.95, na.rm = T)),]
+                                        probs = 0.99, na.rm = T)),]
 #ranLocsDF <- ranFeatsDF[which(ranLocsDF$cMMb <=
 #                               quantile(ranLocsDF$cMMb,
-#                                        probs = 0.95, na.rm = T)),]
+#                                        probs = 0.99, na.rm = T)),]
 
 xmin <- min(c(
               featuresDF[unlist(quantileIndices),]$cMMb,

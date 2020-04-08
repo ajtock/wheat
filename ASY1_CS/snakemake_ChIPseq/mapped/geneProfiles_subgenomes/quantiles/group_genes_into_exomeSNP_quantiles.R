@@ -1621,6 +1621,7 @@ for(x in 1:length(featuresGR_pop_list)) {
 
 # each subgenome (sg)
 for(sg in 1:length(featureName)) {
+  print(substring(featureName, first = 10, last = 10)[sg])
   for(x in 1:length(featuresGR_pop_list)) {
     print(pop_name[x])
     featuresDF <- data.frame(featuresGR_pop_list[[x]],

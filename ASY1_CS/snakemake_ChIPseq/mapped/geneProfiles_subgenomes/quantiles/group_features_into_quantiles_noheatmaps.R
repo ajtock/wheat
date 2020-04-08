@@ -163,8 +163,10 @@ if( region == "promoters" ) {
   log2ChIPmatRegion <- log2ChIPmat[,(((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 } else if ( region == "bodies" ) {
   log2ChIPmatRegion <- log2ChIPmat[,((upstream/binSize)+1):((upstream+bodyLength)/binSize)]
+} else if ( region == "genes" ) {
+  log2ChIPmatRegion <- log2ChIPmat[,(((upstream-1000)/binSize)+1):(((upstream+bodyLength)/binSize)+(1000/binSize))]
 } else {
-  print("The region name provided does not match 'promoters', 'terminators', or 'bodies'")
+  print("The region name provided does not match 'promoters', 'terminators', 'bodies', or 'genes'")
 }
 log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion, na.rm = T)
 log2ChIPmatRegionRowMeansSorted <- sort.int(log2ChIPmatRegionRowMeans,
