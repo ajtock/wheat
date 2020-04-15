@@ -8,9 +8,9 @@
 # contained within each gene quantile significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
-# P-value is the probability of drawing >= length(quantile_meioOrthologs) [x] features
+# P-value is the probability of drawing >= length(quantile_meio) [x] features
 # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
-# length(genome_meioOrthologs) [m] + ( length(genome_genes) - length(genome_meioOrthologs)) [n]
+# length(genome_meio) [m] + ( length(genome_genes) - length(genome_meio)) [n]
 
 # Usage 
 # ./proportion_meiotic_orthologs_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000

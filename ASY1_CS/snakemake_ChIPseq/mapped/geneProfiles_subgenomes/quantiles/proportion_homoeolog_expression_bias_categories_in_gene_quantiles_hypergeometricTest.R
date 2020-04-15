@@ -1,19 +1,27 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Perform hypergeometric tests to determine whether each ASY1 or DMC1
+# author: Andy Tock
+# contact: ajt200@cam.ac.uk
+# date: 15.04.2020
+
+# Perform hypergeometric tests to determine whether each ASY1, DMC1 or cM/Mb
 # gene quantile is over-represented or under-represented for
-# Meiotic genes (as defined by Ksenia Krasileva) and, separately,
-# meiotic-module genes (as defined in Alabdullah et al. 2019 Front. Plant Sci.)
-# (i.e., is the proportion of Meiotic genes or meiotic-module genes
-# contained within each gene quantile significantly greater or smaller than expected by chance
+# genes assigned to homoeolog expression bias categories
+# (i.e., "Balanced", "A dominant", "B dominant", "D dominant",
+# "A suppressed", "B suppressed", "D suppressed";
+# as defined for various tissue types and conditions in
+# Ramirez-Gonazalez et al. 2018 Science 361) 
+# (e.g., is the proportion of genes within a given quantile that
+# are within a triad that exhibits "A dominant" expression bias
+# significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
-# P-value is the probability of drawing >= length(quantile_meio) [x] features
+# P-value is the probability of drawing >= length(quantile_category) [x] features
 # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
-# length(genome_meio) [m] + ( length(genome_genes) - length(genome_meio)) [n]
+# length(genome_category) [m] + ( length(genome_genes) - length(genome_category)) [n]
 
 # Usage 
-# ./proportion_meiotic_genes_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_homoeolog_expression_bias_categories_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -25,7 +33,7 @@ library(gridExtra)
 library(extrafont)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
-#featRegion <- "bodies"
+#featRegion <- "genes"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
@@ -47,8 +55,15 @@ if(libName %in% "cMMb") {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                    "_in_", featRegion, "/hypergeometricTests/")
 }
-plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
+if(libName %in% "cMMb") {
+  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/")
+} else {
+  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                   "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/")
+}
+system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
+plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define quantile colours
@@ -65,13 +80,13 @@ quantileColours <- makeTransparent(quantileColours)
 
 # Load feature quantiles
 if(libName %in% "cMMb") {
-  featuresDF <- read.table(paste0(sub("hypergeometricTests/", "", outDir),
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/homoeolog_exp_bias/", "", outDir),
                                   "/WesternEurope/features_", quantileLast, "quantiles_by_",
                                   sub("_\\w+$", "", libName), "_of_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
                            header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
 } else {
-  featuresDF <- read.table(paste0(sub("hypergeometricTests/", "", outDir),
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/homoeolog_exp_bias/", "", outDir),
                                   "/WesternEurope/features_", quantileLast, "quantiles_by_",
                                   sub("_\\w+$", "", libName), "_in_", featRegion, "_of_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
@@ -80,22 +95,89 @@ if(libName %in% "cMMb") {
 }
 featuresDF$featureID <- sub(pattern = "\\.\\d+", replacement = "",
                             x = featuresDF$featureID)
-genome_genes <- featuresDF$featureID
-quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
-  featuresDF[featuresDF$quantile == paste0("Quantile ", x),]$featureID
-})
-rm(featuresDF); gc()
 
-# Load meio
-# Note: these two sets of meiotic genes share 271 common genes that are assigned to a chromosome
-meio1 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
-                    header = T, stringsAsFactors = F)
-genome_meio1 <- as.character(meio1$Gene.ID)
+# Load table of genes assigned to the different
+# homoeolog expression bias categories
+triads <- readRDS("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_Uauy_2018_Science/EI_grassroots_data_repo/TablesForExploration/Triads.rds")
+triads$gene <- sub(pattern = "1G", replacement = "2G",
+                   x = triads$gene)
+triads$description <- sub(pattern = "Central", replacement = "Balanced",
+                          x = triads$description)
+triads$general_description <- sub(pattern = "Central", replacement = "Balanced",
+                                  x = triads$general_description)
+colnames(triads) <- sub(pattern = "Central", replacement = "Balanced",
+                        x = colnames(triads))
+triads <- data.frame(triads,
+                     description2 = "",
+                     stringsAsFactors = F)
+triads[(triads$description == "Balanced") , ]$description2 <- "Balanced"
+triads[(triads$description == "A.dominant" &
+        triads$chr_group == "A") , ]$description2 <- "A.dominant"
+triads[(triads$description == "B.dominant" &
+        triads$chr_group == "B") , ]$description2 <- "B.dominant"
+triads[(triads$description == "D.dominant" &
+        triads$chr_group == "D") , ]$description2 <- "D.dominant"
+triads[(triads$description == "A.suppressed" &
+        triads$chr_group == "A") , ]$description2 <- "A.suppressed"
+triads[(triads$description == "B.suppressed" &
+        triads$chr_group == "B") , ]$description2 <- "B.suppressed"
+triads[(triads$description == "D.suppressed" &
+        triads$chr_group == "D") , ]$description2 <- "D.suppressed"
+triads[(triads$description == "A.dominant" &
+        triads$chr_group != "A") |
+       (triads$description == "B.dominant" &
+        triads$chr_group != "B") |
+       (triads$description == "D.dominant" &
+        triads$chr_group != "D") , ]$description2 <- "non_dominant"
+triads[(triads$description == "A.suppressed" &
+        triads$chr_group != "A") |
+       (triads$description == "B.suppressed" &
+        triads$chr_group != "B") |
+       (triads$description == "D.suppressed" &
+        triads$chr_group != "D") , ]$description2 <- "non_suppressed"
+category_factor <- c("Balanced",
+                     ".dominant", "non_dominant", ".suppressed", "non_suppressed",
+                     "A.dominant", "B.dominant", "D.dominant",
+                     "A.suppressed", "B.suppressed", "D.suppressed")
+category_colour <- c(Balanced = "#AAAAAA",
+                     .dominant = "darkcyan", non_dominant = "cyan", .suppressed = "goldenrod", non_suppressed = "goldenrod4",
+                     A.dominant = "#579D1C", B.dominant = "#4B1F6F", D.dominant = "#FF950E",
+                     A.suppressed = "#b2E08a", B.suppressed = "#0eC7ff", D.suppressed ="#ffCF0e")
+
+# Subset genes in triads dataframe to only those within a given subgenome
 genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
-# Subset meio1 to only those within a given subgenome
 if(length(genomeLetter) == 1) {
-  genome_meio1 <- genome_meio1[grepl(paste0("TraesCS\\d", genomeLetter, "02G"), genome_meio1)]
+  triads <- triads[triads$chr_group == genomeLetter,]
+  category_factor <- c("Balanced",
+                       ".dominant", "non_dominant", ".suppressed", "non_suppressed")
+  category_colour <- c(Balanced = "#AAAAAA",
+                       .dominant = "darkcyan", non_dominant = "cyan", .suppressed = "goldenrod", non_suppressed = "goldenrod4")
+} else {
+  category_factor <- c("Balanced",
+                       ".dominant", "non_dominant", ".suppressed", "non_suppressed",
+                       "A.dominant", "B.dominant", "D.dominant",
+                       "A.suppressed", "B.suppressed", "D.suppressed")
+  category_colour <- c(Balanced = "#AAAAAA",
+                       .dominant = "darkcyan", non_dominant = "cyan", .suppressed = "goldenrod", non_suppressed = "goldenrod4",
+                       A.dominant = "#579D1C", B.dominant = "#4B1F6F", D.dominant = "#FF950E",
+                       A.suppressed = "#b2E08a", B.suppressed = "#0eC7ff", D.suppressed ="#ffCF0e")
 }
+  
+dataset <- unique(triads$dataset)
+
+for(xx in seq_along(dataset)) {
+  triads_dataset <- triads[triads$dataset == dataset[xx] &
+                           triads$factor == "all_mean_filter",]
+  genome_genes <- featuresDF$featureID[featuresDF$featureID %in% triads_dataset$gene]
+  quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
+    featuresDF[featuresDF$quantile == paste0("Quantile ", x) &
+               featuresDF$featureID %in% genome_genes,]$featureID
+  })
+  for(yy in seq_along(category_factor)) {
+    genome_category <- as.character(triads[grepl(pattern = category_factor[yy],
+                                                 x = triads$description2,
+                                                 fixed = T),]$gene)
+    
 
 meio2 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
                     header = T, sep = "\t", stringsAsFactors = F)
