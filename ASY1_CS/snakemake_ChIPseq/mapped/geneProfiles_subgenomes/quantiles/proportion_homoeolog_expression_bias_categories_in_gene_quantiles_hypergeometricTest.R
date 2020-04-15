@@ -63,8 +63,6 @@ if(libName %in% "cMMb") {
                    "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/")
 }
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
-plotDir <- paste0(outDir, "plots/")
-system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
@@ -159,6 +157,16 @@ if(length(genomeLetter) == 1) {
 dataset <- unique(triads$dataset)
 
 for(xx in seq_along(dataset)) {
+  if(libName %in% "cMMb") {
+    outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+  } else {
+    outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                     "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+  }
+  system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
+  plotDir <- paste0(outDir, "plots/")
+  system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+
   triads_dataset <- triads[triads$dataset == dataset[xx] &
                            triads$factor == "all_mean_filter",]
   genome_genes <- featuresDF$featureID[featuresDF$featureID %in% triads_dataset$gene]
