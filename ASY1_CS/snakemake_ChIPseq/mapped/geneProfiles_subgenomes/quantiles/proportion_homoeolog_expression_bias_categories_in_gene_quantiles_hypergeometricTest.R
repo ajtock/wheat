@@ -7,12 +7,14 @@
 # Perform hypergeometric tests to determine whether each ASY1, DMC1 or cM/Mb
 # gene quantile is over-represented or under-represented for
 # genes assigned to homoeolog expression bias categories
-# (i.e., "Balanced", "A dominant", "B dominant", "D dominant",
-# "A suppressed", "B suppressed", "D suppressed";
+# (i.e., "Balanced",
+# ".dominant", "non_dominant", ".suppressed", "non_suppressed",
+# "A.dominant", "B.dominant", "D.dominant",
+# "A.suppressed", "B.suppressed", "D.suppressed";
 # as defined for various tissue types and conditions in
 # Ramirez-Gonazalez et al. 2018 Science 361) 
-# (e.g., is the proportion of genes within a given quantile that
-# are within a triad that exhibits "A dominant" expression bias
+# (e.g., is the proportion of A-genome genes within a given quantile that
+# exhibit "A.dominant" expression bias
 # significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
