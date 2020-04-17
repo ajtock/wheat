@@ -8,11 +8,11 @@
 # gene quantile is over-represented or under-represented for genes
 # assigned to stable, middle, or dynamic homoeolog triad expression bias categories
 # (i.e., a stable triad corresponds to a homoeolog triad in the bottom 10%
-# in terms of its mean Euclidean distance of the normalized TPM values across 15 tissues
-# from the global mean normalized TPM values for that triad;
+# in terms of its mean Euclidean distance of the normalised TPM values across 15 tissues
+# from the global mean normalised TPM values for that triad;
 # and a dynamic triad corresponds to a homoeolog triad in the top 10%
-# in terms of its mean Euclidean distance of the normalized TPM values across 15 tissues
-# from the global mean normalized TPM values for that triad;
+# in terms of its mean Euclidean distance of the normalised TPM values across 15 tissues
+# from the global mean normalised TPM values for that triad;
 # as defined across 15 tissues in
 # Ramirez-Gonazalez et al. 2018 Science 361)
 # Also see
@@ -142,7 +142,7 @@ triads[(triads$description == "A.suppressed" &
         triads$chr_group != "D") , ]$description2 <- "non_suppressed"
 
 ## Example using rdist package for calculating for a given triad
-## the mean distance across all tissues from the global mean normalized TPM values
+## the mean distance across all tissues from the global mean normalised TPM values
 ## group_id 378 corresponds to the first row (triad) in tm
 #group_id <- 378
 #local_triad_all_mean <- triads[triads$dataset == "HC_CS_no_stress" &
@@ -174,14 +174,16 @@ category_factor_plot <- c("Stable", "Middle", "Dynamic")
 category_colour <- c("Stable 10%" = "dodgerblue3", "Midddle 80%" = "grey60", "Dynamic 10%" = "firebrick1")
 
 # Load table of gene homoeolog triads containing distances
-# across tissues from global mean normalized TPM values
+# across tissues from global mean normalised TPM values
 triads_movement <- readRDS("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_Uauy_2018_Science/EI_grassroots_data_repo/TablesForExploration/TriadMovement.rds")
 
 # Obtain the names of datasets derived from different tissue types and conditions  
 dataset <- unique(triads$dataset)
+dataset <- dataset[-c(9, 14)]
 
 mclapply(seq_along(dataset), function(xx) {
 #for(xx in seq_along(dataset)) {
+  print(dataset[xx])
   if(libName %in% "cMMb") {
     outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/triad_movement/", dataset[xx], "/")
   } else {
@@ -195,25 +197,29 @@ mclapply(seq_along(dataset), function(xx) {
   tm <- triads_movement[triads_movement$dataset == dataset[xx] &
                         triads_movement$factor_count >= 6,]
   tm_stable <- tm[tm$central_mean_distance <= quantile(tm$central_mean_distance, 0.1),]
-  tm_dynamic <- tm[tm$central_mean_distance >= quantile(tm$central_mean_distance, 0.9),]
   tm_middle <- tm[tm$central_mean_distance > quantile(tm$central_mean_distance, 0.1) &
                   tm$central_mean_distance < quantile(tm$central_mean_distance, 0.9),]
+  tm_dynamic <- tm[tm$central_mean_distance >= quantile(tm$central_mean_distance, 0.9),]
 
   triads_dataset <- triads[triads$dataset == dataset[xx] &
                            triads$factor == "all_mean_filter",]
-  triads_dataset <- data.frame(triads_datset,
+  triads_dataset <- data.frame(triads_dataset,
                                movement = "",
                                stringsAsFactors = F)
   triads_dataset[triads_dataset$group_id %in% tm_stable$group_id,]$movement <- "stable"
-  triads_data
+  triads_dataset[triads_dataset$group_id %in% tm_middle$group_id,]$movement <- "middle"
+  triads_dataset[triads_dataset$group_id %in% tm_dynamic$group_id,]$movement <- "dynamic"
+  triads_dataset <- triads_dataset[triads_dataset$movement != "",]
+
   genome_genes <- featuresDF$featureID[featuresDF$featureID %in% triads_dataset$gene]
   quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
     featuresDF[featuresDF$quantile == paste0("Quantile ", x) &
                featuresDF$featureID %in% genome_genes,]$featureID
   })
   for(yy in seq_along(category_factor)) {
+    print(category_factor[yy])
     genome_category <- as.character(triads_dataset[grepl(pattern = category_factor[yy],
-                                                         x = triads_dataset$description2,
+                                                         x = triads_dataset$movement,
                                                          fixed = T),]$gene)
     
     # Get the intersection of genome_category and genome_genes
@@ -246,6 +252,7 @@ mclapply(seq_along(dataset), function(xx) {
     
     #lapply(seq_along(quantile_genes_list), function(z) {
     for(z in seq_along(quantile_genes_list)) {
+      print(paste0("Quantile ", z))
       quantile_genes <- quantile_genes_list[[z]]
       # Get intersection of gene IDs in quantile z and gene IDs of genome_category
       quantile_category <- intersect(quantile_genes, genome_category)
@@ -501,4 +508,3 @@ mclapply(seq_along(dataset), function(xx) {
   }
 #}
 }, mc.cores = length(dataset), mc.preschedule = F)
-
