@@ -2,19 +2,23 @@
 
 # author: Andy Tock
 # contact: ajt200@cam.ac.uk
-# date: 15.04.2020
+# date: 17.04.2020
 
 # Perform hypergeometric tests to determine whether each ASY1, DMC1 or cM/Mb
-# gene quantile is over-represented or under-represented for
-# genes assigned to homoeolog expression bias categories
-# (i.e., "Balanced",
-# ".dominant", "non_dominant", ".suppressed", "non_suppressed",
-# "A.dominant", "B.dominant", "D.dominant",
-# "A.suppressed", "B.suppressed", "D.suppressed";
-# as defined for various tissue types and conditions in
-# Ramirez-Gonazalez et al. 2018 Science 361) 
-# (e.g., is the proportion of A-genome genes within a given quantile that
-# exhibit "A.dominant" expression bias
+# gene quantile is over-represented or under-represented for genes
+# assigned to stable, middle, or dynamic homoeolog triad expression bias categories
+# (i.e., a stable triad corresponds to a homoeolog triad in the bottom 10%
+# in terms of its mean Euclidean distance of the normalized TPM values across 15 tissues
+# from the global mean normalized TPM values for that triad;
+# and a dynamic triad corresponds to a homoeolog triad in the top 10%
+# in terms of its mean Euclidean distance of the normalized TPM values across 15 tissues
+# from the global mean normalized TPM values for that triad;
+# as defined across 15 tissues in
+# Ramirez-Gonazalez et al. 2018 Science 361)
+# Also see
+# https://github.com/Uauy-Lab/WheatHomoeologExpression/blob/master/02.%20Calculate%20triad%20category.ipynb
+# (e.g., is the proportion of genes within a given quantile that
+# form part of a dynamic triad
 # significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
@@ -23,7 +27,7 @@
 # length(genome_category) [m] + ( length(genome_genes) - length(genome_category)) [n]
 
 # Usage 
-# ./proportion_homoeolog_expression_bias_categories_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_stable_dynamic_triads_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -33,6 +37,7 @@ library(ggthemes)
 library(grid)
 library(gridExtra)
 library(extrafont)
+library(parallel)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #featRegion <- "genes"
@@ -59,10 +64,10 @@ if(libName %in% "cMMb") {
 }
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 if(libName %in% "cMMb") {
-  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/")
+  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/triad_movement/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                   "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/")
+                   "_in_", featRegion, "/hypergeometricTests/triad_movement/")
 }
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 
@@ -76,17 +81,17 @@ makeTransparent <- function(thisColour, alpha = 180)
         alpha = alpha, maxColorValue = 255)
   })
 }
-quantileColours <- makeTransparent(quantileColours)
+#quantileColours <- makeTransparent(quantileColours)
 
 # Load feature quantiles
 if(libName %in% "cMMb") {
-  featuresDF <- read.table(paste0(sub("hypergeometricTests/homoeolog_exp_bias/", "", outDir),
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/triad_movement/", "", outDir),
                                   "/WesternEurope/features_", quantileLast, "quantiles_by_",
                                   sub("_\\w+$", "", libName), "_of_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
                            header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
 } else {
-  featuresDF <- read.table(paste0(sub("hypergeometricTests/homoeolog_exp_bias/", "", outDir),
+  featuresDF <- read.table(paste0(sub("hypergeometricTests/triad_movement/", "", outDir),
                                   "/WesternEurope/features_", quantileLast, "quantiles_by_",
                                   sub("_\\w+$", "", libName), "_in_", featRegion, "_of_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
@@ -136,41 +141,71 @@ triads[(triads$description == "A.suppressed" &
        (triads$description == "D.suppressed" &
         triads$chr_group != "D") , ]$description2 <- "non_suppressed"
 
+## Example using rdist package for calculating for a given triad
+## the mean distance across all tissues from the global mean normalized TPM values
+## group_id 378 corresponds to the first row (triad) in tm
+#group_id <- 378
+#local_triad_all_mean <- triads[triads$dataset == "HC_CS_no_stress" &
+#                               triads$factor == "all_mean_filter" &
+#                               triads$group_id == group_id,]
+#local_centroid <- t(matrix(data = local_triad_all_mean$normalised_triad,
+#                           nrow = 3,
+#                           dimnames = list(local_triad_all_mean$chr_group,
+#                                           as.character(unique(local_triad_all_mean$factor)))))
+#local_triad_each_factor <- triads[triads$dataset == "HC_CS_no_stress" &
+#                                  triads$factor != "all_mean_filter" &
+#                                  triads$group_id == group_id,]
+#local_mat <- t(matrix(data = local_triad_each_factor$normalised_triad,
+#                      nrow = 3,
+#                      dimnames = list(local_triad_each_factor$chr_group[1:3],
+#                                      as.character(unique(local_triad_each_factor$factor)))))
+#library(rdist)
+#dists <- cdist(local_mat, local_centroid)
+#mean_dist <- mean(dists)
+
 # Subset genes in triads dataframe to only those within a given subgenome
 genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
 if(length(genomeLetter) == 1) {
   triads <- triads[triads$chr_group == genomeLetter,]
-  category_factor <- c("Balanced",
-                       ".dominant", "non_dominant", ".suppressed", "non_suppressed")
-  category_colour <- c(Balanced = "#AAAAAA",
-                       .dominant = "darkcyan", non_dominant = "cyan", .suppressed = "goldenrod", non_suppressed = "goldenrod4")
-} else {
-  category_factor <- c("Balanced",
-                       ".dominant", "non_dominant", ".suppressed", "non_suppressed",
-                       "A.dominant", "B.dominant", "D.dominant",
-                       "A.suppressed", "B.suppressed", "D.suppressed")
-  category_colour <- c(Balanced = "#AAAAAA",
-                       .dominant = "darkcyan", non_dominant = "cyan", .suppressed = "goldenrod", non_suppressed = "goldenrod4",
-                       A.dominant = "#579D1C", B.dominant = "#4B1F6F", D.dominant = "#FF950E",
-                       A.suppressed = "#b2E08a", B.suppressed = "#0eC7ff", D.suppressed ="#ffCF0e")
 }
+
+category_factor <- c("stable", "middle", "dynamic")
+category_factor_plot <- c("Stable", "Middle", "Dynamic")
+category_colour <- c("Stable 10%" = "dodgerblue3", "Midddle 80%" = "grey60", "Dynamic 10%" = "firebrick1")
+
+# Load table of gene homoeolog triads containing distances
+# across tissues from global mean normalized TPM values
+triads_movement <- readRDS("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_Uauy_2018_Science/EI_grassroots_data_repo/TablesForExploration/TriadMovement.rds")
 
 # Obtain the names of datasets derived from different tissue types and conditions  
 dataset <- unique(triads$dataset)
 
-for(xx in seq_along(dataset)) {
+mclapply(seq_along(dataset), function(xx) {
+#for(xx in seq_along(dataset)) {
   if(libName %in% "cMMb") {
-    outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+    outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/triad_movement/", dataset[xx], "/")
   } else {
     outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                     "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+                     "_in_", featRegion, "/hypergeometricTests/triad_movement/", dataset[xx], "/")
   }
   system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
   plotDir <- paste0(outDir, "plots/")
   system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
+  tm <- triads_movement[triads_movement$dataset == dataset[xx] &
+                        triads_movement$factor_count >= 6,]
+  tm_stable <- tm[tm$central_mean_distance <= quantile(tm$central_mean_distance, 0.1),]
+  tm_dynamic <- tm[tm$central_mean_distance >= quantile(tm$central_mean_distance, 0.9),]
+  tm_middle <- tm[tm$central_mean_distance > quantile(tm$central_mean_distance, 0.1) &
+                  tm$central_mean_distance < quantile(tm$central_mean_distance, 0.9),]
+
   triads_dataset <- triads[triads$dataset == dataset[xx] &
                            triads$factor == "all_mean_filter",]
+  triads_dataset <- data.frame(triads_datset,
+                               movement = "",
+                               stringsAsFactors = F)
+  triads_dataset[triads_dataset$group_id %in% tm_stable$group_id,]$movement <- "stable"
+  triads_data
   genome_genes <- featuresDF$featureID[featuresDF$featureID %in% triads_dataset$gene]
   quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
     featuresDF[featuresDF$quantile == paste0("Quantile ", x) &
@@ -464,4 +499,6 @@ for(xx in seq_along(dataset)) {
            height = 8, width = 12)
     }
   }
-}
+#}
+}, mc.cores = length(dataset), mc.preschedule = F)
+
