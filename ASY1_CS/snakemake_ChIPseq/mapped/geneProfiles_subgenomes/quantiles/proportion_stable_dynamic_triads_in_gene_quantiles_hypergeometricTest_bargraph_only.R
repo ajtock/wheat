@@ -28,7 +28,7 @@
 # length(genome_category) [m] + ( length(genome_genes) - length(genome_category)) [n]
 
 # Usage 
-# ./proportion_stable_dynamic_triads_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' Agenome_Bgenome_Dgenome 100000
+# ./proportion_stable_dynamic_triads_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' Agenome_Bgenome_Dgenome 100000 6
 
 library(methods)
 library(plotrix)
@@ -47,6 +47,7 @@ library(parallel)
 #region <- "genomewide"
 #genomeName <- "Agenome_Bgenome_Dgenome"
 #samplesNum <- 100000
+#minConditions <- 6
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -56,6 +57,7 @@ quantileLast <- as.integer(args[4])
 region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
+minConditions <- as.numeric(args[8])
 
 if(libName %in% "cMMb") {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
@@ -70,6 +72,12 @@ if(libName %in% "cMMb") {
                    "_in_", featRegion, "/hypergeometricTests/triad_movement/")
 }
 dataset <- system(paste0("ls ", outDir), intern = T)
+## Remove "HC_abiotic_stress_control" (controls for the samples with abiotic stress; index 5)
+## datasets as genes in triads are expressed across too few samples (< 6) in these categories
+## NOTE: this applies only to ASY1 and DMC1 in promoters where I was interested in
+## evaluating triad category representation among gene quantiles while imposing a lower
+## minimum number of conditions in which a gene triad must be expressed 
+#dataset <- dataset[-c(5)]
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
@@ -108,12 +116,12 @@ mclapply(seq_along(dataset), function(xx) {
       load(paste0(outDir,
                   dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_", libName, "_of_genes_in_", genomeName, "_",
-                  region, "_hypergeomTestRes.RData"))
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
       } else {
       load(paste0(outDir,
                   dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
-                  region, "_hypergeomTestRes.RData"))
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
       }
       hg_list_quantile <- c(hg_list_quantile, hgTestResults)
     }
@@ -211,14 +219,14 @@ mclapply(seq_along(dataset), function(xx) {
   ggsave(paste0(plotDir,
                 "combined_bargraph_", dataset[xx], "_stable_dynamic_triad_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_genes_in_", genomeName, "_",
-                region, "_hypergeomTestRes.pdf"),
+                region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
          plot = bp,
          height = 8, width = 12)
   } else {
   ggsave(paste0(plotDir,
                 "combined_bargraph_", dataset[xx], "_stable_dynamic_triad_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
-                region, "_hypergeomTestRes.pdf"),
+                region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
          plot = bp,
          height = 8, width = 12)
   }

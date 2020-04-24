@@ -27,7 +27,7 @@
 # length(genome_category) [m] + ( length(genome_genes) - length(genome_category)) [n]
 
 # Usage 
-# ./proportion_stable_dynamic_triads_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_stable_dynamic_triads_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000 6
 
 library(methods)
 library(plotrix)
@@ -46,6 +46,7 @@ library(parallel)
 #region <- "genomewide"
 #genomeName <- "Agenome_Bgenome_Dgenome"
 #samplesNum <- 100000
+#minConditions <- 6
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -55,6 +56,7 @@ quantileLast <- as.integer(args[4])
 region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
+minConditions <- as.numeric(args[8])
 
 if(libName %in% "cMMb") {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
@@ -179,7 +181,12 @@ triads_movement <- readRDS("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_U
 
 # Obtain the names of datasets derived from different tissue types and conditions  
 dataset <- unique(triads$dataset)
+# Remove "HC_root" (root samples; index 9) and "HC_abiotic_stress_control" (controls for the samples with abiotic stress; index 14)
+# datasets as genes in triads are expressed across too few samples (< 6) in these categories
 dataset <- dataset[-c(9, 14)]
+## Remove "HC_root" (root samples; index 9)
+## datasets as genes in triads are expressed across too few samples (< 1) in these categories
+#dataset <- dataset[-c(9)]
 
 mclapply(seq_along(dataset), function(xx) {
 #for(xx in seq_along(dataset)) {
@@ -195,7 +202,7 @@ mclapply(seq_along(dataset), function(xx) {
   system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
   tm <- triads_movement[triads_movement$dataset == dataset[xx] &
-                        triads_movement$factor_count >= 6,]
+                        triads_movement$factor_count >= minConditions,]
   tm_stable <- tm[tm$central_mean_distance <= quantile(tm$central_mean_distance, 0.1),]
   tm_middle <- tm[tm$central_mean_distance > quantile(tm$central_mean_distance, 0.1) &
                   tm$central_mean_distance < quantile(tm$central_mean_distance, 0.9),]
@@ -314,13 +321,13 @@ mclapply(seq_along(dataset), function(xx) {
            file = paste0(outDir,
                          dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                          "_by_", libName, "_of_genes_in_",
-                         genomeName, "_", region, "_hypergeomTestRes.RData"))
+                         genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
       } else {
       save(hgTestResults,
            file = paste0(outDir,
                          dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                          "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
-                         genomeName, "_", region, "_hypergeomTestRes.RData"))
+                         genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
       }
     
       # Generate histogram
@@ -328,13 +335,13 @@ mclapply(seq_along(dataset), function(xx) {
       pdf(paste0(plotDir,
                  dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                  "_by_", libName, "_of_genes_in_",
-                 genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
+                 genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, "_hist.pdf"),
                  height = 4.5, width = 5)
       } else {
       pdf(paste0(plotDir,
                  dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                  "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
-                 genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
+                 genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, "_hist.pdf"),
                  height = 4.5, width = 5)
       }
       par(mar = c(3.1, 3.1, 4.1, 1.1),
@@ -344,12 +351,12 @@ mclapply(seq_along(dataset), function(xx) {
       # Calculate max density
       maxDensityPlus <- max(density(hgTestResults@hypergeomDist)$y)*1.2
       if(hgTestResults@alternative == "MoreThanRandom") {
-        xlim <- c(pmin(0, min(hgTestResults@hypergeomDist)/1.2),
+        xlim <- c(pmin(min(hgTestResults@hypergeomDist)/1.2),
                   pmax(hgTestResults@observed*1.2, hgTestResults@alpha0.05*1.2))
         textX1 <- quantile(xlim, 0.25)[[1]]
     #    textX1 <- min(hgTestResults@hypergeomDist)/1.15
       } else {
-        xlim <- c(pmin(0, hgTestResults@observed/1.2),
+        xlim <- c(pmin(hgTestResults@observed/1.2),
                   max(hgTestResults@hypergeomDist)*1.2)
         textX1 <- quantile(xlim, 0.75)[[1]]
     #    textX1 <- min(hgTestResults@hypergeomDist)/1.15
@@ -430,12 +437,12 @@ mclapply(seq_along(dataset), function(xx) {
       load(paste0(outDir,
                   dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_", libName, "_of_genes_in_",
-                  genomeName, "_", region, "_hypergeomTestRes.RData"))
+                  genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
       } else {
       load(paste0(outDir,
                   dataset[xx], "_", category_factor[yy], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
-                  genomeName, "_", region, "_hypergeomTestRes.RData"))
+                  genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
      }
       pt_list <- c(pt_list, hgTestResults)
     }
@@ -494,14 +501,14 @@ mclapply(seq_along(dataset), function(xx) {
     ggsave(paste0(plotDir,
                   "bargraph_", dataset[xx], "_", category_factor[yy], "_representation_among_", quantileLast,
                   "quantiles_by_", libName, "_of_genes_in_",
-                  genomeName, "_", region, "_hypergeomTestRes.pdf"),
+                  genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
            plot = bp,
            height = 8, width = 12)
     } else {
     ggsave(paste0(plotDir,
                   "bargraph_", dataset[xx], "_", category_factor[yy], "_representation_among_", quantileLast,
                   "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_",
-                  genomeName, "_", region, "_hypergeomTestRes.pdf"),
+                  genomeName, "_", region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
            plot = bp,
            height = 8, width = 12)
     }

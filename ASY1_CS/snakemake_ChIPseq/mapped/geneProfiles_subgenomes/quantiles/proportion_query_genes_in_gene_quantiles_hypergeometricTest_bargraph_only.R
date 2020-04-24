@@ -19,6 +19,8 @@
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' meiotic 'Meiotic' 100000 'black,purple4,purple,magenta'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'black,darkgreen,seagreen,springgreen'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'black,red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' disease_stress_DSR 'Disease stress responsive' 100000 'black,navy,dodgerblue4,deepskyblue'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' abiotic_stress_ASR 'Abiotic stress responsive' 100000 'black,red4,red,tomato'
 
 library(methods)
 library(plotrix)
@@ -112,7 +114,7 @@ bp <- ggplot(data = bargraph_df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-0.8, 0.8)) +
+  scale_y_continuous(limits = c(-1.0, 1.0)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
