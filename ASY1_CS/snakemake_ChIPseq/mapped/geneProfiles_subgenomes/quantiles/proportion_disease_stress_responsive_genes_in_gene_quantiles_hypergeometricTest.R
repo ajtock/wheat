@@ -96,7 +96,6 @@ DSRs <- read.table(paste0("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_Ua
 DSRs$gene <- gsub(pattern = "1G", replacement = "2G",
                   x = DSRs$gene)
 DSRs <- DSRs[DSRs$P.value_stress < 0.05,]
-DSRs <- DSRs[DSRs$corr_stress > 0,]
 stress <- unique(DSRs$stress)
 stress <- c("*", stress)
 stressName <- sub("*", "disease_stress", stress, fixed = T)

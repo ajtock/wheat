@@ -96,7 +96,6 @@ ASRs <- read.table(paste0("/home/ajt200/analysis/wheat/RNAseq_RamirezGonzalez_Ua
 ASRs$gene <- gsub(pattern = "1G", replacement = "2G",
                   x = ASRs$gene)
 ASRs <- ASRs[ASRs$P.value_stress < 0.05,]
-ASRs <- ASRs[ASRs$corr_stress > 0,]
 stress <- unique(ASRs$stress)
 stress <- gsub(" ", "_", stress)
 stress <- c("*", stress)
