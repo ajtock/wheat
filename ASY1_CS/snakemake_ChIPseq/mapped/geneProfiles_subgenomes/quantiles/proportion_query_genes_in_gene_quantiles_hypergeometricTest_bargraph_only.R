@@ -20,7 +20,7 @@
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'black,darkgreen,seagreen,springgreen'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'black,red4,red,tomato'
 # ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' disease_stress_DSR 'Disease stress responsive' 100000 'black,navy,dodgerblue4,deepskyblue'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' abiotic_stress_ASR 'Abiotic stress responsive' 100000 'black,red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' abiotic_stress_ASR 'Disease & abiotic stress responsive' 100000 'black,red4,red,tomato'
 
 library(methods)
 library(plotrix)
@@ -51,6 +51,17 @@ featCat <- args[6]
 featCatPlot <- args[7]
 samplesNum <- as.numeric(args[8])
 genomeColours <- unlist(strsplit(args[9], split = ","))
+
+# Define quantile colours
+quantileColours <- c("red", "purple", "blue", "navy")
+makeTransparent <- function(thisColour, alpha = 180)
+{
+  newColour <- col2rgb(thisColour)
+  apply(newColour, 2, function(x) {
+    rgb(red = x[1], green = x[2], blue = x[3],
+        alpha = alpha, maxColorValue = 255)
+  })
+}
 
 if(libName %in% c("cMMb", "HudsonRM_all")) {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
@@ -113,8 +124,25 @@ bp <- ggplot(data = bargraph_df,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
+  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+               colour = quantileColours[1],
+               inherit.aes = F, size = 5) +
+  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+               colour = quantileColours[2],
+               inherit.aes = F, size = 5) +
+  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+               colour = quantileColours[3],
+               inherit.aes = F, size = 5) +
+  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+               colour = quantileColours[4],
+               inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-1.0, 1.0)) +
+#  scale_y_continuous(limits = c(-3.2, 3.2)) +
+  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
