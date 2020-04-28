@@ -5,7 +5,7 @@
 ## sort by decreasing -log10(qval) for use with weeder2
 
 # Usage:
-# ./peaks_peakranger_ranger_to_GRanges_mergedOverlaps.R H3K4me3_Rep1_ChIP 0.05 0.05
+# ./peaks_peakranger_ranger_to_GRanges_mergedOverlaps.R ASY1_CS_Rep1_ChIP 0.001 0.01
 
 args <- commandArgs(trailingOnly = TRUE)
 ChIPLibName <- args[1]
