@@ -31,12 +31,6 @@ quantiles <- as.numeric(args[4])
 library(GenomicRanges)
 library(dplyr)
 library(parallel)
-library(doParallel)
-registerDoParallel(cores = detectCores())
-print("Currently registered parallel backend name, version and cores")
-print(getDoParName())
-print(getDoParVersion())
-print(getDoParWorkers())
 
 # Load features in BED format and convert into GRanges
 # Note addition of 1 to 0-based BED start coordinates
@@ -192,14 +186,12 @@ mclapply(seq_along(orderingFactor), function(w) {
                   percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
     }
     write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
-                file = paste0(outDir_list[[w]][x],
+                file = paste0(outDir[w],
                               "quantile", k, "_of_", quantiles,
                               "_by_", orderingFactor[w],
-                              "_of_",
-                              substring(featureName[1][1], first = 1, last = 5), "_in_",
-                              paste0(substring(featureName, first = 10, last = 16),
-                                     collapse = "_"), "_",
-                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                              "_of_", libName, "_peaks_in_",
+                              paste0(featureName,
+                                     collapse = "_"), ".txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     stats <- data.frame(quantile = as.integer(k),
                         n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
@@ -209,23 +201,20 @@ mclapply(seq_along(orderingFactor), function(w) {
     quantilesStats <- rbind(quantilesStats, stats)
   }
   write.table(quantilesStats,
-              file = paste0(outDir_list[[w]][x],
-                            "summary_", quantiles, "quantiles_by_", orderingFactor[w], "_in_",
-                            region, "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
-                            paste0(substring(featureName, first = 10, last = 16),
-                                   collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+              file = paste0(outDir[w],
+                            "summary_", quantiles, "quantiles",
+                             "_by_", orderingFactor[w],
+                             "_of_", libName, "_peaks_in_",
+                             paste0(featureName,
+                                    collapse = "_"), ".txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
   write.table(featuresDF,
-              file = paste0(outDir_list[[w]][x],
+              file = paste0(outDir[w],
                             "features_", quantiles, "quantiles",
-                            "_by_", orderingFactor[w], "_in_",
-                            region, "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
-                            paste0(substring(featureName, first = 10, last = 16),
-                                   collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                             "_by_", orderingFactor[w],
+                             "_of_", libName, "_peaks_in_",
+                             paste0(featureName,
+                                    collapse = "_"), ".txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
 
   # Divide ranLocs into quantiles based on feature quantile indices
@@ -240,150 +229,11 @@ mclapply(seq_along(orderingFactor), function(w) {
     ranLocsDF[quantileIndices[[k]],]$random <- paste0("Random ", k)
   }
   write.table(ranLocsDF,
-              file = paste0(outDir_list[[w]][x],
+              file = paste0(outDir[w],
                             "features_", quantiles, "quantiles",
-                            "_by_", orderingFactor[w], "_in_",
-                            region, "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
-                            paste0(substring(featureName, first = 10, last = 16),
-                                   collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_", pop_name[x], "_ranLocs.txt"),
+                             "_by_", orderingFactor[w],
+                             "_of_", libName, "_peaks_in_",
+                             paste0(featureName,
+                                    collapse = "_"), "_ranLocs.txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
 }, mc.cores = length(orderingFactor), mc.preschedule = F)
-
-
-
-# Divide features into quantiles based on decreasing log2ChIPmatRegionRowMeans
-featuresDF <- data.frame(featuresGR,
-                         quantile = as.character(""),
-                         stringsAsFactors = F)
-featuresDF$log2ChIPmatRegionRowMeans[which(is.na(featuresDF$log2ChIPmatRegionRowMeans))] <- 0
-quantilesStats <- data.frame()
-for(k in 1:quantiles) {
-  if(k < quantiles) {
-  # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
-    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
-  } else {
-  # Final quantile should span 0 to, e.g., 0.25 proportions of features
-    featuresDF[ percent_rank(featuresDF$log2ChIPmatRegionRowMeans) <= 1-((k-1)/quantiles) &
-                percent_rank(featuresDF$log2ChIPmatRegionRowMeans) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
-  }
-  write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
-              file = paste0(outDir,
-                            "quantile", k, "_of_", quantiles,
-                            "_by_log2_", libName, "_control_in_",
-                            region, "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
-                            paste0(substring(featureName, first = 10, last = 16),
-                                   collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), ".txt"),
-              quote = FALSE, sep = "\t", row.names = FALSE)
-  stats <- data.frame(quantile = as.integer(k),
-                      n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
-                      mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
-                      total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
-                      mean_log2ChIPmatRegionRowMeans = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$log2ChIPmatRegionRowMeans, na.rm = T)))
-  quantilesStats <- rbind(quantilesStats, stats)
-}
-write.table(quantilesStats,
-            file = paste0(outDir,
-                          "summary_", quantiles, "quantiles_by_log2_", libName, "_control_in_",
-                          region, "_of_",
-                          substring(featureName[1][1], first = 1, last = 5), "_in_",
-                          paste0(substring(featureName, first = 10, last = 16),
-                                 collapse = "_"), "_",
-                          substring(featureName[1][1], first = 18), ".txt"),
-            quote = FALSE, sep = "\t", row.names = FALSE)
-write.table(featuresDF,
-            file = paste0(outDir,
-                          "features_", quantiles, "quantiles",
-                          "_by_log2_", libName, "_control_in_",
-                          region, "_of_",
-                          substring(featureName[1][1], first = 1, last = 5), "_in_",
-                          paste0(substring(featureName, first = 10, last = 16),
-                                 collapse = "_"), "_",
-                          substring(featureName[1][1], first = 18), ".txt"),
-            quote = FALSE, sep = "\t", row.names = FALSE)
-
-# Divide ranLocs into quantiles based on feature quantile indices
-ranLocsDF <- data.frame(ranLocsGR,
-                        random = as.character(""),
-                        stringsAsFactors = F)
-# Get row indices for each feature quantile
-quantileIndices <- lapply(1:quantiles, function(k) {
-  which(featuresDF$quantile == paste0("Quantile ", k))
-})
-for(k in 1:quantiles) {
-  ranLocsDF[quantileIndices[[k]],]$random <- paste0("Random ", k)
-}
-write.table(ranLocsDF,
-            file = paste0(outDir,
-                          "features_", quantiles, "quantiles",
-                          "_by_log2_", libName, "_control_in_",
-                          region, "_of_",
-                          substring(featureName[1][1], first = 1, last = 5), "_in_",
-                          paste0(substring(featureName, first = 10, last = 16),
-                                 collapse = "_"), "_",
-                          substring(featureName[1][1], first = 18), "_ranLocs.txt"),
-            quote = FALSE, sep = "\t", row.names = FALSE)
-
-# Order features in each quantile by decreasing log2ChIPmatRegion levels
-# to define "row_order" for heatmaps
-combineRowOrders <- function(quantile_bool_list) {
-  do.call("c", lapply(quantile_bool_list, function(x) {
-    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    quantile_log2ChIPmatRegionRowMeans[which(is.na(quantile_log2ChIPmatRegionRowMeans))] <- 0
-    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
-  }))
-}
-row_order <- combineRowOrders(quantile_bool_list =
-  lapply(seq_along(1:quantiles), function(k) { 
-    featuresDF$quantile == paste0("Quantile ", k)
-  })
-)
-# Confirm row_order is as would be obtained by alternative method
-# Note that this alternative 
-stopifnot(identical(row_order,
-                    order(featuresDF$log2ChIPmatRegionRowMeans,
-                          decreasing=T)))
-
-# Order feature IDs in each quantile by decreasing log2ChIPmatRegion levels
-# for use in GO term enrichment analysis
-listCombineRowOrders <- function(quantile_bool_list) {
-  do.call(list, lapply(quantile_bool_list, function(x) {
-    quantile_log2ChIPmatRegionRowMeans <- rowMeans(log2ChIPmatRegion[x,], na.rm = T)
-    quantile_log2ChIPmatRegionRowMeans[which(is.na(quantile_log2ChIPmatRegionRowMeans))] <- 0
-    which(x)[order(quantile_log2ChIPmatRegionRowMeans, decreasing = T)]
-  }))
-}
-featureIndicesList <- listCombineRowOrders(quantile_bool_list =
-  lapply(seq_along(1:quantiles), function(k) {
-    featuresDF$quantile == paste0("Quantile ", k)
-  })
-)
-stopifnot(identical(row_order,
-                    do.call(c, lapply(featureIndicesList,
-                                      function(x) x))))
-# Alternatively, with original ordering:
-## Get feature indices for each quantile
-#featureIndicesList <- lapply(seq_along(1:quantiles), function(k) {
-#  which(featuresDF$quantile == paste0("Quantile ", k))
-#})
-
-featureIDsQuantileList <- lapply(seq_along(1:quantiles), function(k) {
-  sub(pattern = "\\.\\d+", replacement = "",
-      x = as.vector(featuresDF[featureIndicesList[[k]],]$featureID))
-})
-sapply(seq_along(featureIDsQuantileList), function(k) {
-  write.table(featureIDsQuantileList[[k]],
-              file = paste0(outDir,
-                            "featureIDs_quantile", k, "_of_", quantiles,
-                            "_by_log2_", libName, "_control_in_",
-                            region, "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
-                            paste0(substring(featureName, first = 10, last = 16),
-                                   collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), ".txt"),
-              quote = F, row.names = F, col.names = F)
-})
