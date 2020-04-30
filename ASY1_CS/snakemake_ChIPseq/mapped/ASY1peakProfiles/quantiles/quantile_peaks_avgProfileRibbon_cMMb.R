@@ -2114,7 +2114,7 @@ superfam_featureMats <- mclapply(seq_along(superfamNames), function(x) {
   lapply(seq_along(featureName), function(y) {
     as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/ASY1peakProfiles/matrices/",
                                 superfamNames[x], "_", superfamCodes[x],
-                                "_around_", featureName[y],
+                                "_around_", dirName, "_peaks_in_", featureName[y],
                                 "_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
                          header = T))
   })
@@ -2134,7 +2134,7 @@ superfam_ranLocMats <- mclapply(seq_along(superfamNames), function(x) {
   lapply(seq_along(featureName), function(y) {
     as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/ASY1peakProfiles/matrices/",
                                 superfamNames[x], "_", superfamCodes[x],
-                                "_around_", featureName[y],
+                                "_around_", dirName, "_peaks_in_", featureName[y],
                                 "_ranLoc_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
                          header = T))
   })
@@ -2176,7 +2176,6 @@ superfam_mats_quantiles <- mclapply(seq_along(superfam_featureMats), function(x)
        })
       ) 
 }, mc.cores = length(superfam_featureMats))
-
 
 # Transpose matrix and convert into dataframe
 # in which first column is window name
