@@ -14,7 +14,7 @@
 #
 
 # Usage:
-# /applications/R/R-3.4.0/bin/Rscript group_peaks_into_cMMb_quantiles.R ASY1_CS_Rep1_ChIP ASY1_CS 'Agenome_euchromatin,Bgenome_euchromatin,Dgenome_euchromatin' 4
+# /applications/R/R-3.5.0/bin/Rscript group_peaks_into_cMMb_quantiles.R ASY1_CS_Rep1_ChIP ASY1_CS 'Agenome_euchromatin,Bgenome_euchromatin,Dgenome_euchromatin' 4
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -174,8 +174,6 @@ mclapply(seq_along(orderingFactor), function(w) {
   }
   if(grepl("HudsonRM", orderingFactor[w])) {
     quantiles <- 2
-  } else {
-    quantiles <- 4
   }
   quantilesStats <- data.frame()
   for(k in 1:quantiles) {
