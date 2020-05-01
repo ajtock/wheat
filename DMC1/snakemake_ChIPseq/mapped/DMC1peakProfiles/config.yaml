@@ -1,0 +1,22 @@
+THREADS: 32
+SAMPLE: ["DMC1_Rep1_ChIP"]
+FEATURES:
+      genomeRegionName: ["Agenome_euchromatin",
+                         "Bgenome_euchromatin",
+                         "Dgenome_euchromatin",
+                         "Agenome_heterochromatin",
+                         "Bgenome_heterochromatin",
+                         "Dgenome_heterochromatin"]
+MAPPING:
+      mode: "both"
+      reference: "data/index/wheat_v1.0"
+COVERAGE:
+      bodyLength: 400
+      startLabel: "Start"
+      endLabel: "End"
+      upstream: 2000
+      downstream: 2000
+      flankName: "2kb"
+      binSize: 20
+      binName: "20bp"
+      sortRegions: "keep"
