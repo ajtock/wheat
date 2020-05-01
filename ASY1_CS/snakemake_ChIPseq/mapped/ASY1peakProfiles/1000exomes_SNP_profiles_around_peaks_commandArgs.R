@@ -213,7 +213,8 @@ if(length(mask_ranLoc_overlap) > 0) {
 }
 
 # Load SNPs
-SNPs <- read.table("all.GP08_mm75_het3_publication01142019.vcf",
+SNPs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
+                          "all.GP08_mm75_het3_publication01142019.vcf"),
                    header = F, skip = 31,
                    colClasses = c(rep(NA, 2),
                                   "NULL",
