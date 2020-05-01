@@ -1,0 +1,2546 @@
+#!/applications/R/R-3.5.0/bin/Rscript
+
+# Plot average coverage profiles with 95% CIs around peak quantiles
+
+# Usage:
+# csmit -m 100G -c 15 "/applications/R/R-3.5.0/bin/Rscript quantile_peaks_avgProfileRibbon_cMMb.R DMC1_Rep1_ChIP DMC1 'Agenome_euchromatin,Bgenome_euchromatin,Dgenome_euchromatin' cMMb 4 both 400 2000 2kb 20 '0.02,0.96'"
+
+#libName <- "DMC1_Rep1_ChIP"
+#dirName <- "DMC1"
+#featureName <- unlist(strsplit("Agenome_euchromatin,Bgenome_euchromatin,Dgenome_euchromatin",
+#                               split = ","))
+#orderingFactor <- "cMMb"
+#quantiles <- 4
+#align <- "both"
+#bodyLength <- 400
+#upstream <- 2000
+#downstream <- 2000
+#flankName <- "2 kb"
+#binSize <- 20
+## top left
+#legendPos <- as.numeric(unlist(strsplit("0.02,0.96",
+#                                        split = ",")))
+## top centre
+#legendPos <- as.numeric(unlist(strsplit("0.38,0.96",
+#                                        split = ",")))
+## top right
+#legendPos <- as.numeric(unlist(strsplit("0.75,0.96",
+#                                        split = ",")))
+## bottom left
+#legendPos <- as.numeric(unlist(strsplit("0.02,0.30",
+#                                        split = ",")))
+args <- commandArgs(trailingOnly = T)
+libName <- args[1]
+dirName <- args[2]
+featureName <- unlist(strsplit(args[3],
+                               split = ","))
+orderingFactor <- args[4]
+quantiles <- as.numeric(args[5])
+align <- args[6]
+bodyLength <- as.numeric(args[7])
+upstream <- as.numeric(args[8])
+downstream <- as.numeric(args[8])
+flankName <- args[9]
+binSize <- as.numeric(args[10])
+legendPos <- as.numeric(unlist(strsplit(args[11],
+                                        split = ",")))
+
+library(parallel)
+library(tidyr)
+library(dplyr)
+library(ggplot2)
+library(ggthemes)
+library(grid)
+library(gridExtra)
+library(extrafont)
+
+outDir <- paste0("quantiles_by_", orderingFactor, "/")
+plotDir <- paste0(outDir, "plots/")
+system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
+system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+
+# Define plot titles
+if(orderingFactor == "cMMb") {
+  featureNamePlot <- paste0(substr(orderingFactor, start = 1, stop = 2), "/",
+                            substr(orderingFactor, start = 3, stop = 4), " ",
+                            sub("_\\w+", "", libName), " peaks")
+}
+ranFeatNamePlot <- paste0("Random ",
+                          sub("_\\w+", "", libName), " peaks")
+ranLocNamePlot <- "Random loci"
+
+# Define quantile colours
+quantileColours <- c("red", "purple", "blue", "navy")
+
+# Define feature start and end labels for plotting
+featureStartLab <- "Start"
+featureEndLab <- "End"
+
+# Genomic definitions
+chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
+chrs <- chrs[-length(chrs)]
+
+# Load table of features grouped into quantiles
+# by decreasing cM/Mb
+featuresDF <- read.table(paste0(outDir,
+                                "features_", quantiles, "quantiles",
+                                 "_by_", orderingFactor,
+                                 "_of_", libName, "_peaks_in_",
+                                 paste0(featureName,
+                                        collapse = "_"), ".txt"),
+                         header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
+
+# Load features to confirm feature (row) ordering in "featuresDF" is the same
+# as in "features" (which was used for generating the coverage matrices)
+features <- lapply(seq_along(featureName), function(y) {
+  tmp <- read.table(paste0("/home/ajt200/analysis/wheat/", dirName,
+                           "/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/",
+                           libName,
+                           "_rangerPeaksGRmergedOverlaps_minuslog10_p0.001_q0.01_noMinWidth_in_",
+                           featureName[y], ".bed"),
+                    header = F)
+  data.frame(tmp,
+             V7 = paste0(featureName[y], "_", tmp$V4),
+             stringsAsFactors = F)
+})
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature data.frames
+if(length(featureName) > 1) {
+  features <- do.call(rbind, features)
+} else {
+  features <- features[[1]]
+}
+colnames(features) <- c("chr", "start", "end", "name", "score", "strand", "featureID")
+stopifnot(identical(as.character(featuresDF$featureID),
+                    as.character(features$featureID)))
+rm(features); gc()
+
+# Get row indices for each feature quantile
+quantileIndices <- lapply(1:quantiles, function(k) {
+  which(featuresDF$quantile == paste0("Quantile ", k))
+})
+
+## Random feature quantiles
+# Define function to randomly select n rows from
+# a data.frame
+selectRandomFeatures <- function(features, n) {
+  return(features[sample(x = dim(features)[1],
+                         size = n,
+                         replace = FALSE),])
+}
+
+# Define seed so that random selections are reproducible
+set.seed(93750174)
+
+# Divide features into random sets of equal number,
+# with the same number of peaks per chromosome as
+# above-defined orderingFactor-defined feature quantiles
+randomPCIndices <- lapply(1:quantiles, function(k) {
+  randomPCIndicesk <- NULL
+  for(i in 1:length(chrs)) {
+    randomPCfeatureskChr <- selectRandomFeatures(features = featuresDF[featuresDF$seqnames == chrs[i],],
+                                                 n = dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k) &
+                                                                    featuresDF$seqnames == chrs[i],])[1])
+    randomPCIndicesk <- c(randomPCIndicesk, as.integer(rownames(randomPCfeatureskChr)))
+  }
+  randomPCIndicesk
+})
+# Confirm per-chromosome feature numbers are the same for quantiles and random groupings
+lapply(seq_along(1:quantiles), function(k) {
+  sapply(seq_along(chrs), function(x) {
+    if(!identical(dim(featuresDF[randomPCIndices[[k]],][featuresDF[randomPCIndices[[k]],]$seqnames == chrs[x],]),
+                  dim(featuresDF[quantileIndices[[k]],][featuresDF[quantileIndices[[k]],]$seqnames == chrs[x],])))    {
+      stop("Quantile features and random features do not consist of the same number of features per chromosome")
+    }
+  })
+})
+
+
+# Load feature matrices for each chromatin dataset, calculate log2(ChIP/control),
+# and sort by decreasing log2mat1RegionRowMeans
+ChIPNames <- c(
+               "DMC1_Rep1_ChIP",
+               "ASY1_CS_Rep1_ChIP",
+               "H2AZ_Rep1_ChIP",
+               "H3K4me3_Rep1_ChIP",
+               "H3K4me1_Rep1_ChIP_SRR8126618",
+               "H3K27ac_Rep1_ChIP_SRR8126621",
+               "H3K27me3_ChIP_SRR6350666",
+               "H3K9me2_Rep1_ChIP",
+               "H3K27me1_Rep1_ChIP"
+              )
+ChIPNamesDir <- c(
+                  "DMC1",
+                  "ASY1_CS",
+                  "H2AZ",
+                  "H3K4me3",
+                  "H3K4me1",
+                  "H3K27ac",
+                  "H3K27me3",
+                  "H3K9me2",
+                  "H3K27me1"
+                 )
+log2ChIPNamesPlot <- c(
+                       "DMC1",
+                       "ASY1",
+                       "H2A.Z",
+                       "H3K4me3",
+                       "H3K4me1",
+                       "H3K27ac",
+                       "H3K27me3",
+                       "H3K9me2",
+                       "H3K27me1"
+                      )
+log2ChIPColours <- c(
+                     "green2",
+                     "purple4",
+                     "dodgerblue",
+                     "forestgreen",
+                     "goldenrod1",
+                     "orange",
+                     "navy",
+                     "magenta3",
+                     "firebrick1"
+                    )
+ChIPDirs <- sapply(seq_along(ChIPNames), function(x) {
+  if(ChIPNames[x] %in% c("H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "CENH3_ChIP_SRR1686799")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else if(ChIPNames[x] %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
+                                "H3K27ac_Rep1_ChIP_SRR8126621")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else {
+    paste0("/home/ajt200/analysis/wheat/",
+           ChIPNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  }
+})
+
+controlNames <- c(
+                  "H3_input_SRR6350669",
+                  "MNase_Rep1"
+                 )
+controlNamesDir <- c(
+                     "input",
+                     "MNase"
+                    )
+controlNamesPlot <- c(
+                      "Input",
+                      "MNase"
+                     )
+controlColours <- c(
+                    "grey40",
+                    "darkcyan"
+                   )
+controlDirs <- sapply(seq_along(controlNames), function(x) {
+  if(controlNames[x] == "H3_input_SRR6350669") {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else if(controlNames[x] == "MNase_Rep1") {
+    paste0("/home/ajt200/analysis/wheat/",
+           controlNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else {
+    if(!(controlNames %in% c("H3_input_SRR6350669", "MNase_Rep1"))) {
+      stop(paste0("controlNames[", x, "] is neither H3_input_SRR6350669 nor MNase_Rep1"))
+    }
+  }
+})
+
+otherNames <- c(
+                "MNase_Rep1",
+                "DNaseI_Rep1_SRR8447247",
+                "WT_RNAseq_Rep1_ERR2402974",
+                "WT_RNAseq_Rep2_ERR2402973",
+                "WT_RNAseq_Rep3_ERR2402972"
+               )
+otherNamesDir <- c(
+                   "MNase",
+                   "DNaseI",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci",
+                   "RNAseq_meiocyte_Martin_Moore_2018_FrontPlantSci"
+                  )
+otherNamesPlot <- c(
+                    "MNase",
+                    "DNaseI",
+                    "RNA-seq Rep1",
+                    "RNA-seq Rep2",
+                    "RNA-seq Rep3"
+                   )
+otherColours <- c(
+                  "darkcyan",
+                  "purple",
+                  "red4",
+                  "red4",
+                  "red4"
+                 )
+otherDirs <- sapply(seq_along(otherNames), function(x) {
+  if(otherNames[x] %in% c("MNase_Rep1")) {
+    paste0("/home/ajt200/analysis/wheat/",
+           otherNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else if(otherNames[x] %in% c("DNaseI_Rep1_SRR8447247")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+           otherNamesDir[x], "/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/")
+  } else if(grepl("RNAseq", otherNames[x])) {
+    paste0("/home/ajt200/analysis/wheat/",
+           otherNamesDir[x], "/snakemake_RNAseq_HISAT2/mapped/DMC1peakProfiles/matrices/")
+  } else {
+    stop(paste0("otherNames[", x, "] is not compatible with the specified coverage matrix paths"))
+  }
+})
+
+DNAmethNames <- c(
+                  "BSseq_Rep8a_SRR6792678"
+                 )
+DNAmethNamesDir <- c(
+                     "BSseq"
+                    )
+DNAmethContexts <- c(
+                     "CpG",
+                     "CHG",
+                     "CHH"
+                    )
+DNAmethNamesPlot <- c(
+                      "mCG",
+                      "mCHG",
+                      "mCHH"
+                     )
+DNAmethColours <- c(
+                    "navy",
+                    "blue",
+                    "deepskyblue1"
+                   )
+DNAmethDirs <- sapply(seq_along(DNAmethNames), function(x) {
+  if(DNAmethNames[x] %in% c("BSseq_Rep8a_SRR6792678")) {
+    paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+           DNAmethNamesDir[x],
+           "/snakemake_BSseq/coverage/DMC1peakProfiles/matrices/")
+  } else {
+    stop(paste0("DNAmethNames[", x, "] is not compatible with the specified coverage matrix paths"))
+  }
+})
+
+## control
+# feature
+control_featureMats <- mclapply(seq_along(controlNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                dirName, "_peaks_in_", featureName[y], "_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(controlNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+control_featureMats <- mclapply(seq_along(control_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, control_featureMats[[x]])
+  } else {
+    control_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(control_featureMats))
+
+# ranLoc
+control_ranLocMats <- mclapply(seq_along(controlNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(controlDirs[x],
+                                controlNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                dirName, "_peaks_in_", featureName[y], "_ranLoc_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(controlNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+control_ranLocMats <- mclapply(seq_along(control_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, control_ranLocMats[[x]])
+  } else {
+    control_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(control_ranLocMats))
+
+## ChIP
+# feature
+ChIP_featureMats <- mclapply(seq_along(ChIPNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(ChIPDirs[x],
+                                ChIPNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                dirName, "_peaks_in_", featureName[y], "_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(ChIPNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, ChIP_featureMats[[x]])
+  } else {
+    ChIP_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(ChIP_featureMats))
+
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
+log2ChIP_featureMats <- mclapply(seq_along(ChIP_featureMats), function(x) {
+  if(ChIPNames[x] %in% c(
+                         "ASY1_CS_Rep1_ChIP",
+                         "DMC1_Rep1_ChIP",
+                         "H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "H3K4me1_Rep1_ChIP_SRR8126618",
+                         "H3K27ac_Rep1_ChIP_SRR8126621"
+                        )) {
+    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[1]]+1))
+  } else {
+    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_featureMats[[x]]+1)/(control_featureMats[[2]]+1))
+  }
+}, mc.cores = length(ChIP_featureMats))
+
+# ranLoc
+ChIP_ranLocMats <- mclapply(seq_along(ChIPNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(ChIPDirs[x],
+                                ChIPNames[x],
+                                "_MappedOn_wheat_v1.0_lowXM_", align, "_sort_norm_",
+                                dirName, "_peaks_in_", featureName[y], "_ranLoc_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(ChIPNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, ChIP_ranLocMats[[x]])
+  } else {
+    ChIP_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(ChIP_ranLocMats))
+
+# Conditionally calculate log2(ChIP/input) or log2(ChIP/MNase)
+# for each matrix depending on library
+log2ChIP_ranLocMats <- mclapply(seq_along(ChIP_ranLocMats), function(x) {
+  if(ChIPNames[x] %in% c(
+                         "ASY1_CS_Rep1_ChIP",
+                         "DMC1_Rep1_ChIP",
+                         "H3K4me3_ChIP_SRR6350668",
+                         "H3K27me3_ChIP_SRR6350666",
+                         "H3K36me3_ChIP_SRR6350670",
+                         "H3K9ac_ChIP_SRR6350667",
+                         "H3K4me1_Rep1_ChIP_SRR8126618",
+                         "H3K27ac_Rep1_ChIP_SRR8126621"
+                        )) {
+    print(paste0(ChIPNames[x], " was sonication-based; using ", controlNames[1], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_ranLocMats[[x]]+1)/(control_ranLocMats[[1]]+1))
+  } else {
+    print(paste0(ChIPNames[x], " was MNase-based; using ", controlNames[2], " for log2((ChIP+1)/(control+1)) calculation"))
+    log2((ChIP_ranLocMats[[x]]+1)/(control_ranLocMats[[2]]+1))
+  }
+}, mc.cores = length(ChIP_ranLocMats))
+
+# Add column names
+for(x in seq_along(log2ChIP_featureMats)) {
+  colnames(log2ChIP_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(log2ChIP_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+log2ChIP_mats_quantiles <- mclapply(seq_along(log2ChIP_featureMats), function(x) {
+  list(
+       # feature quantiles
+       lapply(1:quantiles, function(k) {
+         log2ChIP_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # feature random groupings
+       lapply(1:quantiles, function(k) {
+         log2ChIP_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # random loci groupings
+       lapply(1:quantiles, function(k) {
+         log2ChIP_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(log2ChIP_featureMats))
+
+# Transpose matrix and convert into dataframe
+# in which first column is window name
+wideDFfeature_list_log2ChIP <- mclapply(seq_along(log2ChIP_mats_quantiles), function(x) {
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(log2ChIP_mats_quantiles[[x]][[y]][[k]]),
+                 t(log2ChIP_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(log2ChIP_mats_quantiles))
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list_log2ChIP  <- mclapply(seq_along(wideDFfeature_list_log2ChIP), function(x) {
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_log2ChIP[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
+}, mc.cores = length(wideDFfeature_list_log2ChIP))
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(x in seq_along(tidyDFfeature_list_log2ChIP)) {
+  for(y in seq_along(log2ChIP_mats_quantiles[[x]])) {
+    for(k in seq_along(log2ChIP_mats_quantiles[[x]][[y]])) {
+      tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window))
+    }
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list_log2ChIP  <- mclapply(seq_along(tidyDFfeature_list_log2ChIP), function(x) {
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(log2ChIP_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
+}, mc.cores = length(tidyDFfeature_list_log2ChIP))
+
+for(x in seq_along(summaryDFfeature_list_log2ChIP)) {
+  for(y in seq_along(log2ChIP_mats_quantiles[[x]])) {
+    for(k in seq_along(log2ChIP_mats_quantiles[[x]][[y]])) {
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_log2ChIP[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_log2ChIP[[x]][[y]][[k]]$sem
+    }
+  }
+}
+
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
+randomPCNames <- paste0(rep("Random ", quantiles), 1:quantiles)
+for(x in seq_along(summaryDFfeature_list_log2ChIP)) {
+  # feature quantiles
+  names(summaryDFfeature_list_log2ChIP[[x]][[1]]) <- quantileNames
+  # feature random groupings
+  names(summaryDFfeature_list_log2ChIP[[x]][[2]]) <- randomPCNames
+  # random loci groupings
+  names(summaryDFfeature_list_log2ChIP[[x]][[3]]) <- randomPCNames
+}
+
+# Convert list of lists of lists of feature quantiles summaryDFfeature_list_log2ChIP into
+# a list of lists of single data.frames containing all feature quantiles for plotting
+summaryDFfeature_log2ChIP  <- mclapply(seq_along(summaryDFfeature_list_log2ChIP), function(x) {
+  lapply(seq_along(log2ChIP_mats_quantiles[[x]]), function(y) {
+    bind_rows(summaryDFfeature_list_log2ChIP[[x]][[y]], .id = "quantile")
+  })
+}, mc.cores = length(summaryDFfeature_list_log2ChIP))
+for(x in seq_along(summaryDFfeature_log2ChIP)) {
+  # feature quantiles
+  summaryDFfeature_log2ChIP[[x]][[1]]$quantile <- factor(summaryDFfeature_log2ChIP[[x]][[1]]$quantile,
+                                                         levels = names(summaryDFfeature_list_log2ChIP[[x]][[1]]))
+  # feature random groupings
+  summaryDFfeature_log2ChIP[[x]][[2]]$quantile <- factor(summaryDFfeature_log2ChIP[[x]][[2]]$quantile,
+                                                         levels = names(summaryDFfeature_list_log2ChIP[[x]][[2]]))
+  # random loci groupings
+  summaryDFfeature_log2ChIP[[x]][[3]]$quantile <- factor(summaryDFfeature_log2ChIP[[x]][[3]]$quantile,
+                                                         levels = names(summaryDFfeature_list_log2ChIP[[x]][[3]]))
+}
+
+# Define y-axis limits
+ymin_list_log2ChIP <- lapply(seq_along(summaryDFfeature_log2ChIP), function(x) {
+  min(c(summaryDFfeature_log2ChIP[[x]][[1]]$CI_lower,
+        summaryDFfeature_log2ChIP[[x]][[2]]$CI_lower,
+        summaryDFfeature_log2ChIP[[x]][[3]]$CI_lower))
+})
+ymax_list_log2ChIP <- lapply(seq_along(summaryDFfeature_log2ChIP), function(x) {
+  max(c(summaryDFfeature_log2ChIP[[x]][[1]]$CI_upper,
+        summaryDFfeature_log2ChIP[[x]][[2]]$CI_upper,
+        summaryDFfeature_log2ChIP[[x]][[3]]$CI_upper))
+})
+
+# Define legend labels
+legendLabs_feature <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranFeat <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranLoc <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+
+# Plot average profiles with 95% CI ribbon
+## feature
+ggObj1_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[1]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_log2ChIP[[x]][[1]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_log2ChIP[[x]][[1]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_log2ChIP[[x]][[1]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = log2ChIPNamesPlot[x]) +
+  annotation_custom(legendLabs_feature[[1]]) +
+  annotation_custom(legendLabs_feature[[2]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = log2ChIPColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(log2ChIPNamesPlot))
+
+## ranFeat
+ggObj2_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[2]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_log2ChIP[[x]][[2]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_log2ChIP[[x]][[2]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_log2ChIP[[x]][[2]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = log2ChIPNamesPlot[x]) +
+  annotation_custom(legendLabs_ranFeat[[1]]) +
+  annotation_custom(legendLabs_ranFeat[[2]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = log2ChIPColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranFeatNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(log2ChIPNamesPlot))
+
+## ranLoc
+ggObj3_combined_log2ChIP <- mclapply(seq_along(log2ChIPNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_log2ChIP[[x]][[3]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_log2ChIP[[x]], ymax_list_log2ChIP[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_log2ChIP[[x]][[3]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_log2ChIP[[x]][[3]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              "Start",
+                              "End",
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_log2ChIP[[x]][[3]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = log2ChIPNamesPlot[x]) +
+  annotation_custom(legendLabs_ranLoc[[1]]) +
+  annotation_custom(legendLabs_ranLoc[[2]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = log2ChIPColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranLocNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(log2ChIPNamesPlot))
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_log2ChIP,
+                                           ggObj2_combined_log2ChIP,
+                                           ggObj3_combined_log2ChIP
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(log2ChIPNamesPlot)),
+                                                       (length(c(log2ChIPNamesPlot))+1):(length(c(log2ChIPNamesPlot))*2),
+                                                       ((length(c(log2ChIPNamesPlot))*2)+1):(length(c(log2ChIPNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "log2ChIPcontrol_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   ChIP_featureMats, ChIP_ranLocMats,
+   control_featureMats, control_ranLocMats,
+   log2ChIP_featureMats, log2ChIP_ranLocMats,
+   log2ChIP_mats_quantiles,
+   wideDFfeature_list_log2ChIP,
+   tidyDFfeature_list_log2ChIP,
+   summaryDFfeature_list_log2ChIP,
+   summaryDFfeature_log2ChIP
+  ) 
+gc()
+#####
+
+
+## other
+# feature
+other_featureMats <- mclapply(seq_along(otherNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    otherFile <- system(paste0("ls ", otherDirs[x],
+                               otherNames[x],
+                               "_MappedOn_wheat_v1.0*", align, "_sort_norm_",
+                               dirName, "_peaks_in_", featureName[y], "_matrix_bin", binSize,
+                               "bp_flank", sub(" ", "", flankName), ".tab"),
+                        intern = T)
+    as.matrix(read.table(otherFile,
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(otherNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+other_featureMats <- mclapply(seq_along(other_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, other_featureMats[[x]])
+  } else {
+    other_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(other_featureMats))
+
+# ranLoc
+other_ranLocMats <- mclapply(seq_along(otherNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    otherFile <- system(paste0("ls ", otherDirs[x],
+                               otherNames[x],
+                               "_MappedOn_wheat_v1.0*", align, "_sort_norm_",
+                               dirName, "_peaks_in_", featureName[y], "_ranLoc_matrix_bin", binSize,
+                               "bp_flank", sub(" ", "", flankName), ".tab"),
+                        intern = T)
+    as.matrix(read.table(otherFile,
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(otherNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+other_ranLocMats <- mclapply(seq_along(other_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, other_ranLocMats[[x]])
+  } else {
+    other_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(other_ranLocMats))
+
+# Add column names
+for(x in seq_along(other_featureMats)) {
+  colnames(other_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(other_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+other_mats_quantiles <- mclapply(seq_along(other_featureMats), function(x) {
+  list(
+       # feature quantiles
+       lapply(1:quantiles, function(k) {
+         other_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # feature random groupings
+       lapply(1:quantiles, function(k) {
+         other_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # random loci groupings
+       lapply(1:quantiles, function(k) {
+         other_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(other_featureMats))
+
+
+# Transpose matrix and convert into dataframe
+# in which first column is window name
+wideDFfeature_list_other <- mclapply(seq_along(other_mats_quantiles), function(x) {
+  lapply(seq_along(other_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(other_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(other_mats_quantiles[[x]][[y]][[k]]),
+                 t(other_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(other_mats_quantiles))
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list_other  <- mclapply(seq_along(wideDFfeature_list_other), function(x) {
+  lapply(seq_along(other_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(other_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_other[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
+}, mc.cores = length(wideDFfeature_list_other))
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(x in seq_along(tidyDFfeature_list_other)) {
+  for(y in seq_along(other_mats_quantiles[[x]])) {
+    for(k in seq_along(other_mats_quantiles[[x]][[y]])) {
+      tidyDFfeature_list_other[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_other[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_other[[x]][[y]][[k]]$window))
+    }
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list_other  <- mclapply(seq_along(tidyDFfeature_list_other), function(x) {
+  lapply(seq_along(other_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(other_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_other[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_other[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_other[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_other[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_other[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_other[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_other[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
+}, mc.cores = length(tidyDFfeature_list_other))
+
+for(x in seq_along(summaryDFfeature_list_other)) {
+  for(y in seq_along(other_mats_quantiles[[x]])) {
+    for(k in seq_along(other_mats_quantiles[[x]][[y]])) {
+      summaryDFfeature_list_other[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_other[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_other[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_other[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_other[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_other[[x]][[y]][[k]]$sem <- summaryDFfeature_list_other[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_other[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_other[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_other[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_other[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_other[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_other[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_other[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_other[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_other[[x]][[y]][[k]]$sem
+    }
+  }
+}
+
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
+randomPCNames <- paste0(rep("Random ", quantiles), 1:quantiles)
+for(x in seq_along(summaryDFfeature_list_other)) {
+  # feature quantiles
+  names(summaryDFfeature_list_other[[x]][[1]]) <- quantileNames
+  # feature random groupings
+  names(summaryDFfeature_list_other[[x]][[2]]) <- randomPCNames
+  # random loci groupings
+  names(summaryDFfeature_list_other[[x]][[3]]) <- randomPCNames
+}
+
+# Convert list of lists of lists of feature quantiles summaryDFfeature_list_other into
+# a list of lists of single data.frames containing all feature quantiles for plotting
+summaryDFfeature_other  <- mclapply(seq_along(summaryDFfeature_list_other), function(x) {
+  lapply(seq_along(other_mats_quantiles[[x]]), function(y) {
+    bind_rows(summaryDFfeature_list_other[[x]][[y]], .id = "quantile")
+  })
+}, mc.cores = length(summaryDFfeature_list_other))
+for(x in seq_along(summaryDFfeature_other)) {
+  # feature quantiles
+  summaryDFfeature_other[[x]][[1]]$quantile <- factor(summaryDFfeature_other[[x]][[1]]$quantile,
+                                                         levels = names(summaryDFfeature_list_other[[x]][[1]]))
+  # feature random groupings
+  summaryDFfeature_other[[x]][[2]]$quantile <- factor(summaryDFfeature_other[[x]][[2]]$quantile,
+                                                         levels = names(summaryDFfeature_list_other[[x]][[2]]))
+  # random loci groupings
+  summaryDFfeature_other[[x]][[3]]$quantile <- factor(summaryDFfeature_other[[x]][[3]]$quantile,
+                                                         levels = names(summaryDFfeature_list_other[[x]][[3]]))
+}
+
+# Define y-axis limits
+ymin_list_other <- lapply(seq_along(summaryDFfeature_other), function(x) {
+  min(c(summaryDFfeature_other[[x]][[1]]$CI_lower,
+        summaryDFfeature_other[[x]][[2]]$CI_lower,
+        summaryDFfeature_other[[x]][[3]]$CI_lower))
+})
+ymax_list_other <- lapply(seq_along(summaryDFfeature_other), function(x) {
+  max(c(summaryDFfeature_other[[x]][[1]]$CI_upper,
+        summaryDFfeature_other[[x]][[2]]$CI_upper,
+        summaryDFfeature_other[[x]][[3]]$CI_upper))
+})
+
+# Define legend labels
+legendLabs_feature <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranFeat <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranLoc <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+
+# Plot average profiles with 95% CI ribbon
+## feature
+ggObj1_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_other[[x]][[1]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_other[[x]], ymax_list_other[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_other[[x]][[1]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_other[[x]][[1]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_other[[x]][[1]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = otherNamesPlot[x]) +
+  annotation_custom(legendLabs_feature[[1]]) +
+  annotation_custom(legendLabs_feature[[2]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = otherColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(otherNamesPlot))
+
+## ranFeat
+ggObj2_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_other[[x]][[2]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_other[[x]], ymax_list_other[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_other[[x]][[2]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_other[[x]][[2]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_other[[x]][[2]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = otherNamesPlot[x]) +
+  annotation_custom(legendLabs_ranFeat[[1]]) +
+  annotation_custom(legendLabs_ranFeat[[2]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = otherColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranFeatNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(otherNamesPlot))
+
+## ranLoc
+ggObj3_combined_other <- mclapply(seq_along(otherNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_other[[x]][[3]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_other[[x]], ymax_list_other[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_other[[x]][[3]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_other[[x]][[3]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              "Start",
+                              "End",
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_other[[x]][[3]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = otherNamesPlot[x]) +
+  annotation_custom(legendLabs_ranLoc[[1]]) +
+  annotation_custom(legendLabs_ranLoc[[2]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = otherColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranLocNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(otherNamesPlot))
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_other,
+                                           ggObj2_combined_other,
+                                           ggObj3_combined_other
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(otherNamesPlot)),
+                                                       (length(c(otherNamesPlot))+1):(length(c(otherNamesPlot))*2),
+                                                       ((length(c(otherNamesPlot))*2)+1):(length(c(otherNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "other_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   other_featureMats, other_ranLocMats,
+   other_mats_quantiles,
+   wideDFfeature_list_other,
+   tidyDFfeature_list_other,
+   summaryDFfeature_list_other,
+   summaryDFfeature_other
+  ) 
+gc()
+#####
+
+
+## DNAmeth
+# feature
+DNAmeth_featureMats <- mclapply(seq_along(DNAmethContexts), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(DNAmethDirs,
+                                DNAmethNames,
+                                "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_", DNAmethContexts[x], "_",
+                                dirName, "_peaks_in_", featureName[y], "_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(DNAmethContexts))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+DNAmeth_featureMats <- mclapply(seq_along(DNAmeth_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, DNAmeth_featureMats[[x]])
+  } else {
+    DNAmeth_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(DNAmeth_featureMats))
+
+# ranLoc
+DNAmeth_ranLocMats <- mclapply(seq_along(DNAmethContexts), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0(DNAmethDirs,
+                                DNAmethNames,
+                                "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_", DNAmethContexts[x], "_",
+                                dirName, "_peaks_in_", featureName[y], "_ranLoc_matrix_bin", binSize,
+                                "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = F, skip = 3))
+  })
+}, mc.cores = length(DNAmethContexts))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+DNAmeth_ranLocMats <- mclapply(seq_along(DNAmeth_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, DNAmeth_ranLocMats[[x]])
+  } else {
+    DNAmeth_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(DNAmeth_ranLocMats))
+
+# Add column names
+for(x in seq_along(DNAmeth_featureMats)) {
+  colnames(DNAmeth_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(DNAmeth_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+DNAmeth_mats_quantiles <- mclapply(seq_along(DNAmeth_featureMats), function(x) {
+  list(
+       # feature quantiles
+       lapply(1:quantiles, function(k) {
+         DNAmeth_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # feature random groupings
+       lapply(1:quantiles, function(k) {
+         DNAmeth_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # random loci groupings
+       lapply(1:quantiles, function(k) {
+         DNAmeth_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(DNAmeth_featureMats))
+
+
+# Transpose matrix and convert into dataframe
+# in which first column is window name
+wideDFfeature_list_DNAmeth <- mclapply(seq_along(DNAmeth_mats_quantiles), function(x) {
+  lapply(seq_along(DNAmeth_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(DNAmeth_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(DNAmeth_mats_quantiles[[x]][[y]][[k]]),
+                 t(DNAmeth_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(DNAmeth_mats_quantiles))
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list_DNAmeth  <- mclapply(seq_along(wideDFfeature_list_DNAmeth), function(x) {
+  lapply(seq_along(DNAmeth_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(DNAmeth_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_DNAmeth[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
+}, mc.cores = length(wideDFfeature_list_DNAmeth))
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(x in seq_along(tidyDFfeature_list_DNAmeth)) {
+  for(y in seq_along(DNAmeth_mats_quantiles[[x]])) {
+    for(k in seq_along(DNAmeth_mats_quantiles[[x]][[y]])) {
+      tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_DNAmeth[[x]][[y]][[k]]$window))
+    }
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list_DNAmeth  <- mclapply(seq_along(tidyDFfeature_list_DNAmeth), function(x) {
+  lapply(seq_along(DNAmeth_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(DNAmeth_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_DNAmeth[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_DNAmeth[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
+}, mc.cores = length(tidyDFfeature_list_DNAmeth))
+
+for(x in seq_along(summaryDFfeature_list_DNAmeth)) {
+  for(y in seq_along(DNAmeth_mats_quantiles[[x]])) {
+    for(k in seq_along(DNAmeth_mats_quantiles[[x]][[y]])) {
+      summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_DNAmeth[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_DNAmeth[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$sem <- summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_DNAmeth[[x]][[y]][[k]]$sem
+    }
+  }
+}
+
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
+randomPCNames <- paste0(rep("Random ", quantiles), 1:quantiles)
+for(x in seq_along(summaryDFfeature_list_DNAmeth)) {
+  # feature quantiles
+  names(summaryDFfeature_list_DNAmeth[[x]][[1]]) <- quantileNames
+  # feature random groupings
+  names(summaryDFfeature_list_DNAmeth[[x]][[2]]) <- randomPCNames
+  # random loci groupings
+  names(summaryDFfeature_list_DNAmeth[[x]][[3]]) <- randomPCNames
+}
+
+# Convert list of lists of lists of feature quantiles summaryDFfeature_list_DNAmeth into
+# a list of lists of single data.frames containing all feature quantiles for plotting
+summaryDFfeature_DNAmeth  <- mclapply(seq_along(summaryDFfeature_list_DNAmeth), function(x) {
+  lapply(seq_along(DNAmeth_mats_quantiles[[x]]), function(y) {
+    bind_rows(summaryDFfeature_list_DNAmeth[[x]][[y]], .id = "quantile")
+  })
+}, mc.cores = length(summaryDFfeature_list_DNAmeth))
+for(x in seq_along(summaryDFfeature_DNAmeth)) {
+  # feature quantiles
+  summaryDFfeature_DNAmeth[[x]][[1]]$quantile <- factor(summaryDFfeature_DNAmeth[[x]][[1]]$quantile,
+                                                         levels = names(summaryDFfeature_list_DNAmeth[[x]][[1]]))
+  # feature random groupings
+  summaryDFfeature_DNAmeth[[x]][[2]]$quantile <- factor(summaryDFfeature_DNAmeth[[x]][[2]]$quantile,
+                                                         levels = names(summaryDFfeature_list_DNAmeth[[x]][[2]]))
+  # random loci groupings
+  summaryDFfeature_DNAmeth[[x]][[3]]$quantile <- factor(summaryDFfeature_DNAmeth[[x]][[3]]$quantile,
+                                                         levels = names(summaryDFfeature_list_DNAmeth[[x]][[3]]))
+}
+
+# Define y-axis limits
+ymin_list_DNAmeth <- lapply(seq_along(summaryDFfeature_DNAmeth), function(x) {
+  min(c(summaryDFfeature_DNAmeth[[x]][[1]]$CI_lower,
+        summaryDFfeature_DNAmeth[[x]][[2]]$CI_lower,
+        summaryDFfeature_DNAmeth[[x]][[3]]$CI_lower))
+})
+ymax_list_DNAmeth <- lapply(seq_along(summaryDFfeature_DNAmeth), function(x) {
+  max(c(summaryDFfeature_DNAmeth[[x]][[1]]$CI_upper,
+        summaryDFfeature_DNAmeth[[x]][[2]]$CI_upper,
+        summaryDFfeature_DNAmeth[[x]][[3]]$CI_upper))
+})
+
+# Define legend labels
+legendLabs_feature <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranFeat <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranLoc <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+
+# Plot average profiles with 95% CI ribbon
+## feature
+ggObj1_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_DNAmeth[[x]][[1]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_DNAmeth[[x]][[1]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_DNAmeth[[x]][[1]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_DNAmeth[[x]][[1]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  annotation_custom(legendLabs_feature[[1]]) +
+  annotation_custom(legendLabs_feature[[2]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(DNAmethNamesPlot))
+
+## ranFeat
+ggObj2_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_DNAmeth[[x]][[2]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_DNAmeth[[x]][[2]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_DNAmeth[[x]][[2]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_DNAmeth[[x]][[2]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  annotation_custom(legendLabs_ranFeat[[1]]) +
+  annotation_custom(legendLabs_ranFeat[[2]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranFeatNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(DNAmethNamesPlot))
+
+## ranLoc
+ggObj3_combined_DNAmeth <- mclapply(seq_along(DNAmethNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_DNAmeth[[x]][[3]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_DNAmeth[[x]], ymax_list_DNAmeth[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_DNAmeth[[x]][[3]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_DNAmeth[[x]][[3]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              "Start",
+                              "End",
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_DNAmeth[[x]][[3]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = DNAmethNamesPlot[x]) +
+  annotation_custom(legendLabs_ranLoc[[1]]) +
+  annotation_custom(legendLabs_ranLoc[[2]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = DNAmethColours[x]),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranLocNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(DNAmethNamesPlot))
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_DNAmeth,
+                                           ggObj2_combined_DNAmeth,
+                                           ggObj3_combined_DNAmeth
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(DNAmethNamesPlot)),
+                                                       (length(c(DNAmethNamesPlot))+1):(length(c(DNAmethNamesPlot))*2),
+                                                       ((length(c(DNAmethNamesPlot))*2)+1):(length(c(DNAmethNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "DNAmeth_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   DNAmeth_featureMats, DNAmeth_ranLocMats,
+   DNAmeth_mats_quantiles,
+   wideDFfeature_list_DNAmeth,
+   tidyDFfeature_list_DNAmeth,
+   summaryDFfeature_list_DNAmeth,
+   summaryDFfeature_DNAmeth
+  ) 
+gc()
+#####
+
+
+# varietal SNPclasses
+SNPclassNames <- c(
+                   "all",
+                   "transition",
+                   "transversion"
+                  )
+SNPclassNamesPlot <- c(
+                       "Exome SNPs",
+                       "Transitions",
+                       "Transversions"
+                      )
+
+# feature
+SNPclass_featureMats <- mclapply(seq_along(SNPclassNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/",
+                                "exome_", SNPclassNames[x],
+                                "_SNPs_around_", dirName, "_peaks_in_", featureName[y],
+                                "_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = T))
+  })
+}, mc.cores = length(SNPclassNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+SNPclass_featureMats <- mclapply(seq_along(SNPclass_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, SNPclass_featureMats[[x]])
+  } else {
+    SNPclass_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(SNPclass_featureMats))
+
+# ranLoc
+SNPclass_ranLocMats <- mclapply(seq_along(SNPclassNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/",
+                                "exome_", SNPclassNames[x],
+                                "_SNPs_around_", dirName, "_peaks_in_", featureName[y],
+                                "_ranLoc_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = T))
+  })
+}, mc.cores = length(SNPclassNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+SNPclass_ranLocMats <- mclapply(seq_along(SNPclass_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, SNPclass_ranLocMats[[x]])
+  } else {
+    SNPclass_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(SNPclass_ranLocMats))
+
+# Add column names
+for(x in seq_along(SNPclass_featureMats)) {
+  colnames(SNPclass_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(SNPclass_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+SNPclass_mats_quantiles <- mclapply(seq_along(SNPclass_featureMats), function(x) {
+  list(
+       # feature quantiles
+       lapply(1:quantiles, function(k) {
+         SNPclass_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # feature random groupings
+       lapply(1:quantiles, function(k) {
+         SNPclass_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # random loci groupings
+       lapply(1:quantiles, function(k) {
+         SNPclass_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(SNPclass_featureMats))
+
+# Transpose matrix and convert into dataframe
+# in which first column is window name
+wideDFfeature_list_SNPclass <- mclapply(seq_along(SNPclass_mats_quantiles), function(x) {
+  lapply(seq_along(SNPclass_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(SNPclass_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(SNPclass_mats_quantiles[[x]][[y]][[k]]),
+                 t(SNPclass_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(SNPclass_mats_quantiles)/2)
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list_SNPclass  <- mclapply(seq_along(wideDFfeature_list_SNPclass), function(x) {
+  lapply(seq_along(SNPclass_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(SNPclass_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_SNPclass[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
+}, mc.cores = length(wideDFfeature_list_SNPclass)/2)
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(x in seq_along(tidyDFfeature_list_SNPclass)) {
+  for(y in seq_along(SNPclass_mats_quantiles[[x]])) {
+    for(k in seq_along(SNPclass_mats_quantiles[[x]][[y]])) {
+      tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_SNPclass[[x]][[y]][[k]]$window))
+    }
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list_SNPclass  <- mclapply(seq_along(tidyDFfeature_list_SNPclass), function(x) {
+  lapply(seq_along(SNPclass_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(SNPclass_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_SNPclass[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_SNPclass[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
+}, mc.cores = length(tidyDFfeature_list_SNPclass)/2)
+
+for(x in seq_along(summaryDFfeature_list_SNPclass)) {
+  for(y in seq_along(SNPclass_mats_quantiles[[x]])) {
+    for(k in seq_along(SNPclass_mats_quantiles[[x]][[y]])) {
+      summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_SNPclass[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_SNPclass[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$sem <- summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_SNPclass[[x]][[y]][[k]]$sem
+    }
+  }
+}
+
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
+randomPCNames <- paste0(rep("Random ", quantiles), 1:quantiles)
+for(x in seq_along(summaryDFfeature_list_SNPclass)) {
+  # feature quantiles
+  names(summaryDFfeature_list_SNPclass[[x]][[1]]) <- quantileNames
+  # feature random groupings
+  names(summaryDFfeature_list_SNPclass[[x]][[2]]) <- randomPCNames
+  # random loci groupings
+  names(summaryDFfeature_list_SNPclass[[x]][[3]]) <- randomPCNames
+}
+
+# Convert list of lists of lists of feature quantiles summaryDFfeature_list_SNPclass into
+# a list of lists of single data.frames containing all feature quantiles for plotting
+summaryDFfeature_SNPclass  <- mclapply(seq_along(summaryDFfeature_list_SNPclass), function(x) {
+  lapply(seq_along(SNPclass_mats_quantiles[[x]]), function(y) {
+    bind_rows(summaryDFfeature_list_SNPclass[[x]][[y]], .id = "quantile")
+  })
+}, mc.cores = length(summaryDFfeature_list_SNPclass))
+for(x in seq_along(summaryDFfeature_SNPclass)) {
+  # feature quantiles
+  summaryDFfeature_SNPclass[[x]][[1]]$quantile <- factor(summaryDFfeature_SNPclass[[x]][[1]]$quantile,
+                                                         levels = names(summaryDFfeature_list_SNPclass[[x]][[1]]))
+  # feature random groupings
+  summaryDFfeature_SNPclass[[x]][[2]]$quantile <- factor(summaryDFfeature_SNPclass[[x]][[2]]$quantile,
+                                                         levels = names(summaryDFfeature_list_SNPclass[[x]][[2]]))
+  # random loci groupings
+  summaryDFfeature_SNPclass[[x]][[3]]$quantile <- factor(summaryDFfeature_SNPclass[[x]][[3]]$quantile,
+                                                         levels = names(summaryDFfeature_list_SNPclass[[x]][[3]]))
+}
+
+# Define y-axis limits
+ymin_list_SNPclass <- lapply(seq_along(summaryDFfeature_SNPclass), function(x) {
+  min(c(summaryDFfeature_SNPclass[[x]][[1]]$CI_lower,
+        summaryDFfeature_SNPclass[[x]][[2]]$CI_lower,
+        summaryDFfeature_SNPclass[[x]][[3]]$CI_lower))
+})
+ymax_list_SNPclass <- lapply(seq_along(summaryDFfeature_SNPclass), function(x) {
+  max(c(summaryDFfeature_SNPclass[[x]][[1]]$CI_upper,
+        summaryDFfeature_SNPclass[[x]][[2]]$CI_upper,
+        summaryDFfeature_SNPclass[[x]][[3]]$CI_upper))
+})
+
+# Define legend labels
+legendLabs_feature <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranFeat <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranLoc <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+
+# Plot average profiles with 95% CI ribbon
+## feature
+ggObj1_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_SNPclass[[x]][[1]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_SNPclass[[x]], ymax_list_SNPclass[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_SNPclass[[x]][[1]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_SNPclass[[x]][[1]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_SNPclass[[x]][[1]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = SNPclassNamesPlot[x]) +
+  annotation_custom(legendLabs_feature[[1]]) +
+  annotation_custom(legendLabs_feature[[2]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(SNPclassNamesPlot))
+
+## ranFeat
+ggObj2_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_SNPclass[[x]][[2]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_SNPclass[[x]], ymax_list_SNPclass[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_SNPclass[[x]][[2]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_SNPclass[[x]][[2]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_SNPclass[[x]][[2]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = SNPclassNamesPlot[x]) +
+  annotation_custom(legendLabs_ranFeat[[1]]) +
+  annotation_custom(legendLabs_ranFeat[[2]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranFeatNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(SNPclassNamesPlot))
+
+## ranLoc
+ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_SNPclass[[x]][[3]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_SNPclass[[x]], ymax_list_SNPclass[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_SNPclass[[x]][[3]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_SNPclass[[x]][[3]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              "Start",
+                              "End",
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_SNPclass[[x]][[3]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = SNPclassNamesPlot[x]) +
+  annotation_custom(legendLabs_ranLoc[[1]]) +
+  annotation_custom(legendLabs_ranLoc[[2]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranLocNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(SNPclassNamesPlot))
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_SNPclass,
+                                           ggObj2_combined_SNPclass,
+                                           ggObj3_combined_SNPclass
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(SNPclassNamesPlot)),
+                                                       (length(c(SNPclassNamesPlot))+1):(length(c(SNPclassNamesPlot))*2),
+                                                       ((length(c(SNPclassNamesPlot))*2)+1):(length(c(SNPclassNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "1000exomesSNPclass_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   SNPclass_featureMats, SNPclass_ranLocMats,
+   SNPclass_mats_quantiles,
+   wideDFfeature_list_SNPclass,
+   tidyDFfeature_list_SNPclass,
+   summaryDFfeature_list_SNPclass,
+   summaryDFfeature_SNPclass
+  ) 
+gc()
+#####
+
+
+# TE superfams
+superfamCodes <- c("RLG",
+                   "RLC",
+                   "RLX",
+                   "RIX",
+                   "SIX",
+                   "DTC",
+                   "DTM",
+                   "DTX",
+                   "DTH",
+                   "DMI",
+                   "DTT",
+                   "DXX",
+                   "DTA",
+                   "DHH",
+                   "XXX")
+superfamNames <- c("Gypsy_LTR",
+                   "Copia_LTR",
+                   "Unclassified_LTR",
+                   "LINE",
+                   "SINE",
+                   "CACTA",
+                   "Mutator",
+                   "Unclassified_with_TIRs",
+                   "Harbinger",
+                   "MITE",
+                   "Mariner",
+                   "Unclassified_class_2",
+                   "hAT",
+                   "Helitrons",
+                   "Unclassified_repeats")
+superfamNamesPlot <- c("Gypsy LTR",
+                       "Copia LTR",
+                       "Unclassified LTR",
+                       "LINE",
+                       "SINE",
+                       "CACTA",
+                       "Mutator",
+                       "Unclassified with TIRs",
+                       "Harbinger",
+                       "MITE",
+                       "Mariner",
+                       "Unclassified class 2",
+                       "hAT",
+                       "Helitrons",
+                       "Unclassified repeats")
+
+# feature
+superfam_featureMats <- mclapply(seq_along(superfamNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/",
+                                superfamNames[x], "_", superfamCodes[x],
+                                "_around_", dirName, "_peaks_in_", featureName[y],
+                                "_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = T))
+  })
+}, mc.cores = length(superfamNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+superfam_featureMats <- mclapply(seq_along(superfam_featureMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, superfam_featureMats[[x]])
+  } else {
+    superfam_featureMats[[x]][[1]]
+  }
+}, mc.cores = length(superfam_featureMats))
+
+# ranLoc
+superfam_ranLocMats <- mclapply(seq_along(superfamNames), function(x) {
+  lapply(seq_along(featureName), function(y) {
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/DMC1peakProfiles/matrices/",
+                                superfamNames[x], "_", superfamCodes[x],
+                                "_around_", dirName, "_peaks_in_", featureName[y],
+                                "_ranLoc_matrix_bin", binSize, "bp_flank", sub(" ", "", flankName), ".tab"),
+                         header = T))
+  })
+}, mc.cores = length(superfamNames))
+# If features from multiple subgenomes and/or compartments are to be analysed,
+# concatenate the corresponding feature coverage matrices
+superfam_ranLocMats <- mclapply(seq_along(superfam_ranLocMats), function(x) {
+  if(length(featureName) > 1) {
+    do.call(rbind, superfam_ranLocMats[[x]])
+  } else {
+    superfam_ranLocMats[[x]][[1]]
+  }
+}, mc.cores = length(superfam_ranLocMats))
+
+# Add column names
+for(x in seq_along(superfam_featureMats)) {
+  colnames(superfam_featureMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                           paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                           paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+  colnames(superfam_ranLocMats[[x]]) <- c(paste0("u", 1:(upstream/binSize)),
+                                          paste0("t", ((upstream/binSize)+1):((upstream+bodyLength)/binSize)),
+                                          paste0("d", (((upstream+bodyLength)/binSize)+1):(((upstream+bodyLength)/binSize)+(downstream/binSize))))
+}
+
+# Subdivide coverage matrices into above-defined quantiles and random groupings
+superfam_mats_quantiles <- mclapply(seq_along(superfam_featureMats), function(x) {
+  list(
+       # feature quantiles
+       lapply(1:quantiles, function(k) {
+         superfam_featureMats[[x]][quantileIndices[[k]],]
+       }),
+       # feature random groupings
+       lapply(1:quantiles, function(k) {
+         superfam_featureMats[[x]][randomPCIndices[[k]],]
+       }),
+       # random loci groupings
+       lapply(1:quantiles, function(k) {
+         superfam_ranLocMats[[x]][quantileIndices[[k]],]
+       })
+      ) 
+}, mc.cores = length(superfam_featureMats))
+
+# Transpose matrix and convert into dataframe
+# in which first column is window name
+wideDFfeature_list_superfam <- mclapply(seq_along(superfam_mats_quantiles), function(x) {
+  lapply(seq_along(superfam_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(superfam_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = colnames(superfam_mats_quantiles[[x]][[y]][[k]]),
+                 t(superfam_mats_quantiles[[x]][[y]][[k]]))
+    })
+  })
+}, mc.cores = length(superfam_mats_quantiles)/3)
+
+# Convert into tidy data.frame (long format)
+tidyDFfeature_list_superfam  <- mclapply(seq_along(wideDFfeature_list_superfam), function(x) {
+  lapply(seq_along(superfam_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(superfam_mats_quantiles[[x]][[y]]), function(k) {
+      gather(data  = wideDFfeature_list_superfam[[x]][[y]][[k]],
+             key   = feature,
+             value = coverage,
+             -window)
+    })
+  }) 
+}, mc.cores = length(wideDFfeature_list_superfam)/3)
+
+# Order levels of factor "window" so that sequential levels
+# correspond to sequential windows
+for(x in seq_along(tidyDFfeature_list_superfam)) {
+  for(y in seq_along(superfam_mats_quantiles[[x]])) {
+    for(k in seq_along(superfam_mats_quantiles[[x]][[y]])) {
+      tidyDFfeature_list_superfam[[x]][[y]][[k]]$window <- factor(tidyDFfeature_list_superfam[[x]][[y]][[k]]$window,
+                                                                  levels = as.character(wideDFfeature_list_superfam[[x]][[y]][[k]]$window))
+    }
+  }
+}
+
+# Create summary data.frame in which each row corresponds to a window (Column 1),
+# Column2 is the number of coverage values (features) per window,
+# Column3 is the mean of coverage values per window,
+# Column4 is the standard deviation of coverage values per window,
+# Column5 is the standard error of the mean of coverage values per window,
+# Column6 is the lower bound of the 95% confidence interval, and
+# Column7 is the upper bound of the 95% confidence interval
+summaryDFfeature_list_superfam  <- mclapply(seq_along(tidyDFfeature_list_superfam), function(x) {
+  lapply(seq_along(superfam_mats_quantiles[[x]]), function(y) {
+    lapply(seq_along(superfam_mats_quantiles[[x]][[y]]), function(k) {
+      data.frame(window = as.character(wideDFfeature_list_superfam[[x]][[y]][[k]]$window),
+                 n      = tapply(X     = tidyDFfeature_list_superfam[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_superfam[[x]][[y]][[k]]$window,
+                                 FUN   = length),
+                 mean   = tapply(X     = tidyDFfeature_list_superfam[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_superfam[[x]][[y]][[k]]$window,
+                                 FUN   = mean,
+                                 na.rm = TRUE),
+                 sd     = tapply(X     = tidyDFfeature_list_superfam[[x]][[y]][[k]]$coverage,
+                                 INDEX = tidyDFfeature_list_superfam[[x]][[y]][[k]]$window,
+                                 FUN   = sd,
+                                 na.rm = TRUE))
+    })
+  })
+}, mc.cores = length(tidyDFfeature_list_superfam)/3)
+
+for(x in seq_along(summaryDFfeature_list_superfam)) {
+  for(y in seq_along(superfam_mats_quantiles[[x]])) {
+    for(k in seq_along(superfam_mats_quantiles[[x]][[y]])) {
+      summaryDFfeature_list_superfam[[x]][[y]][[k]]$window <- factor(summaryDFfeature_list_superfam[[x]][[y]][[k]]$window,
+                                                                     levels = as.character(wideDFfeature_list_superfam[[x]][[y]][[k]]$window))
+      summaryDFfeature_list_superfam[[x]][[y]][[k]]$winNo <- factor(1:dim(summaryDFfeature_list_superfam[[x]][[y]][[k]])[1])
+      summaryDFfeature_list_superfam[[x]][[y]][[k]]$sem <- summaryDFfeature_list_superfam[[x]][[y]][[k]]$sd/sqrt(summaryDFfeature_list_superfam[[x]][[y]][[k]]$n-1)
+      summaryDFfeature_list_superfam[[x]][[y]][[k]]$CI_lower <- summaryDFfeature_list_superfam[[x]][[y]][[k]]$mean -
+        qt(0.975, df = summaryDFfeature_list_superfam[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_superfam[[x]][[y]][[k]]$sem
+      summaryDFfeature_list_superfam[[x]][[y]][[k]]$CI_upper <- summaryDFfeature_list_superfam[[x]][[y]][[k]]$mean +
+        qt(0.975, df = summaryDFfeature_list_superfam[[x]][[y]][[k]]$n-1)*summaryDFfeature_list_superfam[[x]][[y]][[k]]$sem
+    }
+  }
+}
+
+quantileNames <- paste0(rep("Quantile ", quantiles), 1:quantiles)
+randomPCNames <- paste0(rep("Random ", quantiles), 1:quantiles)
+for(x in seq_along(summaryDFfeature_list_superfam)) {
+  # feature quantiles
+  names(summaryDFfeature_list_superfam[[x]][[1]]) <- quantileNames
+  # feature random groupings
+  names(summaryDFfeature_list_superfam[[x]][[2]]) <- randomPCNames
+  # random loci groupings
+  names(summaryDFfeature_list_superfam[[x]][[3]]) <- randomPCNames
+}
+
+# Convert list of lists of lists of feature quantiles summaryDFfeature_list_superfam into
+# a list of lists of single data.frames containing all feature quantiles for plotting
+summaryDFfeature_superfam  <- mclapply(seq_along(summaryDFfeature_list_superfam), function(x) {
+  lapply(seq_along(superfam_mats_quantiles[[x]]), function(y) {
+    bind_rows(summaryDFfeature_list_superfam[[x]][[y]], .id = "quantile")
+  })
+}, mc.cores = length(summaryDFfeature_list_superfam))
+for(x in seq_along(summaryDFfeature_superfam)) {
+  # feature quantiles
+  summaryDFfeature_superfam[[x]][[1]]$quantile <- factor(summaryDFfeature_superfam[[x]][[1]]$quantile,
+                                                         levels = names(summaryDFfeature_list_superfam[[x]][[1]]))
+  # feature random groupings
+  summaryDFfeature_superfam[[x]][[2]]$quantile <- factor(summaryDFfeature_superfam[[x]][[2]]$quantile,
+                                                         levels = names(summaryDFfeature_list_superfam[[x]][[2]]))
+  # random loci groupings
+  summaryDFfeature_superfam[[x]][[3]]$quantile <- factor(summaryDFfeature_superfam[[x]][[3]]$quantile,
+                                                         levels = names(summaryDFfeature_list_superfam[[x]][[3]]))
+}
+
+# Define y-axis limits
+ymin_list_superfam <- lapply(seq_along(summaryDFfeature_superfam), function(x) {
+  min(c(summaryDFfeature_superfam[[x]][[1]]$CI_lower,
+        summaryDFfeature_superfam[[x]][[2]]$CI_lower,
+        summaryDFfeature_superfam[[x]][[3]]$CI_lower))
+})
+ymax_list_superfam <- lapply(seq_along(summaryDFfeature_superfam), function(x) {
+  max(c(summaryDFfeature_superfam[[x]][[1]]$CI_upper,
+        summaryDFfeature_superfam[[x]][[2]]$CI_upper,
+        summaryDFfeature_superfam[[x]][[3]]$CI_upper))
+})
+
+# Define legend labels
+legendLabs_feature <- lapply(seq_along(quantileNames), function(x) {
+  grobTree(textGrob(bquote(.(quantileNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranFeat <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+legendLabs_ranLoc <- lapply(seq_along(randomPCNames), function(x) {
+  grobTree(textGrob(bquote(.(randomPCNames[x])),
+                    x = legendPos[1], y = legendPos[2]-((x-1)*0.06), just = "left",
+                    gp = gpar(col = quantileColours[x], fontsize = 18)))
+})
+
+# Plot average profiles with 95% CI ribbon
+## feature
+ggObj1_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_superfam[[x]][[1]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_superfam[[x]], ymax_list_superfam[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_superfam[[x]][[1]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_superfam[[x]][[1]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_superfam[[x]][[1]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = superfamNamesPlot[x]) +
+  annotation_custom(legendLabs_feature[[1]]) +
+  annotation_custom(legendLabs_feature[[2]]) +
+  annotation_custom(legendLabs_feature[[3]]) +
+  annotation_custom(legendLabs_feature[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(featureNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(superfamNamesPlot))
+
+## ranFeat
+ggObj2_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_superfam[[x]][[2]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_superfam[[x]], ymax_list_superfam[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_superfam[[x]][[2]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_superfam[[x]][[2]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              featureStartLab,
+                              featureEndLab,
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_superfam[[x]][[2]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = superfamNamesPlot[x]) +
+  annotation_custom(legendLabs_ranFeat[[1]]) +
+  annotation_custom(legendLabs_ranFeat[[2]]) +
+  annotation_custom(legendLabs_ranFeat[[3]]) +
+  annotation_custom(legendLabs_ranFeat[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranFeatNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(superfamNamesPlot))
+
+## ranLoc
+ggObj3_combined_superfam <- mclapply(seq_along(superfamNamesPlot), function(x) {
+  summaryDFfeature <- summaryDFfeature_superfam[[x]][[3]]
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+  geom_ribbon(data = summaryDFfeature,
+              mapping = aes(ymin = CI_lower,
+                            ymax = CI_upper,
+                            fill = quantile),
+              alpha = 0.4) +
+  scale_fill_manual(values = quantileColours) +
+  scale_y_continuous(limits = c(ymin_list_superfam[[x]], ymax_list_superfam[[x]]),
+                     labels = function(x) sprintf("%6.3f", x)) +
+  scale_x_discrete(breaks = c(1,
+                              (upstream/binSize)+1,
+                              (dim(summaryDFfeature_superfam[[x]][[3]])[1]/quantiles)-(downstream/binSize),
+                              dim(summaryDFfeature_superfam[[x]][[3]])[1]/quantiles),
+                   labels = c(paste0("-", flankName),
+                              "Start",
+                              "End",
+                              paste0("+", flankName))) +
+  geom_vline(xintercept = c((upstream/binSize)+1,
+                            (dim(summaryDFfeature_superfam[[x]][[3]])[1]/quantiles)-(downstream/binSize)),
+             linetype = "dashed",
+             size = 1) +
+  labs(x = "",
+       y = superfamNamesPlot[x]) +
+  annotation_custom(legendLabs_ranLoc[[1]]) +
+  annotation_custom(legendLabs_ranLoc[[2]]) +
+  annotation_custom(legendLabs_ranLoc[[3]]) +
+  annotation_custom(legendLabs_ranLoc[[4]]) +
+  theme_bw() +
+  theme(
+        axis.ticks = element_line(size = 1.0, colour = "black"),
+        axis.ticks.length = unit(0.25, "cm"),
+        axis.text.x = element_text(size = 22, colour = "black"),
+        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.position = "none",
+        panel.grid = element_blank(),
+        panel.border = element_rect(size = 3.5, colour = "black"),
+        panel.background = element_blank(),
+        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+        plot.title = element_text(hjust = 1.0, size = 30)) +
+  ggtitle(bquote(.(ranLocNamePlot) ~ "(" * italic("n") ~ "=" ~
+                 .(prettyNum(summaryDFfeature$n[1],
+                             big.mark = ",", trim = T)) *
+                 ")"))
+}, mc.cores = length(superfamNamesPlot))
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_superfam,
+                                           ggObj2_combined_superfam,
+                                           ggObj3_combined_superfam
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(superfamNamesPlot)),
+                                                       (length(c(superfamNamesPlot))+1):(length(c(superfamNamesPlot))*2),
+                                                       ((length(c(superfamNamesPlot))*2)+1):(length(c(superfamNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "TEsuperfam_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
+
+#### Free up memory by removing no longer required objects
+rm(
+   superfam_featureMats, superfam_ranLocMats,
+   superfam_mats_quantiles,
+   wideDFfeature_list_superfam,
+   tidyDFfeature_list_superfam,
+   summaryDFfeature_list_superfam,
+   summaryDFfeature_superfam
+  ) 
+gc()
+#####
+
+ggObjGA_combined <- grid.arrange(grobs = c(
+                                           ggObj1_combined_log2ChIP,
+                                           ggObj1_combined_other,
+                                           ggObj1_combined_DNAmeth,
+                                           ggObj1_combined_SNPclass,
+                                           ggObj1_combined_superfam,
+                                           ggObj2_combined_log2ChIP,
+                                           ggObj2_combined_other,
+                                           ggObj2_combined_DNAmeth,
+                                           ggObj2_combined_SNPclass,
+                                           ggObj2_combined_superfam,
+                                           ggObj3_combined_log2ChIP,
+                                           ggObj3_combined_other,
+                                           ggObj3_combined_DNAmeth,
+                                           ggObj3_combined_SNPclass,
+                                           ggObj3_combined_superfam
+                                          ),
+                                 layout_matrix = cbind(
+                                                       1:length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)),
+                                                       (length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2),
+                                                       ((length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*3)
+                                                      ))
+ggsave(paste0(plotDir,
+              "combined_avgProfiles_around_", quantiles, "quantiles",
+               "_by_", orderingFactor,
+               "_of_", libName, "_peaks_in_",
+               paste0(featureName,
+                      collapse = "_"), "_v300420.pdf"),
+       plot = ggObjGA_combined,
+       height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
