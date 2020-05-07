@@ -105,7 +105,7 @@ ptOrder_Exp <- lapply(seq_along(ptOrder), function(x) {
   mean(ptOrder[[x]]$numOverlaps$permuted)
 })
 ptOrder_log2ObsExp <- lapply(seq_along(ptOrder_Obs), function(x) {
-  log2((ptOrder_Obs[[x]]+1)/(ptOrder_Exp[[x]]+1))
+  log2(ptOrder_Obs[[x]]/ptOrder_Exp[[x]])
 })
 ptOrder_Zscore <- lapply(seq_along(ptOrder), function(x) {
   ptOrder[[x]]$numOverlaps$zscore
@@ -121,7 +121,7 @@ ptOrder_alpha0.05 <- lapply(seq_along(ptOrder_Perm), function(x) {
   }
 })
 ptOrder_log2alpha0.05 <- lapply(seq_along(ptOrder_alpha0.05), function(x) {
-  log2((ptOrder_alpha0.05[[x]]+1)/(ptOrder_Exp[[x]]+1))
+  log2(ptOrder_alpha0.05[[x]]/ptOrder_Exp[[x]])
 })
 
 # Order permutation test statistics and feature names by
@@ -152,7 +152,7 @@ pt1_Exp <- lapply(seq_along(pt1), function(x) {
   mean(pt1[[x]]$numOverlaps$permuted)
 })
 pt1_log2ObsExp <- lapply(seq_along(pt1_Obs), function(x) {
-  log2((pt1_Obs[[x]]+1)/(pt1_Exp[[x]]+1))
+  log2(pt1_Obs[[x]]/pt1_Exp[[x]])
 })
 pt1_Zscore <- lapply(seq_along(pt1), function(x) {
   pt1[[x]]$numOverlaps$zscore
@@ -168,7 +168,7 @@ pt1_alpha0.05 <- lapply(seq_along(pt1_Perm), function(x) {
   }
 })
 pt1_log2alpha0.05 <- lapply(seq_along(pt1_alpha0.05), function(x) {
-  log2((pt1_alpha0.05[[x]]+1)/(pt1_Exp[[x]]+1))
+  log2(pt1_alpha0.05[[x]]/pt1_Exp[[x]])
 })
 
 # Order permutation test statistics and feature names by
@@ -200,7 +200,7 @@ pt2_Exp <- lapply(seq_along(pt2), function(x) {
   mean(pt2[[x]]$numOverlaps$permuted)
 })
 pt2_log2ObsExp <- lapply(seq_along(pt2_Obs), function(x) {
-  log2((pt2_Obs[[x]]+1)/(pt2_Exp[[x]]+1))
+  log2(pt2_Obs[[x]]/pt2_Exp[[x]])
 })
 pt2_Zscore <- lapply(seq_along(pt2), function(x) {
   pt2[[x]]$numOverlaps$zscore
@@ -216,7 +216,7 @@ pt2_alpha0.05 <- lapply(seq_along(pt2_Perm), function(x) {
   }
 })
 pt2_log2alpha0.05 <- lapply(seq_along(pt2_alpha0.05), function(x) {
-  log2((pt2_alpha0.05[[x]]+1)/(pt2_Exp[[x]]+1))
+  log2(pt2_alpha0.05[[x]]/pt2_Exp[[x]])
 })
 
 # Order permutation test statistics and feature names by
@@ -247,7 +247,7 @@ pt3_Exp <- lapply(seq_along(pt3), function(x) {
   mean(pt3[[x]]$numOverlaps$permuted)
 })
 pt3_log2ObsExp <- lapply(seq_along(pt3_Obs), function(x) {
-  log2((pt3_Obs[[x]]+1)/(pt3_Exp[[x]]+1))
+  log2(pt3_Obs[[x]]/pt3_Exp[[x]])
 })
 pt3_Zscore <- lapply(seq_along(pt3), function(x) {
   pt3[[x]]$numOverlaps$zscore
@@ -263,7 +263,7 @@ pt3_alpha0.05 <- lapply(seq_along(pt3_Perm), function(x) {
   }
 })
 pt3_log2alpha0.05 <- lapply(seq_along(pt3_alpha0.05), function(x) {
-  log2((pt3_alpha0.05[[x]]+1)/(pt3_Exp[[x]]+1))
+  log2(pt3_alpha0.05[[x]]/pt3_Exp[[x]])
 })
 
 # Order permutation test statistics and feature names by
@@ -314,7 +314,7 @@ bp <- ggplot(data = df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 10) +
   labs(y = expression("Log"[2]*"(observed/expected) peak overlap")) +
-  scale_y_continuous(limits = c(-2.5, 2.5)) +
+  scale_y_continuous(limits = c(-2.8, 2.8)) +
   scale_x_discrete(position = "top") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
