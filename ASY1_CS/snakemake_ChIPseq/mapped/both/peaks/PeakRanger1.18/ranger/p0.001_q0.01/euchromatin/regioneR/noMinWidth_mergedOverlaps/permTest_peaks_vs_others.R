@@ -23,8 +23,10 @@ chrs <- chrs[-length(chrs)]
 chrStart <- c(rep(1, times = length(chrs)))
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
 chrLens <- chrLens[-length(chrLens)]
-centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,2])
-centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,3])
+centromereStart <- as.vector(read.table(paste0("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/",
+                                               "centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt"))[,2])
+centromereEnd <- as.vector(read.table(paste0("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/",
+                                             "centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt"))[,3])
 chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
                             header = TRUE)
 genomeGR <- GRanges(seqnames = chrs,
@@ -104,6 +106,23 @@ peaksGR <- peaksGR[-subjectHits(mask_peaks_overlap)]
 strand(peaksGR) <- "*"
 print("***********peaks***********")
 print(peaksGR)
+
+# DMC1
+load("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/DMC1_Rep1_ChIP_rangerPeaksGRmergedOverlaps_minuslog10_p0.001_q0.01_noMinWidth.RData")
+DMC1GR <- rangerPeaksGRmergedOverlaps
+rangerPeaksGRmergedOverlaps <- NULL
+DMC1GR <- DMC1GR[grep(genomeName,
+                      seqnames(DMC1GR))@values]
+# Subset to include only those not overlapping masked region (e.g., heterochromatin)
+mask_peaks_overlap <- findOverlaps(query = maskGR,
+                                   subject = DMC1GR,
+                                   type = "any",
+                                   select = "all",
+                                   ignore.strand = TRUE)
+DMC1GR <- DMC1GR[-subjectHits(mask_peaks_overlap)]
+strand(DMC1GR) <- "*"
+print("***********DMC1***********")
+print(DMC1GR)
 
 # H3K4me3
 load("/home/ajt200/analysis/wheat/H3K4me3/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.05_q0.05/H3K4me3_Rep1_ChIP_rangerPeaksGRmergedOverlaps_minuslog10_p0.05_q0.05_noMinWidth.RData")
@@ -224,6 +243,40 @@ strand(H2AZGR) <- "*"
 print("***********H2AZ***********")
 print(H2AZGR)
 
+# H3K4me1
+load("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/H3K4me1/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.05_q0.05/H3K4me1_Rep1_ChIP_SRR8126618_rangerPeaksGRmergedOverlaps_minuslog10_p0.05_q0.05_noMinWidth.RData")
+H3K4me1GR <- rangerPeaksGRmergedOverlaps
+rangerPeaksGRmergedOverlaps <- NULL
+H3K4me1GR <- H3K4me1GR[grep(genomeName,
+                            seqnames(H3K4me1GR))@values]
+# Subset to include only those not overlapping masked region
+mask_H3K4me1_overlap <- findOverlaps(query = maskGR,
+                                     subject = H3K4me1GR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = TRUE)
+H3K4me1GR <- H3K4me1GR[-subjectHits(mask_H3K4me1_overlap)]
+strand(H3K4me1GR) <- "*"
+print("***********H3K4me1***********")
+print(H3K4me1GR)
+
+# H3K27ac
+load("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/H3K27ac/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.05_q0.05/H3K27ac_Rep1_ChIP_SRR8126621_rangerPeaksGRmergedOverlaps_minuslog10_p0.05_q0.05_noMinWidth.RData")
+H3K27acGR <- rangerPeaksGRmergedOverlaps
+rangerPeaksGRmergedOverlaps <- NULL
+H3K27acGR <- H3K27acGR[grep(genomeName,
+                            seqnames(H3K27acGR))@values]
+# Subset to include only those not overlapping masked region
+mask_H3K27ac_overlap <- findOverlaps(query = maskGR,
+                                     subject = H3K27acGR,
+                                     type = "any",
+                                     select = "all",
+                                     ignore.strand = TRUE)
+H3K27acGR <- H3K27acGR[-subjectHits(mask_H3K27ac_overlap)]
+strand(H3K27acGR) <- "*"
+print("***********H3K27ac***********")
+print(H3K27acGR)
+
 # MNase
 load("/home/ajt200/analysis/wheat/MNase/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/MNase_Rep1_rangerPeaksGRmergedOverlaps_minuslog10_p0.001_q0.01_noMinWidth.RData")
 MNaseGR <- rangerPeaksGRmergedOverlaps
@@ -290,15 +343,20 @@ print(terminatorsGR)
 strand(genesGR) <- "*"
 print(genesGR)
 
-
 # NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_manually_curated_gene_families/IWGSC_v1.1_nlr_representative_mRNA.gff3",
+NLRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+                          "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_complete_representative_mRNA.gff3"),
                    colClasses = c(NA,
                                   rep("NULL", 2),
                                   rep(NA, 2),
                                   "NULL", NA, "NULL", NA))
+NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
+               x = NLRs$V9)
 colnames(NLRs) <- c("chr", "start", "end", "strand", "geneID")
 NLRs <- NLRs[NLRs$chr != "chrUn",]
+geneIDs <- sub(pattern = "\\.\\d+", replacement = "",
+               x = genes$geneID)
+NLRs <- NLRs[NLRs$geneID %in% geneIDs,]
 NLRsGR <- GRanges(seqnames = NLRs$chr,
                   ranges = IRanges(start = NLRs$start,
                                    end = NLRs$end),
@@ -339,6 +397,63 @@ print(NLRterminatorsGR)
 strand(NLRsGR) <- "*"
 print(NLRsGR)
 
+# meio
+# Note: these two sets of meiotic genes share 271 common genes that are assigned to a chromosome
+meio1 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
+                    header = T, stringsAsFactors = F)$Gene.ID
+meio2 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
+                    header = T, sep = "\t", stringsAsFactors = F)$Gene.ID
+meio <- unique(c(meio1, meio2))
+print(length(meio))
+#[1] 1063
+meio <- genes[sub(pattern = "\\.\\d+", replacement = "",
+                  x = genes$geneID) %in% meio,]
+print(dim(meio))
+#[1] 1059    5
+# Redundant but does no harm
+meio <- meio[meio$chr != "chrUn",]
+print(dim(meio))
+#[1] 1059    5
+# Convert into GRanges
+meioGR <- GRanges(seqnames = meio$chr,
+                  ranges = IRanges(start = meio$start,
+                                   end = meio$end),
+                  strand = meio$strand)
+meioGR <- meioGR[grep(genomeName,
+                      seqnames(meioGR))@values]
+# Subset to include only those not overlapping masked region
+mask_meio_overlap <- findOverlaps(query = maskGR,
+                                  subject = meioGR,
+                                  type = "any",
+                                  select = "all",
+                                  ignore.strand = TRUE)
+meioGR <- meioGR[-subjectHits(mask_meio_overlap)]
+# Retain strand information until after obtaining promoters, etc.
+
+# Obtain 1000-bp gene promoters
+meiopromotersGR <- promoters(meioGR, upstream = 1000, downstream = 0)
+strand(meiopromotersGR) <- "*"
+print(meiopromotersGR)
+
+# Obtain regions immediately downstream of gene TSSs (TSS to TSS+499 bp)
+meioTSSsGR <- promoters(meioGR, upstream = 0, downstream = 500)
+strand(meioTSSsGR) <- "*"
+print(meioTSSsGR)
+
+# Obtain regions immediately upstream of gene TTSs (TTS to TTS-499 bp)
+source("/projects/ajt200/Rfunctions/TTSplus.R")
+meioTTSsGR <- TTSplus(meioGR, upstream = 499, downstream = 0)
+strand(meioTTSsGR) <- "*"
+print(meioTTSsGR)
+
+# Obtain 1000-bp gene terminators
+meioterminatorsGR <- TTSplus(meioGR, upstream = -1, downstream = 1000)
+strand(meioterminatorsGR) <- "*"
+print(meioterminatorsGR)
+
+# Remove strand information from meioGR
+strand(meioGR) <- "*"
+print(meioGR)
 
 ## TEs
 #TEdir <- "/home/ajt200/analysis/wheat/featureProfiles/TEs/"
@@ -419,6 +534,7 @@ print(NLRsGR)
 
 # Create vector of other-feature names
 otherNames <- c(
+                "DMC1",
                 "H3K4me3",
                 "H3K9me2",
                 "H3K27me1",
@@ -426,6 +542,8 @@ otherNames <- c(
                 "H3K36me3",
                 "H3K9ac",
                 "H2AZ",
+                "H3K4me1",
+                "H3K27ac",
                 "MNase",
                 "genes",
                 "promoters",
@@ -436,10 +554,16 @@ otherNames <- c(
                 "NLRpromoters",
                 "NLRTSSsPlus500bp",
                 "NLRTTSsMinus500bp",
-                "NLRterminators"
+                "NLRterminators",
+                "meio",
+                "meiopromoters",
+                "meioTSSsPlus500bp",
+                "meioTTSsMinus500bp",
+                "meioterminators"
                ) 
 # Create GRangesList of other features
 othersGRL <- c(
+               "DMC1GR" = DMC1GR,
                "H3K4me3GR" = H3K4me3GR,
                "H3K9me2GR" = H3K9me2GR,
                "H3K27me1GR" = H3K27me1GR,
@@ -447,6 +571,8 @@ othersGRL <- c(
                "H3K36me3GR" = H3K36me3GR,
                "H3K9acGR" = H3K9acGR,
                "H2AZGR" = H2AZGR,
+               "H3K4me1GR" = H3K4me1GR,
+               "H3K27acGR" = H3K27acGR,
                "MNaseGR" = MNaseGR,
                "genesGR" = genesGR,
                "promotersGR" = promotersGR,
@@ -457,7 +583,12 @@ othersGRL <- c(
                "NLRpromotersGR" = NLRpromotersGR,
                "NLRTSSsGR" = NLRTSSsGR,
                "NLRTTSsGR" = NLRTTSsGR,
-               "NLRterminatorsGR" = NLRterminatorsGR
+               "NLRterminatorsGR" = NLRterminatorsGR,
+               "meioGR" = meioGR,
+               "meiopromotersGR" = meiopromotersGR,
+               "meioTSSsGR" = meioTSSsGR,
+               "meioTTSsGR" = meioTTSsGR,
+               "meioterminatorsGR" = meioterminatorsGR
               ) 
 
 # Perform permutation tests with randomized regions generated on a per chromosome basis;

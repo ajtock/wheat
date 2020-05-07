@@ -67,23 +67,23 @@ otherNamesPlot <- c(
 # of other features in bar graph
 load(paste0(ptOrderDir, "permTest_", perms, "perms_ASY1_CS_Rep1_ChIP_peaks_vs_TEfams_in_",
             ptOrderLibName, "_euchromatin.RData"))
-ptOrder <- ptPeaksOtherPerChrom[1:13]
+ptOrder <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 # Load permutation test results to be used for plotting
 load(paste0(pt1Dir, "permTest_", perms, "perms_ASY1_CS_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt1LibName, "_", region, ".RData"))
-pt1 <- ptPeaksOtherPerChrom[1:13]
+pt1 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 load(paste0(pt2Dir, "permTest_", perms, "perms_ASY1_CS_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt2LibName, "_", region, ".RData"))
-pt2 <- ptPeaksOtherPerChrom[1:13]
+pt2 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 load(paste0(pt3Dir, "permTest_", perms, "perms_ASY1_CS_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt3LibName, "_", region, ".RData"))
-pt3 <- ptPeaksOtherPerChrom[1:13]
+pt3 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 # ptOrder
