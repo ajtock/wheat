@@ -54,41 +54,47 @@ otherNamesPlot <- c(
                     "H3K36me3",
                     "H3K9ac",
                     "H2A.Z",
-                    "Nucleosomes",
+                    "H3K4me1",
+                    "H3K27ac",
+                    "MNase",
                     "Genes",
                     "Gene promoters",
                     "Gene 5' ends",
                     "Gene 3' ends",
                     "Gene terminators",
-                    "NLRs",
+                    "NLR-encoding genes",
                     "NLR promoters",
                     "NLR 5' ends",
                     "NLR 3' ends",
-                    "NLR terminators"
+                    "NLR terminators",
+                    "Meiotic genes",
+                    "Meiotic promoters",
+                    "Meiotic 5' ends",
+                    "Meiotic 3' ends",
+                    "Meiotic terminators"
                    )
-otherNamesPlot <- otherNamesPlot[1:14]
 
 # Load permutation test results for peak set to be used for ordering
 # of other features in bar graph
 load(paste0(ptOrderDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
             ptOrderLibName, "_euchromatin.RData"))
-ptOrder <- ptPeaksOtherPerChrom[1:14]
+ptOrder <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 # Load permutation test results to be used for plotting
 load(paste0(pt1Dir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
             pt1LibName, "_", region, ".RData"))
-pt1 <- ptPeaksOtherPerChrom[1:14]
+pt1 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 load(paste0(pt2Dir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
             pt2LibName, "_", region, ".RData"))
-pt2 <- ptPeaksOtherPerChrom[1:14]
+pt2 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 load(paste0(pt3Dir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
             pt3LibName, "_", region, ".RData"))
-pt3 <- ptPeaksOtherPerChrom[1:14]
+pt3 <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
 
 # ptOrder
@@ -347,7 +353,7 @@ ggsave(paste0(plotDir, "barplot_other_features_permTestResults_",
               pt1LibName, "_", pt2LibName, "_", pt3LibName, "_",
               region, "_peaks.pdf"),
        plot = bp,
-       height = 8, width = 14)
+       height = 8, width = 26)
 save(bp,
      file = paste0(plotDir, "barplot_other_features_permTestResults_",
                    as.character(perms), "perms_",
