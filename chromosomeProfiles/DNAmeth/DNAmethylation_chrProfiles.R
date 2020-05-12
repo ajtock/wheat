@@ -3,7 +3,7 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# csmit -m 100G -c 48 " Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
+# csmit -m 100G -c 48 "Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
 
 #DNAmethName <- "BSseq_Rep8a_SRR6792679"
 #winName <- "1Mb"
@@ -157,9 +157,9 @@ for(i in 1:length(chrs)) {
   chr_profile <- data.frame(chr = chrs[i],
                             window = start(chr_windowsGR),
                             mCG = win_mCG,
-                            mCHG = win_mCG,
-                            mCHH = win_mCG,
-                            mC = win_mCG,
+                            mCHG = win_mCHG,
+                            mCHH = win_mCHH,
+                            mC = win_mC,
                             stringsAsFactors = F)
   # Iteratively combine profiles from each chromosome
   # in a data.frame (profileDNAmeth) that grows with the
