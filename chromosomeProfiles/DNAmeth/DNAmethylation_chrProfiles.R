@@ -3,16 +3,16 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# csmit -m 100G -c 48 "Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
+# csmit -m 100G -c 30 "Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
 
 #DNAmethName <- "BSseq_Rep8a_SRR6792679"
 #winName <- "1Mb"
 #winSize <- 1000000
 
 args <- commandArgs(trailingOnly = T)
-DNAmethName <- args[5]
-winName <- args[7]
-winSize <- as.numeric(args[8])
+DNAmethName <- args[1]
+winName <- args[2]
+winSize <- as.numeric(args[3])
 
 library(parallel)
 library(GenomicRanges)
