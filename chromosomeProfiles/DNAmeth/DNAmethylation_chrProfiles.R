@@ -5,9 +5,9 @@
 # Usage:
 # csmit -m 100G -c 48 " Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
 
-DNAmethName <- "BSseq_Rep8a_SRR6792679"
-winName <- "1Mb"
-winSize <- 1000000
+#DNAmethName <- "BSseq_Rep8a_SRR6792679"
+#winName <- "1Mb"
+#winSize <- 1000000
 
 args <- commandArgs(trailingOnly = T)
 DNAmethName <- args[5]
@@ -54,15 +54,15 @@ mCHH$propMeth <- as.numeric(mCHH$propMeth/100)
 
 # Define windows as GRanges object
 windowsGR <- GRanges()
-for(x in 1:length(chrs)) {
-  seqWindows <- seq(1, chrLens[x], by = winSize)
+for(i in 1:length(chrs)) {
+  seqWindows <- seq(1, chrLens[i], by = winSize)
   windowsIR <- IRanges(start = seqWindows,
                        width = winSize)
   windowsIR <- windowsIR[-length(windowsIR)]
   windowsIR <- append(windowsIR,
                       IRanges(start = seqWindows[length(seqWindows)],
-                              end = chrLens[x]))
-  chrWindowsGR <- GRanges(seqnames = chrs[x],
+                              end = chrLens[i]))
+  chrWindowsGR <- GRanges(seqnames = chrs[i],
                           ranges = windowsIR,
                           strand = "*")
   print(chrWindowsGR)
@@ -71,6 +71,7 @@ for(x in 1:length(chrs)) {
 
 profileDNAmeth <- NULL
 for(i in 1:length(chrs)) {
+  print(chrs[i])
   chr_windowsGR <- windowsGR[seqnames(windowsGR) == chrs[i]]
   # mCG
   chr_mCG <- mCG[mCG$chr == chrs[i],]
