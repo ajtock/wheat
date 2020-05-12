@@ -7,19 +7,19 @@
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_DNAmeth_log2_histoneMod_IWGSCinput_cMMb_meiotic_genes.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 BSseq_Rep8a_SRR6792678 both 1Mb 1000000 15 purple4 120520 'chr3A,chr3B,chr3D'
 
-markChIPA <- "ASY1_CS"
-libNameChIPA <- "ASY1_CS_Rep1_ChIP"
-markControlA <- "input"
-libNameControlA <- "H3_input_SRR6350669"
-DNAmethName <- "BSseq_Rep8a_SRR6792678"
-align <- "both"
-winName <- "1Mb"
-winSize <- 1000000
-N <- 15
-colourA <- "purple4"
-date <- "120520"
-chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
-                           split = ","))
+#markChIPA <- "ASY1_CS"
+#libNameChIPA <- "ASY1_CS_Rep1_ChIP"
+#markControlA <- "input"
+#libNameControlA <- "H3_input_SRR6350669"
+#DNAmethName <- "BSseq_Rep8a_SRR6792678"
+#align <- "both"
+#winName <- "1Mb"
+#winSize <- 1000000
+#N <- 15
+#colourA <- "purple4"
+#date <- "120520"
+#chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
+#                           split = ","))
 
 args <- commandArgs(trailingOnly = T)
 markChIPA <- args[1]
@@ -60,9 +60,9 @@ plotDir <- "plots/"
 
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
-#chrs <- chrs[-length(chrs)]
+chrs <- chrs[-length(chrs)]
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
-#chrLens <- chrLens[-length(chrLens)]
+chrLens <- chrLens[-length(chrLens)]
 centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,2])
 centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,3])
 chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
@@ -70,11 +70,6 @@ chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_ps
 markers <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_recombination_rate_analysis/iwgsc_refseqv1.0_mapping_data.txt",
                       header = TRUE)
 
-DNAmethContexts <- c(
-                     "CpG",
-                     "CHG",
-                     "CHH"
-                    )
 DNAmethNamesPlot <- c(
                       "mCG",
                       "mCHG",
@@ -86,151 +81,6 @@ DNAmethColours <- c(
                     "deepskyblue1"
                    )
 DNAmethColours <- makeTransparent(DNAmethColours)
-
-if(grepl(pattern = "SRR67926", x = DNAmethName)) {
-  DNAmethDir <- "/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/BSseq/snakemake_BSseq/coverage/"
-} else {
-  stop(paste0("DNAmethName is not compatible with the specified coverage path"))
-}
-
-## mCG profile
-mCG <- read.table(gzfile(paste0(DNAmethDir,
-                                DNAmethName, "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_",
-                                "CpG.gz.bismark.cov.gz")),
-                  header = F, stringsAsFactors = F,
-                  colClasses = c(rep(NA, 2), "NULL", NA, rep("NULL", 2)))
-colnames(mCG) <- c("chr", "pos", "propMeth")
-mCG$propMeth <- as.numeric(mCG$propMeth/100)
-mCHG <- read.table(gzfile(paste0(DNAmethDir,
-                                 DNAmethName, "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_",
-                                 "CHG.gz.bismark.cov.gz")),
-                   header = F, stringsAsFactors = F,
-                   colClasses = c(rep(NA, 2), "NULL", NA, rep("NULL", 2)))
-colnames(mCHG) <- c("chr", "pos", "propMeth")
-mCHG$propMeth <- as.numeric(mCHG$propMeth/100)
-mCHH <- read.table(gzfile(paste0(DNAmethDir,
-                                 DNAmethName, "_MappedOn_wheat_v1.0_incl_organelles_controls_dedup_",
-                                 "CHH.gz.bismark.cov.gz")),
-                   header = F, stringsAsFactors = F,
-                   colClasses = c(rep(NA, 2), "NULL", NA, rep("NULL", 2)))
-colnames(mCHH) <- c("chr", "pos", "propMeth")
-mCHH$propMeth <- as.numeric(mCHH$propMeth/100)
-
-# Define windows as GRanges object
-windowsGR <- GRanges()
-for(x in 1:length(chrs)) {
-  seqWindows <- seq(1, chrLens[x], by = winSize)
-  windowsIR <- IRanges(start = seqWindows,
-                       width = winSize)
-  windowsIR <- windowsIR[-length(windowsIR)]
-  windowsIR <- append(windowsIR,
-                      IRanges(start = seqWindows[length(seqWindows)],
-                              end = chrLens[x]))
-  chrWindowsGR <- GRanges(seqnames = chrs[x],
-                          ranges = windowsIR,
-                          strand = "*")
-  print(chrWindowsGR)
-  windowsGR <- append(windowsGR, chrWindowsGR)
-}
-
-profileDNAmeth <- NULL
-for(i in 1:length(chrs)) {
-  chr_windowsGR <- windowsGR[seqnames(windowsGR) == chrs[i]]
-  # mCG
-  chr_mCG <- mCG[mCG$chr == chrs[i],]
-  chr_mCG_GR <- GRanges(seqnames = chrs[i],
-                        ranges = IRanges(start = chr_mCG$pos,
-                                         width = 1),
-                        strand = "*")
-  # Identify overlapping windows and cytosine coordinates in CG context
-  mCG_fOverlaps <- findOverlaps(query = chr_windowsGR,
-                                subject = chr_mCG_GR,
-                                type = "any",
-                                select = "all",
-                                ignore.strand = TRUE)
-  # Convert mCG_fOverlaps into list object equivalent to that
-  # generated by segmentSeq::getOverlaps(), in which each
-  # list element corresponds to a genomic window of
-  # sequentially numbered cytosine coordinates
-  mCG_fOverlapsList <- mclapply(seq_along(unique(queryHits(mCG_fOverlaps))),
-                       function(x) {
-                         subjectHits(mCG_fOverlaps[queryHits(mCG_fOverlaps) == x])
-                       }, mc.cores = detectCores(), mc.preschedule = T)  
-
-  win_mCG <- sapply(mCG_fOverlapsList, function(x) {
-               mean(chr_mCG$propMeth[x])
-             })
-
-  # mCHG
-  chr_mCHG <- mCHG[mCHG$chr == chrs[i],]
-  chr_mCHG_GR <- GRanges(seqnames = chrs[i],
-                         ranges = IRanges(start = chr_mCHG$pos,
-                                          width = 1),
-                         strand = "*")
-  # Identify overlapping windows and cytosine coordinates in CHG context
-  mCHG_fOverlaps <- findOverlaps(query = chr_windowsGR,
-                                 subject = chr_mCHG_GR,
-                                 type = "any",
-                                 select = "all",
-                                 ignore.strand = TRUE)
-  # Convert mCHG_fOverlaps into list object equivalent to that
-  # generated by segmentSeq::getOverlaps(), in which each
-  # list element corresponds to a genomic window of
-  # sequentially numbered cytosine coordinates
-  mCHG_fOverlapsList <- mclapply(seq_along(unique(queryHits(mCHG_fOverlaps))),
-                        function(x) {
-                          subjectHits(mCHG_fOverlaps[queryHits(mCHG_fOverlaps) == x])
-                        }, mc.cores = detectCores(), mc.preschedule = T)  
-
-  win_mCHG <- sapply(mCHG_fOverlapsList, function(x) {
-                mean(chr_mCHG$propMeth[x])
-              })
-
-  # mCHH
-  chr_mCHH <- mCHH[mCHH$chr == chrs[i],]
-  chr_mCHH_GR <- GRanges(seqnames = chrs[i],
-                         ranges = IRanges(start = chr_mCHH$pos,
-                                          width = 1),
-                         strand = "*")
-  # Identify overlapping windows and cytosine coordinates in CHH context
-  mCHH_fOverlaps <- findOverlaps(query = chr_windowsGR,
-                                 subject = chr_mCHH_GR,
-                                 type = "any",
-                                 select = "all",
-                                 ignore.strand = TRUE)
-  # Convert mCHH_fOverlaps into list object equivalent to that
-  # generated by segmentSeq::getOverlaps(), in which each
-  # list element corresponds to a genomic window of
-  # sequentially numbered cytosine coordinates
-  mCHH_fOverlapsList <- mclapply(seq_along(unique(queryHits(mCHH_fOverlaps))),
-                        function(x) {
-                          subjectHits(mCHH_fOverlaps[queryHits(mCHH_fOverlaps) == x])
-                        }, mc.cores = detectCores(), mc.preschedule = T)  
-
-  win_mCHH <- sapply(mCHH_fOverlapsList, function(x) {
-                mean(chr_mCHH$propMeth[x])
-              })
-
-  # Mean of all 3 contexts
-  win_mC <- sapply(seq_along(win_mCG), function(x) {
-              mean(c(win_mCG[x], win_mCG[x], win_mCG[x]))
-            })
-  # Make data.frame
-  chr_profile <- data.frame(chr = chrs[i],
-                            window = start(chr_windowsGR),
-                            mCG = win_mCG,
-                            mCHG = win_mCHG,
-                            mCHH = win_mCHH,
-                            mC = win_mC,
-                            stringsAsFactors = F)
-
-  profileDNAmeth <- rbind(profileDNAmeth, chr_profile)
-} 
-write.table(profile
-write.table(featureProfile,
-            file = paste0(outDir,
-                          "meiotic_gene_frequency_per_", winName,
-                          ".txt"))
 
 ## ChIPA profile
 if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
@@ -425,53 +275,68 @@ maxCPMA <- max(unlist(mclapply(which(chrs %in% chrName),
     max(c(filt_chrProfilesChIPA[[x]]$filt_log2CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))+0.25
 
-## ChIPB
-# Calculate log2((ChIP+1)/(Control+1)) coverage within each window
-profileChIPBlog2 <- data.frame(chr = as.character(profileChIPB$chr),
-                               window = as.numeric(profileChIPB$window),
-                               log2CPM = as.numeric(log2((profileChIPB$CPM+1)/(profileControlB$CPM+1))),
-                               stringsAsFactors = F)
-                        
-chrProfilesChIPB <- mclapply(seq_along(chrs), function(x) {
-  profileChIPBlog2[profileChIPBlog2$chr == chrs[x],]
+# DNA methylation proportion profiles
+profileDNAmeth <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/DNAmeth/",
+                                    DNAmethName, "_per_", winName, ".txt"),
+                             header = T)
+chrProfilesDNAmeth <- mclapply(seq_along(chrs) , function(x) {
+  profileDNAmeth[profileDNAmeth$chr == chrs[x],]
 }, mc.cores = length(chrs))
 
-# Calculate moving average of current window, ((N/2)-0.5) previous windows,
-# and ((N/2)-0.5) subsequent windows
-# (the higher N is, the greater the smoothing)
-flank <- (N/2)-0.5
-# Define MA filter coefficients
-f <- rep(1/N, N)
-
-filt_chrProfilesChIPB <- mclapply(seq_along(chrProfilesChIPB), function(x) {
-  filt_chrProfile <- stats::filter(x = chrProfilesChIPB[[x]]$log2CPM,
-                                   filter = f,
-                                   sides = 2)
-  filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
-  filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
-  data.frame(chr = as.character(chrProfilesChIPB[[x]]$chr),
-             window = as.integer(chrProfilesChIPB[[x]]$window),
-             filt_log2CPM = as.numeric(filt_chrProfile),
+filt_chrProfilesDNAmeth <- mclapply(seq_along(chrProfilesDNAmeth), function(x) {
+  # mCG
+  filt_chrProfile_mCG <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCG,
+                                       filter = f,
+                                       sides = 2)
+  filt_chrProfile_mCG[1:flank] <- filt_chrProfile_mCG[flank+1]
+  filt_chrProfile_mCG[(length(filt_chrProfile_mCG)-flank+1):length(filt_chrProfile_mCG)] <- filt_chrProfile_mCG[(length(filt_chrProfile_mCG)-flank)]
+  # mCHG
+  filt_chrProfile_mCHG <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCHG,
+                                        filter = f,
+                                        sides = 2)
+  filt_chrProfile_mCHG[1:flank] <- filt_chrProfile_mCHG[flank+1]
+  filt_chrProfile_mCHG[(length(filt_chrProfile_mCHG)-flank+1):length(filt_chrProfile_mCHG)] <- filt_chrProfile_mCHG[(length(filt_chrProfile_mCHG)-flank)]
+  # mCHH
+  filt_chrProfile_mCHH <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCHH,
+                                        filter = f,
+                                        sides = 2)
+  filt_chrProfile_mCHH[1:flank] <- filt_chrProfile_mCHH[flank+1]
+  filt_chrProfile_mCHH[(length(filt_chrProfile_mCHH)-flank+1):length(filt_chrProfile_mCHH)] <- filt_chrProfile_mCHH[(length(filt_chrProfile_mCHH)-flank)]
+  # mC
+  filt_chrProfile_mC <- stats::filter(x = chrProfilesDNAmeth[[x]]$mC,
+                                      filter = f,
+                                      sides = 2)
+  filt_chrProfile_mC[1:flank] <- filt_chrProfile_mC[flank+1]
+  filt_chrProfile_mC[(length(filt_chrProfile_mC)-flank+1):length(filt_chrProfile_mC)] <- filt_chrProfile_mC[(length(filt_chrProfile_mC)-flank)]
+  # Combine in data.frame
+  data.frame(chr = as.character(chrProfilesDNAmeth[[x]]$chr),
+             window = as.integer(chrProfilesDNAmeth[[x]]$window),
+	     filt_mCG = as.numeric(filt_chrProfile_mCG),
+             filt_mCHG = as.numeric(filt_chrProfile_mCHG),
+             filt_mCHH = as.numeric(filt_chrProfile_mCHH),
+             filt_mC = as.numeric(filt_chrProfile_mC),
              stringsAsFactors = F)
-}, mc.cores = length(chrProfilesChIPB))
+}, mc.cores = length(chrProfilesDNAmeth))
 
-minCPMB_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
+minDNAmeth_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesDNAmeth),
   function(x) {
-    min(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))-0.025
-maxCPMB_chrs <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
+    min(c(filt_chrProfilesDNAmeth[[x]]$filt_mCHH), na.rm = T)
+}, mc.cores = length(filt_chrProfilesDNAmeth))))
+maxDNAmeth_chrs <- max(unlist(mclapply(seq_along(filt_chrProfilesDNAmeth),
   function(x) {
-    max(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))+0.025
+    max(c(filt_chrProfilesDNAmeth[[x]]$filt_mCG), na.rm = T)
+}, mc.cores = length(filt_chrProfilesDNAmeth))))
 
-minCPMB <- min(unlist(mclapply(which(chrs %in% chrName),
+minDNAmeth <- min(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
-    min(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))-0.025
-maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
+    min(c(filt_chrProfilesDNAmeth[[x]]$filt_mCHH), na.rm = T)
+}, mc.cores = length(filt_chrProfilesDNAmeth))))
+maxDNAmeth <- max(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
-    max(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))+0.025
+    max(c(filt_chrProfilesDNAmeth[[x]]$filt_mCG), na.rm = T)
+}, mc.cores = length(filt_chrProfilesDNAmeth))))
+
+
 
 # Feature frequency chromosome profiles
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
