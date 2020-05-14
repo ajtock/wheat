@@ -22,7 +22,6 @@
 #genomeName <- unlist(strsplit("A,B,D",
 #                              split = ","))
 
-
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
 winSize <- as.numeric(args[2])
@@ -124,8 +123,10 @@ if(region == "distal") {
                     ranges = IRanges(start = chrPartitions$R1_R2a+1,
                                      end = chrPartitions$R2b_R3-1),
                     strand = "*")
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else if(region == "interstitial") {
   maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 3),
                     ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
@@ -135,8 +136,10 @@ if(region == "distal") {
                                              chrPartitions$C_R2b-1,
                                              chrLens)),
                     strand = "*")
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else if(region == "proximal") {
   maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 2),
                     ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
@@ -144,8 +147,10 @@ if(region == "distal") {
                                      end = c(chrPartitions$R2a_C,
                                              chrLens)),
                     strand = "*")
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else if(region == "heterochromatin") {
   maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 2),
                     ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
@@ -153,8 +158,10 @@ if(region == "distal") {
                                      end = c(chrPartitions$R1_R2a,
                                              chrLens)),
                     strand = "*")
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else if(region == "centromeres") {
   maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 2),
                     ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
@@ -162,19 +169,46 @@ if(region == "distal") {
                                      end = c(centromereStart-1,
                                              chrLens)),
                     strand = "*")
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else if(region == "genomewide") {
   maskGR <- GRanges()
-  maskGR <- maskGR[grep(genomeName,
-                        seqnames(maskGR))@values]
+  if(length(genomeName) == 1) {
+    maskGR <- maskGR[grep(genomeName,
+                          seqnames(maskGR))@values]
+  }
 } else {
   stop("region is not distal, interstitial, proximal, heterochromatin, centromeres, or genomewide")
 }
 
 
+ASY1 <- read.table("log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669_per_1Mb_smoothed.txt",
+                   header = T)
+ASY1GR <- GRanges(seqnames = ASY1$chr,
+                  ranges = IRanges(start = ASY1$window,
+                                   end = ASY1$window+winSize-1),
+                  strand = "*",
+                  value = ASY1$filt_log2ChIPcontrol)
+ASY1GR_chrs <- lapply(seq_along(chrs), function(x) {
+  ASY1GR_chr <- ASY1GR[seqnames(ASY1GR) == chrs[x]]
+  end(ASY1GR_chr)[length(ASY1GR_chr)] <- chrLens[x]
+  ASY1GR_chr
+})
+ASY1GR <- do.call(c, ASY1GR_chrs)
 
-
+if(length(genomeName) == 1) {
+  ASY1GR <- ASY1GR[grep(genomeName,
+                        seqnames(ASY1GR))@values]
+}
+# Subset to include only those not overlapping masked region (e.g., heterochromatin)
+mask_ASY1_overlap <- findOverlaps(query = maskGR,
+                                  subject = ASY1GR,
+                                  type = "any",
+                                  select = "all",
+                                  ignore.strand = TRUE)
+ASY1GR <- ASY1GR[-subjectHits(mask_ASY1_overlap)]
 
 
 #library(plyr)
