@@ -1,14 +1,16 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./TE_family_frequency_chrProfiles.R 1Mb 1000000
+# ./TE_family_frequency_chrProfiles.R 1Mb 1000000 15
 
-winName <- "1Mb"
-winSize <- 1000000
+#winName <- "1Mb"
+#winSize <- 1000000
+#N <- 15
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
 winSize <- as.numeric(args[2])
+N <- as.numeric(args[3])
 
 library(rtracklayer)
 library(parallel)
@@ -53,7 +55,7 @@ superfamName <- c("Gypsy_LTR",
 superfamList <- mclapply(seq_along(superfamCode), function(x)
   {
     TEsGFF[grep(superfamCode[x], TEsGFF$compo),]
-  }, mc.cores = 48)
+  }, mc.cores = detectCores())
 
 # Create a list of TE superfamilies, wherein each list element
 # is a vector of TE subfamilies
@@ -62,7 +64,7 @@ subfamList <- mclapply(seq_along(superfamList), function(x)
     # Extract the first subfamily specified in the
     # composition ("compo") column
     unique(gsub(" .*$", "", superfamList[[x]]$compo))
-  }, mc.cores = 48)
+  }, mc.cores = detectCores())
 
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
@@ -110,14 +112,50 @@ foreach(h = 1:length(superfamList)) %dopar% {
                             ignore.strand = T)
     chrProfile <- data.frame(chr = as.character(chrs[i]),
                              window = as.integer(start(chrWindowsGR)),
-                             winTEs = as.integer(winTEs))
+                             features = as.integer(winTEs),
+                             stringsAsFactors = F)
     superfamProfile <- rbind(superfamProfile, chrProfile)
   }
   write.table(superfamProfile,
               file = paste0(outDirSuperfams,
                             "TE_frequency_per_", winName,
                             "_superfamily_", superfamName[h], "_", superfamCode[h],
-                            ".txt"))
+                            ".txt"),
+              sep = "\t", quote = F, row.names = F, col.names = T)
+
+  # Calculate moving average of current window, ((N/2)-0.5) previous windows,
+  # and ((N/2)-0.5) subsequent windows
+  # (the higher N is, the greater the smoothing)
+  flank <- (N/2)-0.5
+  # Define MA filter coefficients
+  f <- rep(1/N, N)
+  
+  chrProfiles <- mclapply(seq_along(chrs), function(x) {
+    superfamProfile[superfamProfile$chr == chrs[x],]
+  }, mc.cores = length(chrs))
+  
+  filt_chrProfiles <- mclapply(seq_along(chrProfiles), function(x) {
+    filt_chrProfile <- stats::filter(x = chrProfiles[[x]]$features,
+                                     filter = f,
+                                     sides = 2)
+    filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
+    filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
+    data.frame(chr = as.character(chrProfiles[[x]]$chr),
+               window = as.integer(chrProfiles[[x]]$window),
+               filt_features = as.numeric(filt_chrProfile),
+               stringsAsFactors = F)
+  }, mc.cores = length(chrProfiles))
+  
+  # Combine list of 1 data.frame per chromosome into one data.frame
+  filt_superfamProfile <- do.call(rbind, filt_chrProfiles)
+  
+  write.table(filt_superfamProfile,
+              file = paste0(outDirSuperfams,
+                            "TE_frequency_per_", winName,
+                            "_superfamily_", superfamName[h], "_", superfamCode[h],
+                            "_smoothed.txt"),
+              sep = "\t", quote = F, row.names = F, col.names = T)
+
 
   for(j in 1:length(subfamList[[h]])) {
     print(h)
@@ -140,11 +178,13 @@ foreach(h = 1:length(superfamList)) %dopar% {
                                        ignore.strand = T)
         chrProfile_subfam <- data.frame(chr = as.character(chrs[i]),
                                         window = as.integer(start(chrWindowsGR)),
-                                        winTEs = as.integer(winTEs_subfam))
+                                        features = as.integer(winTEs_subfam),
+                                        stringsAsFactors = F)
       } else {
         chrProfile_subfam <- data.frame(chr = as.character(chrs[i]),
                                         window = as.integer(start(chrWindowsGR)),
-                                        winTEs = as.integer(0))
+                                        features = as.integer(0),
+                                        stringsAsFactors = F)
       }
       subfamProfile <- rbind(subfamProfile, chrProfile_subfam)
     }
@@ -153,7 +193,35 @@ foreach(h = 1:length(superfamList)) %dopar% {
                               "TE_frequency_per_", winName,
                               "_superfamily_", superfamName[h], "_", superfamCode[h],
                               "_subfamily_", subfamList[[h]][j], 
-                              ".txt"))
+                              ".txt"),
+                sep = "\t", quote = F, row.names = F, col.names = T)
+
+    chrProfiles <- mclapply(seq_along(chrs), function(x) {
+      subfamProfile[subfamProfile$chr == chrs[x],]
+    }, mc.cores = length(chrs))
+    
+    filt_chrProfiles <- mclapply(seq_along(chrProfiles), function(x) {
+      filt_chrProfile <- stats::filter(x = chrProfiles[[x]]$features,
+                                       filter = f,
+                                       sides = 2)
+      filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
+      filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
+      data.frame(chr = as.character(chrProfiles[[x]]$chr),
+                 window = as.integer(chrProfiles[[x]]$window),
+                 filt_features = as.numeric(filt_chrProfile),
+                 stringsAsFactors = F)
+    }, mc.cores = length(chrProfiles))
+    
+    # Combine list of 1 data.frame per chromosome into one data.frame
+    filt_subfamProfile <- do.call(rbind, filt_chrProfiles)
+    
+    write.table(filt_subfamProfile,
+                file = paste0(outDirSubfams,
+                              "TE_frequency_per_", winName,
+                              "_superfamily_", superfamName[h], "_", superfamCode[h],
+                              "_subfamily_", subfamList[[h]][j], 
+                              "_smoothed.txt"),
+                sep = "\t", quote = F, row.names = F, col.names = T)
   }
 }
 
