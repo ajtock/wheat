@@ -3,16 +3,18 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # Usage:
-# csmit -m 100G -c 30 "Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000"
+# csmit -m 300G -c 47 "Rscript ./DNAmethylation_chrProfiles.R BSseq_Rep8a_SRR6792678 1Mb 1000000 15"
 
-#DNAmethName <- "BSseq_Rep8a_SRR6792679"
+#DNAmethName <- "BSseq_Rep8a_SRR6792678"
 #winName <- "1Mb"
 #winSize <- 1000000
+#N <- 15
 
 args <- commandArgs(trailingOnly = T)
 DNAmethName <- args[1]
 winName <- args[2]
 winSize <- as.numeric(args[3])
+N <- as.numeric(args[4])
 
 library(parallel)
 library(GenomicRanges)
@@ -168,4 +170,57 @@ for(i in 1:length(chrs)) {
 } 
 write.table(profileDNAmeth,
             file = paste0(DNAmethName, "_per_", winName, ".txt"),
+            sep = "\t", quote = F, row.names = F, col.names = T)
+
+# Calculate moving average of current window, ((N/2)-0.5) previous windows,
+# and ((N/2)-0.5) subsequent windows
+# (the higher N is, the greater the smoothing)
+flank <- (N/2)-0.5
+# Define MA filter coefficients
+f <- rep(1/N, N)
+
+chrProfilesDNAmeth <- mclapply(seq_along(chrs) , function(x) {
+  profileDNAmeth[profileDNAmeth$chr == chrs[x],]
+}, mc.cores = length(chrs))
+
+filt_chrProfilesDNAmeth <- mclapply(seq_along(chrProfilesDNAmeth), function(x) {
+  # mCG
+  filt_chrProfile_mCG <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCG,
+                                       filter = f,
+                                       sides = 2)
+  filt_chrProfile_mCG[1:flank] <- filt_chrProfile_mCG[flank+1]
+  filt_chrProfile_mCG[(length(filt_chrProfile_mCG)-flank+1):length(filt_chrProfile_mCG)] <- filt_chrProfile_mCG[(length(filt_chrProfile_mCG)-flank)]
+  # mCHG
+  filt_chrProfile_mCHG <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCHG,
+                                        filter = f,
+                                        sides = 2)
+  filt_chrProfile_mCHG[1:flank] <- filt_chrProfile_mCHG[flank+1]
+  filt_chrProfile_mCHG[(length(filt_chrProfile_mCHG)-flank+1):length(filt_chrProfile_mCHG)] <- filt_chrProfile_mCHG[(length(filt_chrProfile_mCHG)-flank)]
+  # mCHH
+  filt_chrProfile_mCHH <- stats::filter(x = chrProfilesDNAmeth[[x]]$mCHH,
+                                        filter = f,
+                                        sides = 2)
+  filt_chrProfile_mCHH[1:flank] <- filt_chrProfile_mCHH[flank+1]
+  filt_chrProfile_mCHH[(length(filt_chrProfile_mCHH)-flank+1):length(filt_chrProfile_mCHH)] <- filt_chrProfile_mCHH[(length(filt_chrProfile_mCHH)-flank)]
+  # mC
+  filt_chrProfile_mC <- stats::filter(x = chrProfilesDNAmeth[[x]]$mC,
+                                      filter = f,
+                                      sides = 2)
+  filt_chrProfile_mC[1:flank] <- filt_chrProfile_mC[flank+1]
+  filt_chrProfile_mC[(length(filt_chrProfile_mC)-flank+1):length(filt_chrProfile_mC)] <- filt_chrProfile_mC[(length(filt_chrProfile_mC)-flank)]
+  # Combine in data.frame
+  data.frame(chr = as.character(chrProfilesDNAmeth[[x]]$chr),
+             window = as.integer(chrProfilesDNAmeth[[x]]$window),
+             filt_mCG = as.numeric(filt_chrProfile_mCG),
+             filt_mCHG = as.numeric(filt_chrProfile_mCHG),
+             filt_mCHH = as.numeric(filt_chrProfile_mCHH),
+             filt_mC = as.numeric(filt_chrProfile_mC),
+             stringsAsFactors = F)
+}, mc.cores = length(chrProfilesDNAmeth))
+
+# Combine list of 1 data.frame per chromosome into one data.frame
+filt_profileDNAmeth <- do.call(rbind, filt_chrProfilesDNAmeth)
+
+write.table(filt_profileDNAmeth,
+            file = paste0(DNAmethName, "_per_", winName, "_smoothed.txt"),
             sep = "\t", quote = F, row.names = F, col.names = T)
