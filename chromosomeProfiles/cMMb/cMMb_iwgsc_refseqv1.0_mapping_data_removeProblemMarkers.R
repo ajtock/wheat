@@ -1,16 +1,18 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./cMMb_iwgsc_refseqv1.0_mapping_data_removeProblemMarkers.R 1Mb 1000000 200
+# ./cMMb_iwgsc_refseqv1.0_mapping_data_removeProblemMarkers.R 1Mb 1000000 200 15
 
 #winName <- "1Mb"
 #winSize <- 1000000
 #minMarkerDist <- 200
+#N <- 15
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
 winSize <- as.numeric(args[2])
 minMarkerDist <- as.numeric(args[3])
+N <- as.numeric(args[4])
 
 library(parallel)
 library(doParallel)
@@ -25,8 +27,10 @@ chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Marti
 chrs <- chrs[-length(chrs)]
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
 chrLens <- chrLens[-length(chrLens)]
-centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,2])
-centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr2AMiddleInterval_chr4ALeftmostInterval_chr4BRightmostInterval_chr5ARightmostInterval_chr7BRightTwoIntervals.txt")[,3])
+centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,2])
+centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,3])
+chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
+                            header = TRUE)
 
 # Read in genetic map data
 map <- read.table(paste0(inDir, "iwgsc_refseqv1.0_mapping_data.txt"),
@@ -145,4 +149,49 @@ for(i in 1:length(chrProfiles)) {
 write.table(profile,
             file = paste0(outDir,
                           "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                          as.character(minMarkerDist), "bp_", winName, ".txt"))
+                          as.character(minMarkerDist), "bp_", winName, ".txt"),
+            sep = "\t", quote = F, row.names = F, col.names = T)
+
+# Calculate moving average of current window, ((N/2)-0.5) previous windows,
+# and ((N/2)-0.5) subsequent windows
+# (the higher N is, the greater the smoothing)
+flank <- (N/2)-0.5
+# Define MA filter coefficients
+f <- rep(1/N, N)
+
+cMMbProfile <- read.table(paste0(outDir, 
+                                 "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
+                                 as.character(minMarkerDist), "bp_", winName, ".txt"),
+                          header = T)
+
+chrProfiles <- mclapply(seq_along(chrs), function(x) {
+  cMMbProfile[cMMbProfile$chr == chrs[x],]
+}, mc.cores = length(chrs))
+
+filt_chrProfiles <- mclapply(seq_along(chrProfiles), function(x) {
+  filt_chrProfile <- stats::filter(x = chrProfiles[[x]]$cMMb,
+                                   filter = f,
+                                   sides = 2)
+  # Given missing cM/Mb data for some of the more distal windows,
+  # need a different way of extending the leftmost and rightmost
+  # non-NA values to the ends of each chromosome, replacing NAs where they are present
+  leftFlank <- which(is.na(filt_chrProfile))[which(is.na(filt_chrProfile)) < N*2]
+  rightFlank <- which(is.na(filt_chrProfile))[which(is.na(filt_chrProfile)) > N*2]
+  filt_chrProfile[leftFlank] <- filt_chrProfile[leftFlank[length(leftFlank)]+1]
+  filt_chrProfile[rightFlank] <- filt_chrProfile[rightFlank[1]-1]
+#  filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
+#  filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
+  data.frame(chr = as.character(chrProfiles[[x]]$chr),
+             windowStart = as.integer(chrProfiles[[x]]$windowStart),
+             windowEnd = as.integer(chrProfiles[[x]]$windowEnd),
+             filt_cMMb = as.numeric(filt_chrProfile),
+             stringsAsFactors = F)
+}, mc.cores = length(chrProfiles))
+
+# Combine list of 1 data.frame per chromosome into one data.frame
+filt_cMMbProfile <- do.call(rbind, filt_chrProfiles)
+
+write.table(filt_cMMbProfile,
+            file = paste0("cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
+                          as.character(minMarkerDist), "bp_", winName, "_smoothed.txt"),
+            sep = "\t", quote = F, row.names = F, col.names = T)
