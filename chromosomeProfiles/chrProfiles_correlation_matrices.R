@@ -345,6 +345,10 @@ colnames(profilesDF) <- profileNames
 corMat <- cor(profilesDF, method = "spearman", use = "pairwise.complete.obs")
 corMatSig <- rcorr(as.matrix(profilesDF), type = "spearman")
 
+ggcorrplot(r, 
+           hc.order = TRUE, 
+           type = "lower",
+           lab = TRUE)
 
 
 #library(plyr)
