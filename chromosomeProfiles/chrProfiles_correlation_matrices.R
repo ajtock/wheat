@@ -12,7 +12,7 @@
 # 2. R2a and R2b (interstitial)
 # 3. C (proximal)
 # 4. heterochromatin (interstitial and proximal)
-# 5. centromeres (defined by IWGSC (2018) Science 361 using CENH3 ChIP-seq data from Guo et al. (2016) PLOS Genet. 12)
+# 5. centromeric (defined by IWGSC (2018) Science 361 using CENH3 ChIP-seq data from Guo et al. (2016) PLOS Genet. 12)
 
 # Usage:
 # ./chrProfiles_correlation_matrices.R 1Mb 1000000 distal 'A,B,D' smoothed
@@ -103,7 +103,7 @@ if(region == "distal") {
     regionGR <- regionGR[grep(genomeName,
                               seqnames(regionGR))@values]
   }
-} else if(region == "centromeres") {
+} else if(region == "centromeric") {
   regionGR <- GRanges(seqnames = chrs,
                       ranges = IRanges(start = centromereStart,
                                        end = centromereEnd),
@@ -122,7 +122,7 @@ if(region == "distal") {
                               seqnames(regionGR))@values]
   }
 } else {
-  stop("region is not distal, interstitial, proximal, heterochromatin, centromeres, or genomewide")
+  stop("region is not distal, interstitial, proximal, heterochromatin, centromeric, or genomewide")
 }
 
 # Define region to be masked out of analysis
@@ -170,7 +170,7 @@ if(region == "distal") {
     maskGR <- maskGR[grep(genomeName,
                           seqnames(maskGR))@values]
   }
-} else if(region == "centromeres") {
+} else if(region == "centromeric") {
   maskGR <- GRanges(seqnames = rep(chrPartitions$chrom, 2),
                     ranges = IRanges(start = c(rep(1, dim(chrPartitions)[1]),
                                                centromereEnd+1),
@@ -188,7 +188,7 @@ if(region == "distal") {
                           seqnames(maskGR))@values]
   }
 } else {
-  stop("region is not distal, interstitial, proximal, heterochromatin, centromeres, or genomewide")
+  stop("region is not distal, interstitial, proximal, heterochromatin, centromeric, or genomewide")
 }
 
 ChIPDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/log2ChIPcontrol/"
@@ -329,7 +329,11 @@ profilesGR <- lapply(seq_along(profilesGR), function(x) {
                                            type = "any",
                                            select = "all",
                                            ignore.strand = TRUE)
-  profilesGR[[x]][-subjectHits(mask_profilesGRx_overlap)]
+  if(length(mask_profilesGRx_overlap) != 0) {
+    profilesGR[[x]][-subjectHits(mask_profilesGRx_overlap)]
+  } else {
+    profilesGR[[x]]
+  }
 })
 
 # Combine profiles into one data.frame in which each profile is a column
