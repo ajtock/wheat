@@ -31,6 +31,7 @@ genomeName <- unlist(strsplit(args[4],
                               split = ","))
 
 library(GenomicRanges)
+library(Hmisc) # includes rcorr() function which computes significance levels for Pearson and Spearman correlations
 library(ggplot2)
 library(ggcorrplot)
 
@@ -217,8 +218,36 @@ paths <- c(
            paste0(geneDir, "meiotic_gene_frequency_per_1Mb_smoothed.txt")
 )
 
-profilesDNAmeth <- read.table(paste0(DNAmethDir, "BSseq_Rep8a_SRR6792678_per_", winName, "_smoothed.txt"),
-                              header = T)
+profileNames <- c(
+                  "DMC1",
+                  "ASY1",
+                  "cM/Mb",
+                  "H2A.Z",
+                  "H3K27me3",
+                  "H3K4me1",
+                  "H3K4me3",
+                  "H3K9ac",
+                  "H3K27ac",
+                  "H3K36me3",
+                  "H3K27me1",
+                  "H3K9me2",
+                  "CENH3",
+                  "MNase",
+                  "DNaseI",
+                  "Input",
+                  "mCG",
+                  "mCHG",
+                  "mCHH",
+                  "mC",
+                  "RNA-seq Rep1",
+                  "RNA-seq Rep2",
+                  "RNA-seq Rep3",
+                  "Genes",
+                  "NLR genes",
+                  "Defense response genes",
+                  "Meiotic genes"
+)
+
 profiles <- lapply(seq_along(paths), function(x) {
   read.table(paths[x], header = T)
 })
@@ -303,6 +332,20 @@ profilesGR <- lapply(seq_along(profilesGR), function(x) {
                                            ignore.strand = TRUE)
   profilesGR[[x]][-subjectHits(mask_profilesGRx_overlap)]
 })
+
+# Combine profiles into one data.frame in which each profile is a column
+profilesVal <- lapply(seq_along(profilesGR), function(x) {
+  profilesGR[[x]]$value
+})
+
+profilesDF <- as.data.frame(do.call(cbind, profilesVal),
+                            stringsAsFactors = F)
+colnames(profilesDF) <- profileNames
+
+corMat <- cor(profilesDF, method = "spearman", use = "pairwise.complete.obs")
+corMatSig <- rcorr(as.matrix(profilesDF), type = "spearman")
+
+
 
 #library(plyr)
 #library(data.table)
