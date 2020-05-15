@@ -15,13 +15,14 @@
 # 5. centromeres (defined by IWGSC (2018) Science 361 using CENH3 ChIP-seq data from Guo et al. (2016) PLOS Genet. 12)
 
 # Usage:
-# ./chrProfiles_correlation_matrices.R 1Mb 1000000 distal 'A,B,D'
+# ./chrProfiles_correlation_matrices.R 1Mb 1000000 distal 'A,B,D' smoothed
 
 #winName <- "1Mb"
 #winSize <- 1000000
 #region <- "distal"
 #genomeName <- unlist(strsplit("A,B,D",
 #                              split = ","))
+#smoothing <- "smoothed"
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
@@ -29,6 +30,7 @@ winSize <- as.numeric(args[2])
 region <- args[3]
 genomeName <- unlist(strsplit(args[4],
                               split = ","))
+smoothing <- args[5]
 
 plotDir <- paste0("plots/Figure1/correlation_matrices/")
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
@@ -196,26 +198,26 @@ geneDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/genes/"
 DNAmethDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/DNAmeth/"
 
 paths <- c(
-           paste0(ChIPDir, "log2_DMC1_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(cMMbDir, "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist200bp_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K4me1_Rep1_ChIP_SRR8126618_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K4me3_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K27ac_Rep1_ChIP_SRR8126621_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H2AZ_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K9me2_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K27me1_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(DNAmethDir, "BSseq_Rep8a_SRR6792678_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "WT_RNAseq_Rep1_ERR2402974_per_", winName, "_smoothed.txt"),
-           paste0(geneDir, "gene_frequency_per_1Mb_smoothed.txt"),
-           paste0(geneDir, "NLR_gene_frequency_per_1Mb_smoothed.txt"),
-           paste0(geneDir, "defense_response_gene_frequency_per_1Mb_smoothed.txt"),
-           paste0(geneDir, "meiotic_gene_frequency_per_1Mb_smoothed.txt")
+           paste0(ChIPDir, "log2_DMC1_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(cMMbDir, "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist200bp_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K4me1_Rep1_ChIP_SRR8126618_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K4me3_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K27ac_Rep1_ChIP_SRR8126621_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H2AZ_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K9me2_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_H3K27me1_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
+           paste0(DNAmethDir, "BSseq_Rep8a_SRR6792678_per_", winName, "_", smoothing, ".txt"),
+           paste0(ChIPDir, "log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
+           paste0(otherDir, "MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
+           paste0(otherDir, "WT_RNAseq_Rep1_ERR2402974_per_", winName, "_", smoothing, ".txt"),
+           paste0(geneDir, "gene_frequency_per_", winName, "_", smoothing, ".txt"),
+           paste0(geneDir, "defense_response_gene_frequency_per_", winName, "_", smoothing, ".txt"),
+           paste0(geneDir, "NLR_gene_frequency_per_", winName, "_", smoothing, ".txt"),
+           paste0(geneDir, "meiotic_gene_frequency_per_", winName, "_", smoothing, ".txt")
 )
 
 profileNames <- c(
@@ -231,15 +233,15 @@ profileNames <- c(
                   "H2A.Z",
                   "H3K9me2",
                   "H3K27me1",
-                  "CENH3",
-                  "MNase",
                   "mCG",
                   "mCHG",
                   "mCHH",
-                  "RNA-seq Rep1",
+                  "CENH3",
+                  "MNase",
+                  "RNA-seq (meiocytes)",
                   "Genes",
-                  "NLR-encoding genes",
                   "Defense response genes",
+                  "NLR-encoding genes",
                   "Meiotic genes"
 )
 
@@ -363,295 +365,44 @@ corDat <- melt(corMat)
 corDat <- corDat[-which(is.na(corDat[,3])),]
 
 # Order the data.frame for plotting
-levels(corDat$X1) <- rev(profileNames)
-levels(corDat$X2) <- profileNames
+profileNamesList <- as.list(profileNames)
+names(profileNamesList) <- profileNames
+levels(corDat$X1) <- rev(profileNamesList) 
+levels(corDat$X2) <- profileNamesList[-1]
 
 # Plot
 ggObj <- ggplot(data = corDat,
                 mapping = aes(X2, X1, fill = value)) +
   geom_tile() +
-  geom_text(mapping = aes(X2, X1, label = value),
-            colour = "black", size = 4) +
-  scale_fill_gradient2(name = expression("Spearman" * ~ rho),
+  geom_text(mapping = aes(X2, X1, label = value)) +
+  scale_fill_gradient2(name = bquote("Spearman's" ~ italic(r[s])),
                        low = "blue", mid = "white", high = "red",
-                       midpoint = 0, breaks = seq(-1, 1, by = 0.2), limits = c(-1, 1)) +
-  scale_x_discrete(expand = c(0, 0)) +
+                       midpoint = 0, breaks = seq(-1, 1, by = 0.4), limits = c(-1, 1)) +
+  scale_x_discrete(expand = c(0, 0), position = "top") +
   scale_y_discrete(expand = c(0, 0)) +
   labs(x = "", y = "") +
-  guides(file = guide_colourbar(barwidth = 7, barheight = 1,
+  guides(fill = guide_colourbar(barwidth = 14, barheight = 2,
                                 title.position = "top", title.hjust = 0.5)) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0, size = 14, colour = "black"),
+        axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1, size = 14, colour = "black"),
         panel.grid.major = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
         axis.ticks = element_blank(),
+        legend.title = element_text(size = 15),
+        legend.text = element_text(size = 14),
         legend.justification = c(1, 0),
-        legend.position = c(0.7, 0.9),
+        legend.position = c(0.45, 0.1),
         legend.direction = "horizontal",
-        plot.title = element_text(hjust = 1.0, size = 10)) +
-  guides(file = guide_colourbar(barwidth = 7, barheight = 1,
-                                title.position = "top", title.hjust = 0.5)) +
-  ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman correlations for" ~
-          .(paste0(genomeName, collapse = "-, ")) * "-genome (" *
-          .(region) * "; smoothed)"))
+        legend.background = element_rect(fill = "transparent"),
+        plot.margin = unit(c(5.5, 70.5, 5.5, 5.5), "pt"),
+        plot.title = element_text(hjust = 0.5, size = 20, colour = "black")) +
+  ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman's" ~ italic(r[s]) ~ "for" ~
+          .(paste0(genomeName, collapse = "-, ")) * "-genome" ~
+          .(region) ~ "regions (" * .(smoothing) * ")"))
 ggsave(paste0(plotDir,
               "Spearman_correlation_matrix_", winName,
               "_log2ChIPcontrol_cMMb_MNase_DNase_input_RNAseq_DNAmeth_genes_in_",
-              paste0(genomeName, collapse = "_"), "_genome_", region, "_smoothed_v03.pdf"),
-       plot = ggObj, height = 12, width = 11)
-
-  ggplot(data = summaryDFfeature,
-         mapping = aes(x = winNo,
-                       y = mean,
-                       group = quantile)
-        ) +
-  geom_line(data = summaryDFfeature,
-            mapping = aes(colour = quantile),
-            size = 1) +
-  scale_colour_manual(values = quantileColours) +
- 
-ggObj <- ggcorrplot(corr = corMat, 
-                    hc.order = F, 
-                    type = "upper",
-                    lab = TRUE) +
-         #  theme(
-         #        axis.ticks = element_line(size = 1.0, colour = "black"),
-         #        axis.ticks.length = unit(0.25, "cm"),
-         #        axis.text.x = element_text(size = 22, colour = "black"),
-         #        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
-         #        axis.title = element_text(size = 30, colour = log2ChIPColours[x]),
-         #        legend.position = "none",
-         #        panel.grid = element_blank(),
-         #        panel.border = element_rect(size = 3.5, colour = "black"),
-         #        panel.background = element_blank(),
-         #        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
-         #        plot.title = element_text(hjust = 1.0, size = 30)) +
-           ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman correlations for" ~
-                   .(paste0(genomeName, collapse = "-, ")) * "-genome (" *
-                   .(region) * "; smoothed)"))
-ggsave(paste0(plotDir,
-              "Spearman_correlation_matrix_", winName,
-              "_log2ChIPcontrol_cMMb_MNase_DNase_input_RNAseq_DNAmeth_genes_in_",
-              paste0(genomeName, collapse = "_"), "_genome_", region, "_smoothed_v02.pdf"),
-       plot = ggObj, height = 12, width = 11)
-
-
-
-#library(plyr)
-#library(data.table)
-#library(varhandle)
-#library(zoo)
-
-# Genomic definitions
-chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
-chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
-centromereStart <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,2])
-centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/centromeres_outer_CENH3enriched_IWGSC_2018_Science_Table_S11_chr4ALeftmostInterval_chr5ARightTwoIntervals.txt")[,3])
-chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
-                            header = TRUE)
-
-## ChIPA profile
-if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
-                       "H3K27me3_ChIP_SRR6350666",
-                       "H3K36me3_ChIP_SRR6350670",
-                       "H3K9ac_ChIP_SRR6350667",
-                       "CENH3_ChIP_SRR1686799")) {
-  covDirChIPA <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                        markChIPA, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-} else if(libNameChIPA %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
-                              "H3K27ac_Rep1_ChIP_SRR8126621")) {
-  covDirChIPA <- paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-                        markChIPA, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-} else {
-  covDirChIPA <- paste0("/home/ajt200/analysis/wheat/",
-                        markChIPA, "/snakemake_ChIPseq/mapped/",
-                        align, "/bg/")
-}
-profileChIPA <- read.table(paste0(covDirChIPA, libNameChIPA, "_MappedOn_wheat_v1.0_lowXM_",
-                                  align, "_sort_norm_binSize", winName, ".bedgraph"))
-if("chrUn" %in% chrs) {
-  profileChIPA[dim(profileChIPA)[1],]$V3 <- chrLens[length(chrLens)]
-} else {
-  profileChIPA[dim(profileChIPA)[1],]$V3 <- 480980714
-}
-# Rows where the difference between end and start coordinates is > winSize
-profileChIPA_bigWins <- profileChIPA[profileChIPA$V3-profileChIPA$V2 > winSize,]
-# Rows where the difference between end and start coordinates is == winSize
-profileChIPA <- profileChIPA[profileChIPA$V3-profileChIPA$V2 == winSize,]
-
-# Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
-profileChIPA_bigWinsList <- mclapply(seq_along(1:dim(profileChIPA_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = profileChIPA_bigWins[x,]$V2,
-                      to = profileChIPA_bigWins[x,]$V3,
-                      by = winSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < profileChIPA_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileChIPA_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
-                                 profileChIPA_bigWins[x,]$V3)),
-               V4 = as.numeric(profileChIPA_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == profileChIPA_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileChIPA_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
-               V4 = as.numeric(profileChIPA_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores())
-
-profileChIPA_bigWinsDT <- rbindlist(profileChIPA_bigWinsList)
-profileChIPA <- rbind.fill(profileChIPA, profileChIPA_bigWinsDT)
-profileChIPA <- profileChIPA[order(profileChIPA$V1, profileChIPA$V2),]
-
-chrLenValsAList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileChIPA <- profileChIPA[profileChIPA$V1 == chrs[x],]
-  if(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V4))
-  }
-}, mc.cores = detectCores())
-profileChIPA_chrLenValsADT <- rbindlist(chrLenValsAList)
-profileChIPA <- rbind.fill(profileChIPA, profileChIPA_chrLenValsADT)
-profileChIPA <- profileChIPA[order(profileChIPA$V1, profileChIPA$V2),]
-
-profileChIPA <- data.frame(chr = as.character(profileChIPA$V1),
-                           window = as.integer(profileChIPA$V2+1),
-                           CPM = as.numeric(profileChIPA$V4),
-                           stringsAsFactors = F)
-
-## ControlA profile
-if(libNameControlA == "MNase_Rep1") {
-  covDirControlA <- paste0("/home/ajt200/analysis/wheat/",
-                           "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControlA <- read.table(paste0(covDirControlA, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
-                                       align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else if(libNameControlA == "H3_input_SRR6350669") {
-  covDirControlA <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                           "input/snakemake_ChIPseq/mapped/", align, "/bg/")
-  profileControlA <- read.table(paste0(covDirControlA, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
-                                       align, "_sort_norm_binSize", winName, ".bedgraph"))
-} else {
-  if(!(libNameControlA %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
-    stop("libNameControlA is neither MNase_Rep1 nor H3_input_SRR6350669")
-  }
-}
-if("chrUn" %in% chrs) {
-  profileControlA[dim(profileControlA)[1],]$V3 <- chrLens[length(chrLens)]
-} else {
-  profileControlA[dim(profileControlA)[1],]$V3 <- 480980714
-}
-# Rows where the difference between end and start coordinates is > winSize
-profileControlA_bigWins <- profileControlA[profileControlA$V3-profileControlA$V2 > winSize,]
-# Rows where the difference between end and start coordinates is == winSize
-profileControlA <- profileControlA[profileControlA$V3-profileControlA$V2 == winSize,]
-
-# Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
-profileControlA_bigWinsList <- mclapply(seq_along(1:dim(profileControlA_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = profileControlA_bigWins[x,]$V2,
-                      to = profileControlA_bigWins[x,]$V3,
-                      by = winSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < profileControlA_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileControlA_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
-                                 profileControlA_bigWins[x,]$V3)),
-               V4 = as.numeric(profileControlA_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == profileControlA_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(profileControlA_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
-               V4 = as.numeric(profileControlA_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores())
-
-profileControlA_bigWinsDT <- rbindlist(profileControlA_bigWinsList)
-profileControlA <- rbind.fill(profileControlA, profileControlA_bigWinsDT)
-profileControlA <- profileControlA[order(profileControlA$V1, profileControlA$V2),]
-
-chrLenValsAList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileControl <- profileControlA[profileControlA$V1 == chrs[x],]
-  if(chrProfileControl[dim(chrProfileControl)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileControl[dim(chrProfileControl)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileControl[dim(chrProfileControl)[1],]$V4))
-  }
-}, mc.cores = detectCores())
-profileControlA_chrLenValsADT <- rbindlist(chrLenValsAList)
-profileControlA <- rbind.fill(profileControlA, profileControlA_chrLenValsADT)
-profileControlA <- profileControlA[order(profileControlA$V1, profileControlA$V2),]
-
-profileControlA <- data.frame(chr = as.character(profileControlA$V1),
-                              window = as.integer(profileControlA$V2+1),
-                              CPM = as.numeric(profileControlA$V4),
-                              stringsAsFactors = F)
-
-# Calculate log2((ChIP+1)/(Control+1)) coverage within each window
-profileChIPAlog2 <- data.frame(chr = as.character(profileChIPA$chr),
-                               window = as.integer(profileChIPA$window),
-                               ChIP = as.numeric(profileChIPA$CPM),
-                               control = as.numeric(profileControlA$CPM),
-                               log2ChIPcontrol = as.numeric(log2((profileChIPA$CPM+1)/(profileControlA$CPM+1))),
-                               stringsAsFactors = F)
-                        
-chrProfilesChIPA <- mclapply(seq_along(chrs), function(x) {
-  profileChIPAlog2[profileChIPAlog2$chr == chrs[x],]
-}, mc.cores = length(chrs))
-
-# Calculate moving average of current window, ((N/2)-0.5) previous windows,
-# and ((N/2)-0.5) subsequent windows
-# (the higher N is, the greater the smoothing)
-flank <- (N/2)-0.5
-# Define MA filter coefficients
-f <- rep(1/N, N)
-
-filt_chrProfilesChIPA <- mclapply(seq_along(chrProfilesChIPA), function(x) {
-  # log2ChIPcontrol
-  filt_log2ChIPcontrol <- stats::filter(x = chrProfilesChIPA[[x]]$log2ChIPcontrol,
-                                        filter = f,
-                                        sides = 2)
-  filt_log2ChIPcontrol[1:flank] <- filt_log2ChIPcontrol[flank+1]
-  filt_log2ChIPcontrol[(length(filt_log2ChIPcontrol)-flank+1):length(filt_log2ChIPcontrol)] <- filt_log2ChIPcontrol[(length(filt_log2ChIPcontrol)-flank)]
-
-  # ChIP
-  filt_ChIP <- stats::filter(x = chrProfilesChIPA[[x]]$ChIP,
-                             filter = f,
-                             sides = 2)
-  filt_ChIP[1:flank] <- filt_ChIP[flank+1]
-  filt_ChIP[(length(filt_ChIP)-flank+1):length(filt_ChIP)] <- filt_ChIP[(length(filt_ChIP)-flank)]
-
-  # control
-  filt_control <- stats::filter(x = chrProfilesChIPA[[x]]$control,
-                                        filter = f,
-                                        sides = 2)
-  filt_control[1:flank] <- filt_control[flank+1]
-  filt_control[(length(filt_control)-flank+1):length(filt_control)] <- filt_control[(length(filt_control)-flank)]
-
-  data.frame(chr = as.character(chrProfilesChIPA[[x]]$chr),
-             window = as.integer(chrProfilesChIPA[[x]]$window),
-             filt_ChIP = as.numeric(filt_ChIP),
-             filt_control = as.numeric(filt_control),
-             filt_log2ChIPcontrol = as.numeric(filt_log2ChIPcontrol),
-             stringsAsFactors = F)
-}, mc.cores = length(chrProfilesChIPA))
-
-# Combine list of 1 data.frame per chromosome into one data.frame
-filt_profileChIPAlog2 <- do.call(rbind, filt_chrProfilesChIPA)
-
-write.table(profileChIPAlog2,
-            file = paste0("log2_", libNameChIPA, "_", libNameControlA, "_per_", winName, "_unsmoothed.txt"),
-            sep = "\t", quote = F, row.names = F, col.names = T)
-write.table(filt_profileChIPAlog2,
-            file = paste0("log2_", libNameChIPA, "_", libNameControlA, "_per_", winName, "_smoothed.txt"),
-            sep = "\t", quote = F, row.names = F, col.names = T)
-
+              paste0(genomeName, collapse = "_"), "_genome_", region, "_", smoothing, ".pdf"),
+       plot = ggObj, height = 12, width = 12)
