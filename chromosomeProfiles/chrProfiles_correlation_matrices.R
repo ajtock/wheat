@@ -30,8 +30,12 @@ region <- args[3]
 genomeName <- unlist(strsplit(args[4],
                               split = ","))
 
+plotDir <- paste0("plots/Figure1/correlation_matrices/")
+system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+
 library(GenomicRanges)
 library(Hmisc) # includes rcorr() function which computes significance levels for Pearson and Spearman correlations
+library(reshape)
 library(ggplot2)
 library(ggcorrplot)
 
@@ -195,23 +199,19 @@ paths <- c(
            paste0(ChIPDir, "log2_DMC1_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_ASY1_CS_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(cMMbDir, "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist200bp_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H2AZ_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K4me1_Rep1_ChIP_SRR8126618_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K4me3_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K27ac_Rep1_ChIP_SRR8126621_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
+           paste0(ChIPDir, "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
-           paste0(ChIPDir, "log2_H3K27me1_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
+           paste0(ChIPDir, "log2_H2AZ_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_H3K9me2_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
+           paste0(ChIPDir, "log2_H3K27me1_Rep1_ChIP_MNase_Rep1_per_", winName, "_smoothed.txt"),
            paste0(ChIPDir, "log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(otherDir, "MNase_Rep1_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "DNaseI_Rep1_SRR8447247_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "H3_input_SRR6350669_per_", winName, "_smoothed.txt"),
            paste0(DNAmethDir, "BSseq_Rep8a_SRR6792678_per_", winName, "_smoothed.txt"),
            paste0(otherDir, "WT_RNAseq_Rep1_ERR2402974_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "WT_RNAseq_Rep2_ERR2402973_per_", winName, "_smoothed.txt"),
-           paste0(otherDir, "WT_RNAseq_Rep3_ERR2402972_per_", winName, "_smoothed.txt"),
            paste0(geneDir, "gene_frequency_per_1Mb_smoothed.txt"),
            paste0(geneDir, "NLR_gene_frequency_per_1Mb_smoothed.txt"),
            paste0(geneDir, "defense_response_gene_frequency_per_1Mb_smoothed.txt"),
@@ -222,28 +222,23 @@ profileNames <- c(
                   "DMC1",
                   "ASY1",
                   "cM/Mb",
-                  "H2A.Z",
-                  "H3K27me3",
                   "H3K4me1",
                   "H3K4me3",
                   "H3K9ac",
                   "H3K27ac",
+                  "H3K27me3",
                   "H3K36me3",
-                  "H3K27me1",
+                  "H2A.Z",
                   "H3K9me2",
+                  "H3K27me1",
                   "CENH3",
                   "MNase",
-                  "DNaseI",
-                  "Input",
                   "mCG",
                   "mCHG",
                   "mCHH",
-                  "mC",
                   "RNA-seq Rep1",
-                  "RNA-seq Rep2",
-                  "RNA-seq Rep3",
                   "Genes",
-                  "NLR genes",
+                  "NLR-encoding genes",
                   "Defense response genes",
                   "Meiotic genes"
 )
@@ -263,7 +258,9 @@ profilesNew <- lapply(seq_along(profiles), function(x) {
   # Separate DNA methylation contexts and make columns consistent as above
   } else if(dim(profiles[[x]])[2] == 6) {
     DNAmethList <- list()
-    for(y in 3:dim(profiles[[x]])[2]) {
+#    for(y in 3:dim(profiles[[x]])[2]) {
+    # Exlcude average over all 3 contexts
+    for(y in 3:5) {
       print(y)
       DNAmethList[[y]] <- data.frame(chr = profiles[[x]][,1],
                                      window = profiles[[x]][,2],
@@ -275,8 +272,8 @@ profilesNew <- lapply(seq_along(profiles), function(x) {
   }
 })
 
-# DNAmethList is one list of 4 elements within the 24-element list profilesNew
-# To make each of these 4 elements its own element within a 27-element list profilesNew2:
+# DNAmethList is one list of 3 elements within the 20-element list profilesNew
+# To make each of these 3 elements its own element within a 22-element list profilesNew2:
 profilesNew2 <- profilesNew
 for(x in seq_along(profilesNew)) {
   if(class(profilesNew[[x]]) == "list") {
@@ -284,7 +281,7 @@ for(x in seq_along(profilesNew)) {
     for(z in (length(profilesNew) + listLength - 1) : (x+listLength) ) {
       profilesNew2[[z]] <- profilesNew[[z - listLength + 1]]
     }
-    for(y in 1:4) {
+    for(y in 1:3) {
       profilesNew2[[x + y - 1]] <- profilesNew[[x]][[y]]
     }
   }
@@ -342,13 +339,103 @@ profilesDF <- as.data.frame(do.call(cbind, profilesVal),
                             stringsAsFactors = F)
 colnames(profilesDF) <- profileNames
 
-corMat <- cor(profilesDF, method = "spearman", use = "pairwise.complete.obs")
-corMatSig <- rcorr(as.matrix(profilesDF), type = "spearman")
+# Create correlation matrix
+corMat <- round(cor(profilesDF,
+                    method = "spearman",
+                    use = "pairwise.complete.obs"),
+                digits = 2)
+# Create matrix of P-values for correlation matrix
+corMatSig <- rcorr(as.matrix(profilesDF), type = "spearman")$P
+corMatSig <- corMatSig[,-1]
 
-ggcorrplot(r, 
-           hc.order = TRUE, 
-           type = "lower",
-           lab = TRUE)
+# Set duplicates to NA
+for(x in 1:dim(corMat)[1]) {
+  corMat[x, x] <- NA
+  if(x > 1) {
+    corMat[x, 1:x-1] <- NA
+  }
+}
+corMat <- corMat[,-1]
+
+# Convert into reshape::melt formatted data.frame
+# and remove duplicate pairs
+corDat <- melt(corMat)
+corDat <- corDat[-which(is.na(corDat[,3])),]
+
+# Order the data.frame for plotting
+levels(corDat$X1) <- rev(profileNames)
+levels(corDat$X2) <- profileNames
+
+# Plot
+ggObj <- ggplot(data = corDat,
+                mapping = aes(X2, X1, fill = value)) +
+  geom_tile() +
+  geom_text(mapping = aes(X2, X1, label = value),
+            colour = "black", size = 4) +
+  scale_fill_gradient2(name = expression("Spearman" * ~ rho),
+                       low = "blue", mid = "white", high = "red",
+                       midpoint = 0, breaks = seq(-1, 1, by = 0.2), limits = c(-1, 1)) +
+  scale_x_discrete(expand = c(0, 0)) +
+  scale_y_discrete(expand = c(0, 0)) +
+  labs(x = "", y = "") +
+  guides(file = guide_colourbar(barwidth = 7, barheight = 1,
+                                title.position = "top", title.hjust = 0.5)) +
+  theme_bw() +
+  theme(axis.text.x = element_text(angle = 45, vjust = 1, hjust = 1),
+        panel.grid.major = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        axis.ticks = element_blank(),
+        legend.justification = c(1, 0),
+        legend.position = c(0.7, 0.9),
+        legend.direction = "horizontal",
+        plot.title = element_text(hjust = 1.0, size = 10)) +
+  guides(file = guide_colourbar(barwidth = 7, barheight = 1,
+                                title.position = "top", title.hjust = 0.5)) +
+  ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman correlations for" ~
+          .(paste0(genomeName, collapse = "-, ")) * "-genome (" *
+          .(region) * "; smoothed)"))
+ggsave(paste0(plotDir,
+              "Spearman_correlation_matrix_", winName,
+              "_log2ChIPcontrol_cMMb_MNase_DNase_input_RNAseq_DNAmeth_genes_in_",
+              paste0(genomeName, collapse = "_"), "_genome_", region, "_smoothed_v03.pdf"),
+       plot = ggObj, height = 12, width = 11)
+
+  ggplot(data = summaryDFfeature,
+         mapping = aes(x = winNo,
+                       y = mean,
+                       group = quantile)
+        ) +
+  geom_line(data = summaryDFfeature,
+            mapping = aes(colour = quantile),
+            size = 1) +
+  scale_colour_manual(values = quantileColours) +
+ 
+ggObj <- ggcorrplot(corr = corMat, 
+                    hc.order = F, 
+                    type = "upper",
+                    lab = TRUE) +
+         #  theme(
+         #        axis.ticks = element_line(size = 1.0, colour = "black"),
+         #        axis.ticks.length = unit(0.25, "cm"),
+         #        axis.text.x = element_text(size = 22, colour = "black"),
+         #        axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+         #        axis.title = element_text(size = 30, colour = log2ChIPColours[x]),
+         #        legend.position = "none",
+         #        panel.grid = element_blank(),
+         #        panel.border = element_rect(size = 3.5, colour = "black"),
+         #        panel.background = element_blank(),
+         #        plot.margin = unit(c(0.3,1.2,0.0,0.3), "cm"),
+         #        plot.title = element_text(hjust = 1.0, size = 30)) +
+           ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman correlations for" ~
+                   .(paste0(genomeName, collapse = "-, ")) * "-genome (" *
+                   .(region) * "; smoothed)"))
+ggsave(paste0(plotDir,
+              "Spearman_correlation_matrix_", winName,
+              "_log2ChIPcontrol_cMMb_MNase_DNase_input_RNAseq_DNAmeth_genes_in_",
+              paste0(genomeName, collapse = "_"), "_genome_", region, "_smoothed_v02.pdf"),
+       plot = ggObj, height = 12, width = 11)
+
 
 
 #library(plyr)
