@@ -6,7 +6,7 @@
 
 # Create and plot correlation matrices of chromosome profiles for
 # log2(ChIP/input), cM/Mb, MNase, RNA-seq, DNA methylation,
-# and NLR-encoding, defense response and meiotic genes,
+# and NLR-encoding, defense response and meiotic genes, and TE superfamilies,
 # genome-wide, subgenome-wide or separated into the following chromosome compartments a.k.a. partitions):
 # 1. R1 and R3 (distal)
 # 2. R2a and R2b (interstitial)
@@ -15,7 +15,7 @@
 # 5. centromeric (defined by IWGSC (2018) Science 361 using CENH3 ChIP-seq data from Guo et al. (2016) PLOS Genet. 12)
 
 # Usage:
-# ./chrProfiles_correlation_matrices.R 1Mb 1000000 distal 'A,B,D' smoothed
+# ./chrProfiles_TEsuperfams_correlation_matrices.R 1Mb 1000000 distal 'A,B,D' smoothed
 
 #winName <- "1Mb"
 #winSize <- 1000000
@@ -196,6 +196,8 @@ otherDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/MNase_DNase_input_RN
 cMMbDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/"
 geneDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/genes/"
 DNAmethDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/DNAmeth/"
+superfamDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/TEs/superfamilies/"
+subfamDir <- "/home/ajt200/analysis/wheat/chromosomeProfiles/TEs/subfamilies/"
 
 paths <- c(
            paste0(ChIPDir, "log2_DMC1_Rep1_ChIP_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
@@ -203,21 +205,31 @@ paths <- c(
            paste0(cMMbDir, "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist200bp_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K4me1_Rep1_ChIP_SRR8126618_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K4me3_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
-           paste0(ChIPDir, "log2_H3K9ac_ChIP_SRR6350667_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K27ac_Rep1_ChIP_SRR8126621_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K27me3_ChIP_SRR6350666_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K36me3_ChIP_SRR6350670_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
-           paste0(ChIPDir, "log2_H2AZ_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K9me2_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
            paste0(ChIPDir, "log2_H3K27me1_Rep1_ChIP_MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
            paste0(DNAmethDir, "BSseq_Rep8a_SRR6792678_per_", winName, "_", smoothing, ".txt"),
-           paste0(ChIPDir, "log2_CENH3_ChIP_SRR1686799_H3_input_SRR6350669_per_", winName, "_", smoothing, ".txt"),
            paste0(otherDir, "MNase_Rep1_per_", winName, "_", smoothing, ".txt"),
-           paste0(otherDir, "WT_RNAseq_Rep1_ERR2402974_per_", winName, "_", smoothing, ".txt"),
            paste0(geneDir, "gene_frequency_per_", winName, "_", smoothing, ".txt"),
            paste0(geneDir, "defense_response_gene_frequency_per_", winName, "_", smoothing, ".txt"),
            paste0(geneDir, "NLR_gene_frequency_per_", winName, "_", smoothing, ".txt"),
-           paste0(geneDir, "meiotic_gene_frequency_per_", winName, "_", smoothing, ".txt")
+           paste0(geneDir, "meiotic_gene_frequency_per_", winName, "_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Mariner_DTT_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Mutator_DTM_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Harbinger_DTH_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_CACTA_DTC_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_hAT_DTA_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Unclassified_with_TIRs_DTX_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Helitrons_DHH_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_LINE_RIX_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_SINE_SIX_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Copia_LTR_RLC_", smoothing, ".txt"),
+           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Gypsy_LTR_RLG_", smoothing, ".txt")
+#           paste0(subfamDir, "TE_frequency_per_", winName, "_superfamily_Gypsy_LTR_RLG_subfamily_RLG_famc8.1_", smoothing, ".txt"),
+#           paste0(subfamDir, "TE_frequency_per_", winName, "_superfamily_Gypsy_LTR_RLG_subfamily_RLG_famc8.2_", smoothing, ".txt"),
+#           paste0(subfamDir, "TE_frequency_per_", winName, "_superfamily_Gypsy_LTR_RLG_subfamily_RLG_famc8.3_", smoothing, ".txt")
 )
 
 profileNames <- c(
@@ -226,23 +238,33 @@ profileNames <- c(
                   "cM/Mb",
                   "H3K4me1",
                   "H3K4me3",
-                  "H3K9ac",
                   "H3K27ac",
                   "H3K27me3",
                   "H3K36me3",
-                  "H2A.Z",
                   "H3K9me2",
                   "H3K27me1",
                   "mCG",
                   "mCHG",
                   "mCHH",
-                  "CENH3",
                   "MNase",
-                  "RNA-seq (meiocytes)",
                   "Genes",
                   "Defense response genes",
                   "NLR-encoding genes",
-                  "Meiotic genes"
+                  "Meiotic genes",
+                  "Mariner",
+                  "Mutator",
+                  "Harbinger",
+                  "CACTA",
+                  "hAT",
+                  "Unclassified with TIRs",
+                  "Helitron",
+                  "LINE",
+                  "SINE",
+                  "Copia LTR",
+                  "Gypsy LTR"
+#                  "Gypsy Cereba",
+#                  "Gypsy Quinta 1",
+#                  "Gypsy Quinta 2" 
 )
 
 profiles <- lapply(seq_along(paths), function(x) {
@@ -407,6 +429,6 @@ ggObj <- ggplot(data = corDat,
           .(region) ~ "regions (" * .(smoothing) * ")"))
 ggsave(paste0(plotDir,
               "Spearman_correlation_matrix_", winName,
-              "_log2ChIPcontrol_cMMb_MNase_RNAseq_DNAmeth_genes_in_",
+              "_log2ChIPcontrol_cMMb_MNase_DNAmeth_genes_TEsuperfams_in_",
               paste0(genomeName, collapse = "_"), "_genome_", region, "_", smoothing, ".pdf"),
-       plot = ggObj, height = 12, width = 12)
+       plot = ggObj, height = 20, width = 20)
