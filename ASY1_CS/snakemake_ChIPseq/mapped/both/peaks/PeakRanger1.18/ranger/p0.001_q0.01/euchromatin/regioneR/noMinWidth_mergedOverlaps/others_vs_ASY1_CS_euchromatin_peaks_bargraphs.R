@@ -33,7 +33,7 @@ region <- args[9]
 # Number of permutations (randomisations) performed
 perms <- as.character(args[10])
 
-ptOrderDir <- paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/",
+ptOrderDir <- paste0("/home/ajt200/analysis/wheat/DMC1/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/",
                      "euchromatin/regioneR/noMinWidth_mergedOverlaps/")
 pt1Dir <- paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/peaks/PeakRanger1.18/ranger/p0.001_q0.01/",
                  region, "/regioneR/noMinWidth_mergedOverlaps/")
@@ -76,7 +76,7 @@ otherNamesPlot <- c(
 
 # Load permutation test results for peak set to be used for ordering
 # of other features in bar graph
-load(paste0(ptOrderDir, "permTest_", perms, "perms_ASY1_CS_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(ptOrderDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
             ptOrderLibName, "_euchromatin.RData"))
 ptOrder <- ptPeaksOtherPerChrom
 ptPeaksOtherPerChrom <- NULL
@@ -320,7 +320,7 @@ bp <- ggplot(data = df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 10) +
   labs(y = expression("Log"[2]*"(observed/expected) peak overlap")) +
-  scale_y_continuous(limits = c(-2.8, 2.8)) +
+  scale_y_continuous(limits = c(-2.9, 2.9)) +
   scale_x_discrete(position = "top") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
