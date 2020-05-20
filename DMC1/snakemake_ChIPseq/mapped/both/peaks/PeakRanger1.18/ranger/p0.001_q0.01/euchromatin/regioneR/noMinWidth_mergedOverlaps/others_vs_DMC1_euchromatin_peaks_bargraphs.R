@@ -320,7 +320,7 @@ bp <- ggplot(data = df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 10) +
   labs(y = expression("Log"[2]*"(observed/expected) peak overlap")) +
-  scale_y_continuous(limits = c(-2.8, 2.8)) +
+  scale_y_continuous(limits = c(-2.9, 2.9)) +
   scale_x_discrete(position = "top") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
