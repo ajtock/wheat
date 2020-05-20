@@ -32,6 +32,9 @@ profileColour <- sapply(seq_along(profileColour), function(x) {
   makeTransparent(profileColour[x])
 })
 
+plotDir <- "plots/"
+system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
+
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
 chrs <- chrs[-length(chrs)]
@@ -166,25 +169,25 @@ foreach(h = 1:length(superfamName)) %dopar% {
                              overlapType = "overlapping",
                              whichOverlaps = TRUE)
     scaledWinAvgCovL <- sapply(overlapsL, function(y) {
-                          mean(superfamChrProfiles[[h]][[x]]$winTEs[y], na.rm = T)
+                          mean(superfamChrProfiles[[h]][[x]][,dim(superfamChrProfiles[[h]][[x]])[2]][y], na.rm = T)
                         })
     scaledWinAvgCovR <- sapply(overlapsR, function(y) {
-                          mean(superfamChrProfiles[[h]][[x]]$winTEs[y], na.rm = T)
+                          mean(superfamChrProfiles[[h]][[x]][,dim(superfamChrProfiles[[h]][[x]])[2]][y], na.rm = T)
                         })
     scaledWinAvgCovLR <- cbind(scaledWinAvgCovL,
                                scaledWinAvgCovR)
     TelCenMatrix <- cbind(TelCenMatrix, scaledWinAvgCovLR)
   }
   write.table(TelCenMatrix,
-              file = paste0("./TEs_",
+              file = paste0("TEs_",
                             winName, "_",
-                            "_superfamily_", superfamName[h], "_",
-                            "_", propName, "_TelCenMatrix.txt"))
+                            "superfamily_", superfamName[h], "_",
+                            propName, "_TelCenMatrix.txt"))
   # Load TelCenMatrix
-  TelCenDF <- read.table(paste0("./TEs_",
+  TelCenDF <- read.table(paste0("TEs_",
                                 winName, "_",
-                                "_superfamily_", superfamName[h], "_",
-                                "_", propName, "_TelCenMatrix.txt"))
+                                "superfamily_", superfamName[h], "_",
+                                propName, "_TelCenMatrix.txt"))
   TelCenProfile <- as.vector(rowMeans(TelCenDF, na.rm = T))
   TelCenSD <- as.vector(apply(X = TelCenDF, MARGIN = 1, FUN = sd, na.rm = T))
   
@@ -221,10 +224,10 @@ foreach(h = 1:length(superfamName)) %dopar% {
   #         ncol = 1, cex = 0.7, lwd = 1.5, bty = "n")
   }
   
-  pdf(paste0("./TEs_",
+  pdf(paste0(plotDir, "TEs_",
              winName, "_",
-            "_superfamily_", superfamName[h], "_",
-            "_", propName, "_TelCenProfile.pdf"),
+             "superfamily_", superfamName[h], "_",
+             propName, "_TelCenProfile.pdf"),
       height = 3.5, width = 7)
   par(mfrow = c(1, 1))
   par(mar = c(3.1, 4.1, 3.1, 4.1))
