@@ -48,11 +48,11 @@ profileNamesPlot <- c(
 profileColours <- c(
                     "green2",
                     "purple4",
-                    "blue",
+                    "goldenrod1",
                     "forestgreen",
                     "darkorange2",
                     "dodgerblue",
-                    "goldenrod1",
+                    "blue",
                     "firebrick1",
                     "magenta3",
                     "navy"
