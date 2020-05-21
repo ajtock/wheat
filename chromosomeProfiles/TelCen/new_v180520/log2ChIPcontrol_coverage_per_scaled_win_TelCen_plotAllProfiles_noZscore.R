@@ -47,16 +47,19 @@ profileNamesPlot <- c(
                      )
 profileColours <- c(
                     "green2",
-                    "deeppink",
+                    "purple4",
                     "goldenrod1",
                     "forestgreen",
                     "darkorange2",
-                    "navy",
+                    "dodgerblue",
                     "blue",
                     "firebrick1",
                     "magenta3",
-                    "purple4"
+                    "navy"
                    )
+profileNames <- rev(profileNames)
+profileNamesPlot <- rev(profileNamesPlot)
+profileColours <- rev(profileColours)
 
 makeTransparent <- function(thisColour, alpha = 150)
 {
@@ -92,102 +95,103 @@ TelCenPlot <- function(xplot,
                        proportions,
                        proportionsName,
                        profileColours,
+                       profileColoursLeg,
                        Ylabel,
                        legendLabs,
                        legendLoc) {
-  # Left y-axis
+  # Right y-axis
   plot(xplot, profiles[[1]], type = "l", lwd = 3, col = profileColours[1],
        ylim = c(-max(c(min(profiles[[1]], na.rm = T)*-1, max(profiles[[1]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[1]], na.rm = T)*-1, max(profiles[[1]], na.rm = T)), nar.rm = T)),
+                max(c(min(profiles[[1]], na.rm = T)*-1, max(profiles[[1]], na.rm = T)), na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[1], col.axis = profileColours[1], line = 0.5)
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[1], col.axis = profileColours[1], line = 0.5)
 
-  par(new = T, mgp = c(3, 0.25, 0))
+  par(new = T, mgp = c(3, 0.5, 0))
   plot(xplot, profiles[[2]], type = "l", lwd = 3, col = profileColours[2],
        ylim = c(-max(c(min(profiles[[2]], na.rm = T)*-1, max(profiles[[2]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[2]], na.rm = T)*-1, max(profiles[[2]], na.rm = T)), nar.rm = T)),
+                max(c(min(profiles[[2]], na.rm = T)*-1, max(profiles[[2]], na.rm = T)), na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
 
-  par(new = T, mgp = c(3, 0.25, 0))
+  par(new = T, mgp = c(3, 0.5, 0))
   plot(xplot, profiles[[3]], type = "l", lwd = 3, col = profileColours[3],
        ylim = c(-max(c(min(profiles[[3]], na.rm = T)*-1, max(profiles[[3]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[3]], na.rm = T)*-1, max(profiles[[3]], na.rm = T)), nar.rm = T)),
+                max(c(min(profiles[[3]], na.rm = T)*-1, max(profiles[[3]], na.rm = T)), na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[3], col.axis = profileColours[3], line = 3.5)
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[3], col.axis = profileColours[3], line = 3.5)
 
-  par(new = T, mgp = c(3, 0.25, 0))
+  par(new = T, mgp = c(3, 0.5, 0))
   plot(xplot, profiles[[4]], type = "l", lwd = 3, col = profileColours[4],
        ylim = c(-max(c(min(profiles[[4]], na.rm = T)*-1, max(profiles[[4]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[4]], na.rm = T)*-1, max(profiles[[4]], na.rm = T)), nar.rm = T)),
+                max(c(min(profiles[[4]], na.rm = T)*-1, max(profiles[[4]], na.rm = T)), na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[4], col.axis = profileColours[4], line = 5.0)
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[4], col.axis = profileColours[4], line = 5.0)
 
-  par(new = T, mgp = c(3, 0.25, 0))
+  par(new = T, mgp = c(3, 0.5, 0))
   plot(xplot, profiles[[5]], type = "l", lwd = 3, col = profileColours[5],
        ylim = c(-max(c(min(profiles[[5]], na.rm = T)*-1, max(profiles[[5]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[5]], na.rm = T)*-1, max(profiles[[5]], na.rm = T)), nar.rm = T)),
+                max(c(min(profiles[[5]], na.rm = T)*-1, max(profiles[[5]], na.rm = T)), na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[5], col.axis = profileColours[5], line = 6.5)
+  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[5], col.axis = profileColours[5], line = 6.5)
+
+  p <- par('usr')
+  text(p[2], mean(p[3:4]), cex = 1.0, adj = c(0.5, -10.5), labels = Ylabel, xpd = NA, srt = -90, col = "black")
+
+  # Left y-axis
+  par(new = T, mgp = c(3, 0.5, 0))
+  plot(xplot, profiles[[6]], type = "l", lwd = 3, col = profileColours[6],
+       ylim = c(-max(c(min(profiles[[6]], na.rm = T)*-1, max(profiles[[6]], na.rm = T)), na.rm = T),
+                max(c(min(profiles[[6]], na.rm = T)*-1, max(profiles[[6]], na.rm = T)), na.rm = T)),
+       xlab = "", ylab = "", main = "",
+       xaxt = "n", yaxt = "n")
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[6], col.axis = profileColours[6], line = 0.5)
+
+  par(new = T, mgp = c(3, 0.5, 0))
+  plot(xplot, profiles[[7]], type = "l", lwd = 3, col = profileColours[7],
+       ylim = c(-max(c(min(profiles[[7]], na.rm = T)*-1, max(profiles[[7]], na.rm = T)), na.rm = T),
+                max(c(min(profiles[[7]], na.rm = T)*-1, max(profiles[[7]], na.rm = T)), na.rm = T)),
+       xlab = "", ylab = "", main = "",
+       xaxt = "n", yaxt = "n")
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[7], col.axis = profileColours[7], line = 2.0)
+
+  par(new = T, mgp = c(3, 0.5, 0))
+  plot(xplot, profiles[[8]], type = "l", lwd = 3, col = profileColours[8],
+       ylim = c(-max(c(min(profiles[[8]], na.rm = T)*-1, max(profiles[[8]], na.rm = T)), na.rm = T),
+                max(c(min(profiles[[8]], na.rm = T)*-1, max(profiles[[8]], na.rm = T)), na.rm = T)),
+       xlab = "", ylab = "", main = "",
+       xaxt = "n", yaxt = "n")
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[8], col.axis = profileColours[8], line = 3.5)
+
+  par(new = T, mgp = c(3, 0.5, 0))
+  plot(xplot, profiles[[9]], type = "l", lwd = 3, col = profileColours[9],
+       ylim = c(-max(c(min(profiles[[9]], na.rm = T)*-1, max(profiles[[9]], na.rm = T)), na.rm = T),
+                max(c(min(profiles[[9]], na.rm = T)*-1, max(profiles[[9]], na.rm = T)), na.rm = T)),
+       xlab = "", ylab = "", main = "",
+       xaxt = "n", yaxt = "n")
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[9], col.axis = profileColours[9], line = 5.0)
+
+  par(new = T, mgp = c(3, 0.5, 0))
+  plot(xplot, profiles[[10]], type = "l", lwd = 3, col = profileColours[10],
+       ylim = c(-max(c(min(profiles[[10]], na.rm = T)*-1, max(profiles[[10]], na.rm = T)), na.rm = T),
+                max(c(min(profiles[[10]], na.rm = T)*-1, max(profiles[[10]], na.rm = T)), na.rm = T)),
+       xlab = "", ylab = "", main = "",
+       xaxt = "n", yaxt = "n")
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[10], col.axis = profileColours[10], line = 6.5)
 
   mtext(side = 2, line = 8, cex = 1, text = Ylabel, col = "black")
 
-  # Right y-axis
-  par(new = T, mgp = c(3, 0.25, 0))
-  plot(xplot, profiles[[6]], type = "l", lwd = 3, col = profileColours[6],
-       ylim = c(-max(c(min(profiles[[6]], na.rm = T)*-1, max(profiles[[6]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[6]], na.rm = T)*-1, max(profiles[[6]], na.rm = T)), nar.rm = T)),
-       xlab = "", ylab = "", main = "",
-       xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[6], col.axis = profileColours[6], line = 0.5)
-
-  par(new = T, mgp = c(3, 0.25, 0))
-  plot(xplot, profiles[[7]], type = "l", lwd = 3, col = profileColours[7],
-       ylim = c(-max(c(min(profiles[[7]], na.rm = T)*-1, max(profiles[[7]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[7]], na.rm = T)*-1, max(profiles[[7]], na.rm = T)), nar.rm = T)),
-       xlab = "", ylab = "", main = "",
-       xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[7], col.axis = profileColours[7], line = 2.0)
-
-  par(new = T, mgp = c(3, 0.25, 0))
-  plot(xplot, profiles[[8]], type = "l", lwd = 3, col = profileColours[8],
-       ylim = c(-max(c(min(profiles[[8]], na.rm = T)*-1, max(profiles[[8]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[8]], na.rm = T)*-1, max(profiles[[8]], na.rm = T)), nar.rm = T)),
-       xlab = "", ylab = "", main = "",
-       xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[8], col.axis = profileColours[8], line = 3.5)
-
-  par(new = T, mgp = c(3, 0.25, 0))
-  plot(xplot, profiles[[9]], type = "l", lwd = 3, col = profileColours[9],
-       ylim = c(-max(c(min(profiles[[9]], na.rm = T)*-1, max(profiles[[9]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[9]], na.rm = T)*-1, max(profiles[[9]], na.rm = T)), nar.rm = T)),
-       xlab = "", ylab = "", main = "",
-       xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[9], col.axis = profileColours[9], line = 5.0)
-
-  par(new = T, mgp = c(3, 0.25, 0))
-  plot(xplot, profiles[[10]], type = "l", lwd = 3, col = profileColours[10],
-       ylim = c(-max(c(min(profiles[[10]], na.rm = T)*-1, max(profiles[[10]], na.rm = T)), na.rm = T),
-                max(c(min(profiles[[10]], na.rm = T)*-1, max(profiles[[10]], na.rm = T)), nar.rm = T)),
-       xlab = "", ylab = "", main = "",
-       xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[10], col.axis = profileColours[10], line = 6.5)
-
-  p <- par('usr')
-  text(p[2], mean(p[3:4]), cex = 1.0, adj = c(4.5, -3.5), labels = Ylabel, xpd = NA, srt = -90, col = "black")
-
-  par(mgp = c(3, 1, 0))
+  par(mgp = c(3, 0.5, 0))
   axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
        at = c(1, seq(10, proportions, by = 10)),
        labels = c(expression(italic("TEL")),
                   seq(10, proportions-10, by = 10),
                   expression(italic("CEN"))))
-  mtext(side = 1, line = 2.1, cex = 1,
+  mtext(side = 1, line = 1.5, cex = 1,
         text = paste0("Scaled windows (", proportionsName, ")"))
 
   abline(h = 0, lwd = 1.5, lty = 1)
@@ -195,9 +199,9 @@ TelCenPlot <- function(xplot,
   legend(legendLoc,
          legend = legendLabs,
          col = c("white"),
-         text.col = c(profileColours),
+         text.col = c(profileColoursLeg),
          text.font = c(rep(1, times = 9)),
-         ncol = 2, cex = 0.7, lwd = 1.5, bty = "n")
+         ncol = 2, cex = 0.8, lwd = 1.5, bty = "n")
 }
 
 
@@ -225,25 +229,27 @@ filt_TelCenProfiles <- mclapply(seq_along(TelCenProfiles), function(x) {
 pdf(paste0(plotDir, "log2ChIPcontrol_",
            align, "_", winName, "_",
            propName, "_smooth", N,
-           "_TelCenProfile_v210520.pdf"),
+           "_TelCenProfile_v210520_reordered.pdf"),
     height = 7, width = 12)
 par(mfrow = c(2, 1))
 par(mar = c(3.1, 10.1, 2.1, 10.1))
-par(mgp = c(3, 0.25, 0))
+par(mgp = c(3, 0.5, 0))
 TelCenPlot(xplot = 1:length(TelCenProfiles[[1]]),
            profiles = TelCenProfiles,
            proportions = prop,
            proportionsName = propName,
            profileColours = profileColoursTransparent,
+           profileColoursLeg = rev(profileColoursTransparent),
            Ylabel = bquote("Log"[2]*"(ChIP/control)"),
-           legendLabs = profileNamesPlot,
-           legendLoc = "left")
+           legendLabs = rev(profileNamesPlot),
+           legendLoc = "top")
 TelCenPlot(xplot = 1:length(filt_TelCenProfiles[[1]]),
            profiles = filt_TelCenProfiles,
            proportions = prop,
            proportionsName = propName,
            profileColours = profileColoursTransparent,
+           profileColoursLeg = rev(profileColoursTransparent),
            Ylabel = bquote("Log"[2]*"(ChIP/control)"),
-           legendLabs = profileNamesPlot,
-           legendLoc = "left")
+           legendLabs = rev(profileNamesPlot),
+           legendLoc = "top")
 dev.off()
