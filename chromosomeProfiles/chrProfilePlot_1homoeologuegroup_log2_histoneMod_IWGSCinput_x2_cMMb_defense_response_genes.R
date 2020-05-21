@@ -5,7 +5,7 @@
 # Change xblocks height to 0.62 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue green2 220320 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue green2 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -470,10 +470,10 @@ maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
 
 # Feature frequency chromosome profiles
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                              "200bp_", winName, ".txt"),
+                              "200bp_", winName, "_unsmoothed.txt"),
                        header = T)
 featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/defense_response_gene_frequency_per_",
-                              winName, ".txt"),
+                              winName, "_unsmoothed.txt"),
                        header = T)
 colnames(featureB) <- c("chr", "window", "features")
 
@@ -485,8 +485,15 @@ filt_chrProfilesFeatureA <- mclapply(seq_along(chrProfilesFeatureA), function(x)
   filt_chrProfileFeatureA <- stats::filter(x = chrProfilesFeatureA[[x]]$cMMb,
                                            filter = f,
                                            sides = 2)
-  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
-  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
+  # Given missing cM/Mb data for some of the more distal windows,
+  # need a different way of extending the leftmost and rightmost
+  # non-NA values to the ends of each chromosome, replacing NAs where they are present
+  leftFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) < N*2]
+  rightFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) > N*2]
+  filt_chrProfileFeatureA[leftFlank] <- filt_chrProfileFeatureA[leftFlank[length(leftFlank)]+1]
+  filt_chrProfileFeatureA[rightFlank] <- filt_chrProfileFeatureA[rightFlank[1]-1]
+#  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
+#  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
   data.frame(chr = as.character(chrProfilesFeatureA[[x]]$chr),
              window = as.integer(chrProfilesFeatureA[[x]]$windowStart),
              filt_feature = as.numeric(filt_chrProfileFeatureA),
