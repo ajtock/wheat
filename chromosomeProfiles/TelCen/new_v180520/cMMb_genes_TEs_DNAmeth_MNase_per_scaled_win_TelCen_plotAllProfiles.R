@@ -3,10 +3,10 @@
 # Usage:
 # ./log2ChIPcontrol_coverage_per_scaled_win_TelCen_plotAllProfiles_noZscore.R 1Mb 100 100ths 3 
 
-winName <- "1Mb"
-prop <- 100
-propName <- "100ths" 
-N <- 3 
+#winName <- "1Mb"
+#prop <- 100
+#propName <- "100ths" 
+#N <- 3 
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
