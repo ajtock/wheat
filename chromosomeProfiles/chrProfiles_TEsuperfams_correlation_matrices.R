@@ -372,9 +372,6 @@ corMat <- round(cor(profilesDF,
                     method = "spearman",
                     use = "pairwise.complete.obs"),
                 digits = 2)
-# Create matrix of P-values for correlation matrix
-corMatSig <- rcorr(as.matrix(profilesDF), type = "spearman")$P
-corMatSig <- corMatSig[,-1]
 
 # Set duplicates to NA
 for(x in 1:dim(corMat)[1]) {
@@ -396,34 +393,74 @@ names(profileNamesList) <- profileNames
 levels(corDat$X1) <- rev(profileNamesList) 
 levels(corDat$X2) <- profileNamesList[-1]
 
+# Get P-values for correlation matrix
+corMatSig <- rcorr(as.matrix(profilesDF),
+                   type = "spearman")$P
+# Set duplicates to NA
+for(x in 1:dim(corMatSig)[1]) {
+  corMatSig[x, x] <- NA
+  if(x > 1) {
+    corMatSig[x, 1:x-1] <- NA
+  }
+}
+corMatSig <- corMatSig[,-1]
+
+# Convert into reshape::melt formatted data.frame
+# and remove duplicate pairs
+corDatSig <- melt(corMatSig)
+corDatSig <- corDatSig[-which(is.na(corDatSig[,3])),]
+
+# Standardise P-values to a sample size of 100 (q-values) as proposed by
+# Good (1982) Standardized tail-area probabilities. Journal of Computation and Simulation 16: 65-66
+# and summarised by Woolley (2003):
+# https://stats.stackexchange.com/questions/22233/how-to-choose-significance-level-for-a-large-data-set
+# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.518.5341&rep=rep1&type=pdf
+# Woolley (2003): "Clearly, the meaningfulness of the p-value diminishes as the sample size increases";
+# Anne Z. (2012, Pearson eCollege, Denver): "In the real world, there are unlikely to be semi-partial correlations
+# that are exactly zero, which is the null hypothesis in testing significance of a regression coefficient."
+# Formally, the standardised p-value is defined as:
+# q = min(0.5, p * sqrt( (n/100) ))
+# Woolley (2003): "The value of 0.5 is somewhat arbitrary, though its purpose is to avoid q-values of greater than 1."
+n <- dim(profilesDF)[1]
+corDatSig$value <- sapply(corDatSig$value, function(x) {
+  round(min(0.5, x * sqrt( (n/100) )),
+        digits = 2)
+})
+
+# Order the data.frame for plotting
+levels(corDatSig$X1) <- rev(profileNamesList) 
+levels(corDatSig$X2) <- profileNamesList[-1]
+
 # Plot
 ggObj <- ggplot(data = corDat,
                 mapping = aes(X2, X1, fill = value)) +
   geom_tile() +
-  geom_text(mapping = aes(X2, X1, label = value)) +
+#  geom_text(mapping = aes(X2, X1, label = value), size = 5) +
+  geom_text(data = corDatSig,
+            mapping = aes(X2, X1, label = value), size = 5) +
   scale_fill_gradient2(name = bquote("Spearman's" ~ italic(r[s])),
                        low = "blue", mid = "white", high = "red",
                        midpoint = 0, breaks = seq(-1, 1, by = 0.4), limits = c(-1, 1)) +
   scale_x_discrete(expand = c(0, 0), position = "top") +
   scale_y_discrete(expand = c(0, 0)) +
   labs(x = "", y = "") +
-  guides(fill = guide_colourbar(barwidth = 14, barheight = 2,
+  guides(fill = guide_colourbar(barwidth = 40, barheight = 6,
                                 title.position = "top", title.hjust = 0.5)) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0, size = 14, colour = "black"),
-        axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1, size = 14, colour = "black"),
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0, size = 25, colour = "black"),
+        axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1, size = 25, colour = "black"),
         panel.grid.major = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
         axis.ticks = element_blank(),
-        legend.title = element_text(size = 15),
-        legend.text = element_text(size = 14),
+        legend.title = element_text(size = 40),
+        legend.text = element_text(size = 36),
         legend.justification = c(1, 0),
-        legend.position = c(0.45, 0.1),
+        legend.position = c(0.65, 0.05),
         legend.direction = "horizontal",
         legend.background = element_rect(fill = "transparent"),
         plot.margin = unit(c(5.5, 70.5, 5.5, 5.5), "pt"),
-        plot.title = element_text(hjust = 0.5, size = 20, colour = "black")) +
+        plot.title = element_text(hjust = 0.5, size = 30, colour = "black")) +
   ggtitle(bquote(.(winSize/1e6) * "-Mb Spearman's" ~ italic(r[s]) ~ "for" ~
           .(paste0(genomeName, collapse = "-, ")) * "-genome" ~
           .(region) ~ "regions (" * .(smoothing) * ")"))
