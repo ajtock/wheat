@@ -6,6 +6,8 @@
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue green2 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 blue darkorange2 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -579,11 +581,13 @@ for(x in which(chrs %in% chrName)) {
                                 min1B = -max((minCPMB*-1), maxCPMB),
                                 max1B = max((minCPMB*-1), maxCPMB),
                                 legendLoc = "bottomright",
-                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response"),
+                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "darkorange2",
+                                col2A = "steelblue2",
+                                #col2A = "darkorange2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
+                                #col2B = "limegreen",
                                 col2B = "darkgreen",
                                 Ylab2 = "",
                                 min2A = 0-maxFeatureA,
@@ -619,11 +623,13 @@ for(x in which(chrs %in% chrs)) {
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 max1B = max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 legendLoc = "bottomright",
-                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response"),
+                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "darkorange2",
+                                col2A = "steelblue2",
+                                #col2A = "darkorange2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
+                                #col2B = "limegreen",
                                 col2B = "darkgreen",
                                 Ylab2 = "",
                                 min2A = 0-maxFeatureA_chrs,

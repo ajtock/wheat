@@ -5,7 +5,7 @@
 # Change xblocks height to 0.62 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_NLRs_defense_response_genes_v2.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 220320 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_NLRs_defense_response_genes_v2.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 210520 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "H3K4me3"
 #libNameChIPA <- "H3K4me3_Rep1_ChIP"
@@ -21,7 +21,7 @@
 #N <- 15
 #colourA <- "forestgreen"
 #colourB <- "magenta3"
-#date <- "180220"
+#date <- "210520"
 #superfam <- "Gypsy_LTR_RLG"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -573,7 +573,7 @@ for(x in which(chrs %in% chrName)) {
                                 min1B = -max((minCPMB*-1), maxCPMB),
                                 max1B = max((minCPMB*-1), maxCPMB),
                                 legendLoc = "bottomright",
-                                legendLabs = c(markChIPA, markChIPB, "NLR-encoding", "Defense response"),
+                                legendLabs = c(markChIPA, markChIPB, "NLR-encoding genes", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "steelblue2",
@@ -613,7 +613,7 @@ for(x in which(chrs %in% chrs)) {
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 max1B = max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 legendLoc = "bottomright",
-                                legendLabs = c(markChIPA, markChIPB, "NLR-encoding", "Defense response"),
+                                legendLabs = c(markChIPA, markChIPB, "NLR-encoding genes", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "steelblue2",
