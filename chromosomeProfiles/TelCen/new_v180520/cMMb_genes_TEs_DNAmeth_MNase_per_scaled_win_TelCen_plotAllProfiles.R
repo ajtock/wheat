@@ -1,7 +1,7 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./log2ChIPcontrol_coverage_per_scaled_win_TelCen_plotAllProfiles_noZscore.R 1Mb 100 100ths 3 
+# ./cMMb_genes_TEs_DNAmeth_MNase_per_scaled_win_TelCen_plotAllProfiles.R 1Mb 100 100ths 3 
 
 #winName <- "1Mb"
 #prop <- 100
@@ -92,77 +92,77 @@ TelCenPlot <- function(xplot,
                        legendLocx,
                        legendLocy) {
   # Right y-axis
-  plot(xplot, profiles[[1]], type = "l", lwd = 3, col = profileColours[1],
+  plot(xplot, profiles[[1]], type = "l", lwd = 4, col = profileColours[1],
        ylim = c(min(profiles[[1]], na.rm = T),
                 max(profiles[[1]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[1], col.axis = profileColours[1], line = 0.5)
+  axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[1], col.axis = profileColours[1], line = 0.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[2]], type = "l", lwd = 3, col = profileColours[2],
+  plot(xplot, profiles[[2]], type = "l", lwd = 4, col = profileColours[2],
        ylim = c(min(profiles[[2]], na.rm = T),
                 max(profiles[[2]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
+  axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[3]], type = "l", lwd = 3, col = profileColours[3],
+  plot(xplot, profiles[[3]], type = "l", lwd = 4, col = profileColours[3],
        ylim = c(min(profiles[[3]], na.rm = T),
                 max(profiles[[3]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[3], col.axis = profileColours[3], line = 3.5)
+  axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[3], col.axis = profileColours[3], line = 3.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[4]], type = "l", lwd = 3, col = profileColours[4],
+  plot(xplot, profiles[[4]], type = "l", lwd = 4, col = profileColours[4],
        ylim = c(min(profiles[[4]], na.rm = T),
                 max(profiles[[4]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 4, cex.axis = 1, lwd.tick = 1.5, col = profileColours[4], col.axis = profileColours[4], line = 5.0)
+  axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[4], col.axis = profileColours[4], line = 5.0)
 
   p <- par('usr')
   text(p[2], mean(p[3:4]), cex = 1.0, adj = c(0.5, -10.5), labels = Ylabel, xpd = NA, srt = -90, col = "black")
 
   # Left y-axis
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[5]], type = "l", lwd = 3, col = profileColours[5],
+  plot(xplot, profiles[[5]], type = "l", lwd = 4, col = profileColours[5],
        ylim = c(min(profiles[[5]], na.rm = T),
                 max(profiles[[5]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[5], col.axis = profileColours[5], line = 0.5)
+  axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[5], col.axis = profileColours[5], line = 0.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[6]], type = "l", lwd = 3, col = profileColours[6],
+  plot(xplot, profiles[[6]], type = "l", lwd = 4, col = profileColours[6],
        ylim = c(min(profiles[[6]], na.rm = T),
                 max(profiles[[6]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[6], col.axis = profileColours[6], line = 2.0)
+  axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[6], col.axis = profileColours[6], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[7]], type = "l", lwd = 3, col = profileColours[7],
+  plot(xplot, profiles[[7]], type = "l", lwd = 4, col = profileColours[7],
        ylim = c(min(profiles[[7]], na.rm = T),
                 max(profiles[[7]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[7], col.axis = profileColours[7], line = 3.5)
+  axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[7], col.axis = profileColours[7], line = 3.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[8]], type = "l", lwd = 3, col = profileColours[8],
+  plot(xplot, profiles[[8]], type = "l", lwd = 4, col = profileColours[8],
        ylim = c(min(profiles[[8]], na.rm = T),
                 max(profiles[[8]], na.rm = T)),
        xlab = "", ylab = "", main = "",
        xaxt = "n", yaxt = "n")
-  axis(side = 2, cex.axis = 1, lwd.tick = 1.5, col = profileColours[8], col.axis = profileColours[8], line = 5.0)
+  axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[8], col.axis = profileColours[8], line = 5.0)
 
   mtext(side = 2, line = 8, cex = 1, text = Ylabel, col = "black")
 
   par(mgp = c(3, 0.5, 0))
-  axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+  axis(side = 1, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0,
        at = c(1, seq(10, proportions, by = 10)),
        labels = c(expression(italic("TEL")),
                   seq(10, proportions-10, by = 10),
@@ -170,7 +170,7 @@ TelCenPlot <- function(xplot,
   mtext(side = 1, line = 1.5, cex = 1,
         text = paste0("Scaled windows (", proportionsName, ")"))
 
-  box(lwd = 1.5)
+  box(lwd = 2.0)
   legend(legendLocx, legendLocy,
          legend = legendLabs,
          col = c("white"),
