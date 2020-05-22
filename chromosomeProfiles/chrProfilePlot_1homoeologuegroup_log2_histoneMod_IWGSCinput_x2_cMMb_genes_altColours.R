@@ -5,7 +5,7 @@
 # Change xblocks height to 4.3 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_genes.R CENH3 CENH3_ChIP_SRR1686799 ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue purple4 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue darkgreen 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -20,8 +20,8 @@
 #winSize <- 1000000
 #N <- 15
 #colourA <- "dodgerblue"
-#colourB <- "purple4"
-#date <- "210520"
+#colourB <- "darkgreen"
+#date <- "220520"
 #superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -584,7 +584,7 @@ for(x in which(chrs %in% chrName)) {
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "darkorange2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                col2B = "limegreen",
+                                col2B = "magenta3",
                                 Ylab2 = "",
                                 min2A = 0-maxFeatureA,
                                 max2A = maxFeatureA,
@@ -624,7 +624,7 @@ for(x in which(chrs %in% chrs)) {
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "darkorange2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                col2B = "limegreen",
+                                col2B = "magenta3",
                                 Ylab2 = "",
                                 min2A = 0-maxFeatureA_chrs,
                                 max2A = maxFeatureA_chrs,

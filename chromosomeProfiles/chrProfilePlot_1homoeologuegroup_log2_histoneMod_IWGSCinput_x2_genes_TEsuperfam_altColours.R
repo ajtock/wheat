@@ -2,27 +2,28 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 4.3 in chrPartitionPlotCov2_feature2 function
+# Change xblocks height to 32.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_genes.R CENH3 CENH3_ChIP_SRR1686799 ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue purple4 210520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_genes_TEsuperfam_altColours.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 red4 blue 220520 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_genes_TEsuperfam_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 firebrick1 navy 220520 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
 
-#markChIPA <- "CENH3_ChIP_SRR1686799"
-#libNameChIPA <- "CENH3"
-#markChIPB <- "ASY1_CS"
-#libNameChIPB <- "ASY1_CS_Rep1_ChIP"
-#markControlA <- "input"
-#libNameControlA <- "H3_input_SRR6350669"
-#markControlB <- "input"
-#libNameControlB <- "H3_input_SRR6350669"
+#markChIPA <- "H3K4me3"
+#libNameChIPA <- "H3K4me3_Rep1_ChIP"
+#markChIPB <- "H3K9me2"
+#libNameChIPB <- "H3K9me2_Rep1_ChIP"
+#markControlA <- "MNase"
+#libNameControlA <- "MNase_Rep1"
+#markControlB <- "MNase"
+#libNameControlB <- "MNase_Rep1"
 #align <- "both"
 #winName <- "1Mb"
 #winSize <- 1000000
 #N <- 15
-#colourA <- "dodgerblue"
-#colourB <- "purple4"
-#date <- "210520"
-#superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
+#colourA <- "red4"
+#colourB <- "blue"
+#date <- "220520"
+#superfam <- "Gypsy_LTR_RLG"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
 
@@ -453,27 +454,28 @@ filt_chrProfilesChIPB <- mclapply(seq_along(chrProfilesChIPB), function(x) {
 minCPMB_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
   function(x) {
     min(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))-0.025
+}, mc.cores = length(filt_chrProfilesChIPB))))-0.25
 maxCPMB_chrs <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPB),
   function(x) {
     max(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))+0.025
+}, mc.cores = length(filt_chrProfilesChIPB))))+0.25
 
 minCPMB <- min(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
     min(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))-0.025
+}, mc.cores = length(filt_chrProfilesChIPB))))-0.25
 maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
     max(c(filt_chrProfilesChIPB[[x]]$filt_log2CPM))
-}, mc.cores = length(filt_chrProfilesChIPB))))+0.025
+}, mc.cores = length(filt_chrProfilesChIPB))))+0.25
 
 # Feature frequency chromosome profiles
-featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                              "200bp_", winName, "_unsmoothed.txt"),
-                       header = T)
-featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/gene_frequency_per_",
+featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/gene_frequency_per_",
                               winName, "_unsmoothed.txt"),
+                       header = T)
+colnames(featureA) <- c("chr", "window", "features")
+featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/TEs/superfamilies/TE_frequency_per_",
+                              winName, "_superfamily_", superfam, "_unsmoothed.txt"),
                        header = T)
 colnames(featureB) <- c("chr", "window", "features")
 
@@ -482,20 +484,13 @@ chrProfilesFeatureA <- mclapply(seq_along(chrs), function(x) {
 }, mc.cores = length(chrs))
 
 filt_chrProfilesFeatureA <- mclapply(seq_along(chrProfilesFeatureA), function(x) {
-  filt_chrProfileFeatureA <- stats::filter(x = chrProfilesFeatureA[[x]]$cMMb,
+  filt_chrProfileFeatureA <- stats::filter(x = chrProfilesFeatureA[[x]]$features,
                                            filter = f,
                                            sides = 2)
-  # Given missing cM/Mb data for some of the more distal windows,
-  # need a different way of extending the leftmost and rightmost
-  # non-NA values to the ends of each chromosome, replacing NAs where they are present
-  leftFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) < N*2]
-  rightFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) > N*2]
-  filt_chrProfileFeatureA[leftFlank] <- filt_chrProfileFeatureA[leftFlank[length(leftFlank)]+1]
-  filt_chrProfileFeatureA[rightFlank] <- filt_chrProfileFeatureA[rightFlank[1]-1]
-#  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
-#  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
+  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
+  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
   data.frame(chr = as.character(chrProfilesFeatureA[[x]]$chr),
-             window = as.integer(chrProfilesFeatureA[[x]]$windowStart),
+             window = as.integer(chrProfilesFeatureA[[x]]$window),
              filt_feature = as.numeric(filt_chrProfileFeatureA),
              stringsAsFactors = F)
 }, mc.cores = length(chrProfilesFeatureA))
@@ -556,7 +551,7 @@ maxFeatureB <- max(unlist(mclapply(which(chrs %in% chrName),
 pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
-           align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
+           align, "_featureFreq_", superfam, "_chrPlot_winSize", winName, "_smooth", N,
            "_v", date, ".pdf"),
     height = 4, width = 10*length(chrName))
 par(mfrow = c(1, length(chrName)))
@@ -579,13 +574,13 @@ for(x in which(chrs %in% chrName)) {
                                 min1B = -max((minCPMB*-1), maxCPMB),
                                 max1B = max((minCPMB*-1), maxCPMB),
                                 legendLoc = "bottomright",
-                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Genes"),
+                                legendLabs = c(markChIPA, markChIPB, "Genes", paste0(sub("_", " ", sub("_\\w\\w\\w$", "", superfam)), " TEs")),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "darkorange2",
+                                col2A = "limegreen",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                col2B = "limegreen",
-                                Ylab2 = "",
+                                col2B = "navy",
+                                Ylab2 = "Feature frequency",
                                 min2A = 0-maxFeatureA,
                                 max2A = maxFeatureA,
                                 min2B = 0-maxFeatureB,
@@ -596,7 +591,7 @@ dev.off()
 pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
-           align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
+           align, "_featureFreq_", superfam, "_chrPlot_winSize", winName, "_smooth", N,
            "_v", date, ".pdf"),
     height = 4*7, width = 10*3)
 par(mfrow = c(7, 3))
@@ -619,13 +614,13 @@ for(x in which(chrs %in% chrs)) {
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 max1B = max((minCPMB_chrs*-1), maxCPMB_chrs),
                                 legendLoc = "bottomright",
-                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Genes"),
+                                legendLabs = c(markChIPA, markChIPB, "Genes", paste0(sub("_", " ", sub("_\\w\\w\\w$", "", superfam)), "s")),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "darkorange2",
+                                col2A = "limegreen",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                col2B = "limegreen",
-                                Ylab2 = "",
+                                col2B = "navy",
+                                Ylab2 = "Feature frequency",
                                 min2A = 0-maxFeatureA_chrs,
                                 max2A = maxFeatureA_chrs,
                                 min2B = 0-maxFeatureB_chrs,

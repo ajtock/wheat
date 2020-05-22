@@ -23,7 +23,7 @@
 #N <- 15
 #colourA <- "dodgerblue"
 #colourB <- "green2"
-#date <- "180220"
+#date <- "210520"
 #superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -584,8 +584,9 @@ for(x in which(chrs %in% chrName)) {
                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "steelblue2",
+                                #col2A = "steelblue2",
                                 #col2A = "darkorange2",
+                                col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "limegreen",
                                 col2B = "darkgreen",
@@ -626,8 +627,9 @@ for(x in which(chrs %in% chrs)) {
                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                col2A = "steelblue2",
+                                #col2A = "steelblue2",
                                 #col2A = "darkorange2",
+                                col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "limegreen",
                                 col2B = "darkgreen",
