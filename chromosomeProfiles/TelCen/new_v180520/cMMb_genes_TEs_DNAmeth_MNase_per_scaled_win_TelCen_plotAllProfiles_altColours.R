@@ -53,7 +53,7 @@ profileNames <- rev(profileNames)
 profileNamesPlot <- rev(profileNamesPlot)
 profileColours <- rev(profileColours)
 
-makeTransparent <- function(thisColour, alpha = 150)
+makeTransparent <- function(thisColour, alpha = 210)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -61,7 +61,7 @@ makeTransparent <- function(thisColour, alpha = 150)
         alpha = alpha, maxColorValue = 255)
   })
 }
-profileColoursTransparent <- sapply(seq_along(profileColours), function(x) {
+profileColours <- sapply(seq_along(profileColours), function(x) {
   makeTransparent(profileColours[x])
 })
 
@@ -213,8 +213,8 @@ TelCenPlot(xplot = 1:length(TelCenProfiles[[1]]),
            profiles = TelCenProfiles,
            proportions = prop,
            proportionsName = propName,
-           profileColours = profileColoursTransparent,
-           profileColoursLeg = rev(profileColoursTransparent),
+           profileColours = profileColours,
+           profileColoursLeg = rev(profileColours),
            Ylabel = bquote(""),
            legendLabs = rev(profileNamesPlot),
            legendLocx = 8, legendLocy = 2.7)
@@ -222,8 +222,8 @@ TelCenPlot(xplot = 1:length(filt_TelCenProfiles[[1]]),
            profiles = filt_TelCenProfiles,
            proportions = prop,
            proportionsName = propName,
-           profileColours = profileColoursTransparent,
-           profileColoursLeg = rev(profileColoursTransparent),
+           profileColours = profileColours,
+           profileColoursLeg = rev(profileColours),
            Ylabel = bquote(""),
            legendLabs = rev(profileNamesPlot),
            legendLocx = 8, legendLocy = 2.1)
