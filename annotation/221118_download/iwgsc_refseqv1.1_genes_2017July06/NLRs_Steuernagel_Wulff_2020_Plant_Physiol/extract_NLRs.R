@@ -241,7 +241,7 @@ NLR_complete <- NLR_complete[order(NLR_complete$seqid,
                                    NLR_complete$end),]
 print(dim(NLR_complete))
 write.table(NLR_complete[,1:9],
-            file = "NLR_complete_genes_representative_mRNA.gff3",
+            file = "NLR_genes_complete_representative_mRNA.gff3",
             quote = F, sep = "\t", row.names = F, col.names = F)
 NLR_complete_bed <- data.frame(chr = as.character(NLR_complete[,1]),
                                start = as.integer(NLR_complete[,4]-1),
@@ -251,7 +251,7 @@ NLR_complete_bed <- data.frame(chr = as.character(NLR_complete[,1]),
                                strand = as.character(NLR_complete[,7]),
                                stringsAsFactors = F)
 write.table(NLR_complete_bed,
-            file = "NLR_complete_genes_representative_mRNA.bed",
+            file = "NLR_genes_complete_representative_mRNA.bed",
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 # partial
@@ -269,7 +269,7 @@ NLR_partial <- NLR_partial[order(NLR_partial$seqid,
                                  NLR_partial$end),]
 print(dim(NLR_partial))
 write.table(NLR_partial[,1:9],
-            file = "NLR_partial_genes_representative_mRNA.gff3",
+            file = "NLR_genes_partial_representative_mRNA.gff3",
             quote = F, sep = "\t", row.names = F, col.names = F)
 NLR_partial_bed <- data.frame(chr = as.character(NLR_partial[,1]),
                               start = as.integer(NLR_partial[,4]-1),
@@ -279,5 +279,5 @@ NLR_partial_bed <- data.frame(chr = as.character(NLR_partial[,1]),
                               strand = as.character(NLR_partial[,7]),
                               stringsAsFactors = F)
 write.table(NLR_partial_bed,
-            file = "NLR_partial_genes_representative_mRNA.bed",
+            file = "NLR_genes_partial_representative_mRNA.bed",
             quote = F, sep = "\t", row.names = F, col.names = F)
