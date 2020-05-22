@@ -12,23 +12,44 @@ NLR <- NLR[NLR$Number.of.overlapping.genes == 1,]
 NLR_IDs <- NLR$Overlapping.Genes
 NLR_IDs <- unlist(strsplit(NLR_IDs, split = ","))
 NLR_IDs <- sort(unique(NLR_IDs))
+# Get motifs annotated to each NLR
 NLR_IDs_motifs <- sapply(NLR_IDs, function(x) {
   NLR[NLR$Overlapping.Genes == x,]$Motifs
 })
+# Get indices of NLRs annotated with more than 1 set of motifs
+# This occurs because some genes in the RefSeq v1.1 annotation
+# are overlapped by more than one NLR in the Steuernagel et al. (2020) Plant Physiol. analysis,
+# each containing a potentially different set of motifs
 NLR_IDs_motifs_multi_indices <- as.vector( which( 
   sapply(NLR_IDs_motifs, function(x) {
     length(x) > 1
   })
 ))
-tmp <- sapply(NLR_IDs_motifs_multi_indices, function(x) {
+# If the aim is to evaluate representation of the number of motifs
+# among NLRs in different NLR quantiles (e.g., grouped by decreasing cM/Mb),
+# then it is necessary to identify a representative set of motifs (i.e., the largest set)
+# for each gene, to avoid double-counting the same motif occurrence represented in two sets
+# Alternatively, if the aim is to evaluate representation of NLRs that contain a given motif
+# among NLRs in different NLR quantiles, then it would be preferable to concatenate motif sets
+NLR_IDs_repres_motifs <- NLR_IDs_motifs
+NLR_IDs_concat_motifs <- NLR_IDs_motifs 
+# For each of the above indices, get the index of the longest set of motifs 
+NLR_IDs_motifs_multi_maxLen_indices <- sapply(NLR_IDs_motifs_multi_indices, function(x) {
   motifsSplit <- strsplit(NLR_IDs_motifs[[x]], split = ",")
   motifsSplitLens <- sapply(motifsSplit, function(y) length(y))
   motifsSplitMaxLen <- which(motifsSplitLens == max(motifsSplitLens))
   motifsSplitMaxLen[1]
 })
-sapply(seq_along(NLR_IDs_motifs), function(x) {
-  print(length(NLR_IDs_motifs[[x]]))
-})
+# For each of the NLRs annotated with more than 1 set of motifs,
+# assign the longest set of motifs
+for(x in seq_along(NLR_IDs_motifs_multi_indices)) {
+  NLR_IDs_repres_motifs[[NLR_IDs_motifs_multi_indices[x]]] <- NLR_IDs_repres_motifs[[NLR_IDs_motifs_multi_indices[x]]][NLR_IDs_motifs_multi_maxLen_indices[x]]
+}
+# For each of the NLRs annotated with more than 1 set of motifs,
+# concatenate the sets
+for(x in seq_along(NLR_IDs_motifs_multi_indices)) {
+  NLR_IDs_concat_motifs[[NLR_IDs_motifs_multi_indices[x]]] <- paste0(NLR_IDs_concat_motifs[[NLR_IDs_motifs_multi_indices[x]]], collapse = ",")
+}
 
 # Get complete NLRs (with P-loop, NB-ARC and LRR domains)
 NLR_complete <- NLR[grepl("complete", NLR$Completeness),]
