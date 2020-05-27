@@ -208,6 +208,7 @@ mRNA_rep$groupTrunc <- sub(pattern = "\\.\\d+", replacement = "",
 
 # Create tables of each set of NLR gene coordinates in GFF3 and BED format
 # all
+# repres_motifs
 NLR <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_IDs,]
 NLR <- NLR[order(NLR$groupTrunc),]
 NLR_IDs_repres_motifs_subset <- NLR_IDs_repres_motifs[names(NLR_IDs_repres_motifs) %in%
@@ -222,7 +223,7 @@ NLR <- NLR[order(NLR$seqid,
                  NLR$end),]
 print(dim(NLR))
 write.table(NLR[,1:9],
-            file = "NLRAnnotator_genes_representative_mRNA.gff3",
+            file = "NLRAnnotator_genes_repres_mRNA_repres_motifs.gff3",
             quote = F, sep = "\t", row.names = F, col.names = F)
 NLR_bed <- data.frame(chr = as.character(NLR[,1]),
                       start = as.integer(NLR[,4]-1),
@@ -232,10 +233,38 @@ NLR_bed <- data.frame(chr = as.character(NLR[,1]),
                       strand = as.character(NLR[,7]),
                       stringsAsFactors = F)
 write.table(NLR_bed,
-            file = "NLRAnnotator_genes_representative_mRNA.bed",
+            file = "NLRAnnotator_genes_repres_mRNA_repres_motifs.bed",
+            quote = F, sep = "\t", row.names = F, col.names = F)
+# concat_motifs
+NLR <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_IDs,]
+NLR <- NLR[order(NLR$groupTrunc),]
+NLR_IDs_concat_motifs_subset <- NLR_IDs_concat_motifs[names(NLR_IDs_concat_motifs) %in%
+                                                      NLR$groupTrunc]
+NLR_IDs_concat_motifs_subset <- NLR_IDs_concat_motifs_subset[order(names(NLR_IDs_concat_motifs_subset))]
+stopifnot(identical(NLR$groupTrunc, names(NLR_IDs_concat_motifs_subset)))
+stopifnot(all.equal(NLR$groupTrunc, names(NLR_IDs_concat_motifs_subset)))
+NLR$score <- as.character(NLR_IDs_concat_motifs_subset)
+
+NLR <- NLR[order(NLR$seqid,
+                 NLR$start,
+                 NLR$end),]
+print(dim(NLR))
+write.table(NLR[,1:9],
+            file = "NLRAnnotator_genes_repres_mRNA_concat_motifs.gff3",
+            quote = F, sep = "\t", row.names = F, col.names = F)
+NLR_bed <- data.frame(chr = as.character(NLR[,1]),
+                      start = as.integer(NLR[,4]-1),
+                      end = as.integer(NLR[,5]),
+                      name = as.character(NLR[,9]),
+                      score = as.character(NLR[,6]),
+                      strand = as.character(NLR[,7]),
+                      stringsAsFactors = F)
+write.table(NLR_bed,
+            file = "NLRAnnotator_genes_repres_mRNA_concat_motifs.bed",
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 # complete
+# repres_motifs
 NLR_complete <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_complete_IDs,]
 NLR_complete <- NLR_complete[order(NLR_complete$groupTrunc),]
 NLR_complete_IDs_repres_motifs_subset <- NLR_complete_IDs_repres_motifs[names(NLR_complete_IDs_repres_motifs) %in%
@@ -250,7 +279,7 @@ NLR_complete <- NLR_complete[order(NLR_complete$seqid,
                                    NLR_complete$end),]
 print(dim(NLR_complete))
 write.table(NLR_complete[,1:9],
-            file = "NLRAnnotator_genes_complete_representative_mRNA.gff3",
+            file = "NLRAnnotator_genes_complete_repres_mRNA_repres_motifs.gff3",
             quote = F, sep = "\t", row.names = F, col.names = F)
 NLR_complete_bed <- data.frame(chr = as.character(NLR_complete[,1]),
                                start = as.integer(NLR_complete[,4]-1),
@@ -260,10 +289,38 @@ NLR_complete_bed <- data.frame(chr = as.character(NLR_complete[,1]),
                                strand = as.character(NLR_complete[,7]),
                                stringsAsFactors = F)
 write.table(NLR_complete_bed,
-            file = "NLRAnnotator_genes_complete_representative_mRNA.bed",
+            file = "NLRAnnotator_genes_complete_repres_mRNA_repres_motifs.bed",
+            quote = F, sep = "\t", row.names = F, col.names = F)
+# concat_motifs
+NLR_complete <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_complete_IDs,]
+NLR_complete <- NLR_complete[order(NLR_complete$groupTrunc),]
+NLR_complete_IDs_concat_motifs_subset <- NLR_complete_IDs_concat_motifs[names(NLR_complete_IDs_concat_motifs) %in%
+                                                                        NLR_complete$groupTrunc]
+NLR_complete_IDs_concat_motifs_subset <- NLR_complete_IDs_concat_motifs_subset[order(names(NLR_complete_IDs_concat_motifs_subset))]
+stopifnot(identical(NLR_complete$groupTrunc, names(NLR_complete_IDs_concat_motifs_subset)))
+stopifnot(all.equal(NLR_complete$groupTrunc, names(NLR_complete_IDs_concat_motifs_subset)))
+NLR_complete$score <- as.character(NLR_complete_IDs_concat_motifs_subset)
+
+NLR_complete <- NLR_complete[order(NLR_complete$seqid,
+                                   NLR_complete$start,
+                                   NLR_complete$end),]
+print(dim(NLR_complete))
+write.table(NLR_complete[,1:9],
+            file = "NLRAnnotator_genes_complete_repres_mRNA_concat_motifs.gff3",
+            quote = F, sep = "\t", row.names = F, col.names = F)
+NLR_complete_bed <- data.frame(chr = as.character(NLR_complete[,1]),
+                               start = as.integer(NLR_complete[,4]-1),
+                               end = as.integer(NLR_complete[,5]),
+                               name = as.character(NLR_complete[,9]),
+                               score = as.character(NLR_complete[,6]),
+                               strand = as.character(NLR_complete[,7]),
+                               stringsAsFactors = F)
+write.table(NLR_complete_bed,
+            file = "NLRAnnotator_genes_complete_repres_mRNA_concat_motifs.bed",
             quote = F, sep = "\t", row.names = F, col.names = F)
 
 # partial
+# repres_motifs
 NLR_partial <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_partial_IDs,]
 NLR_partial <- NLR_partial[order(NLR_partial$groupTrunc),]
 NLR_partial_IDs_repres_motifs_subset <- NLR_partial_IDs_repres_motifs[names(NLR_partial_IDs_repres_motifs) %in%
@@ -278,7 +335,7 @@ NLR_partial <- NLR_partial[order(NLR_partial$seqid,
                                  NLR_partial$end),]
 print(dim(NLR_partial))
 write.table(NLR_partial[,1:9],
-            file = "NLRAnnotator_genes_partial_representative_mRNA.gff3",
+            file = "NLRAnnotator_genes_partial_repres_mRNA_repres_motifs.gff3",
             quote = F, sep = "\t", row.names = F, col.names = F)
 NLR_partial_bed <- data.frame(chr = as.character(NLR_partial[,1]),
                               start = as.integer(NLR_partial[,4]-1),
@@ -288,6 +345,32 @@ NLR_partial_bed <- data.frame(chr = as.character(NLR_partial[,1]),
                               strand = as.character(NLR_partial[,7]),
                               stringsAsFactors = F)
 write.table(NLR_partial_bed,
-            file = "NLRAnnotator_genes_partial_representative_mRNA.bed",
+            file = "NLRAnnotator_genes_partial_repres_mRNA_repres_motifs.bed",
             quote = F, sep = "\t", row.names = F, col.names = F)
+# concat_motifs
+NLR_partial <- mRNA_rep[mRNA_rep$groupTrunc %in% NLR_partial_IDs,]
+NLR_partial <- NLR_partial[order(NLR_partial$groupTrunc),]
+NLR_partial_IDs_concat_motifs_subset <- NLR_partial_IDs_concat_motifs[names(NLR_partial_IDs_concat_motifs) %in%
+                                                                      NLR_partial$groupTrunc]
+NLR_partial_IDs_concat_motifs_subset <- NLR_partial_IDs_concat_motifs_subset[order(names(NLR_partial_IDs_concat_motifs_subset))]
+stopifnot(identical(NLR_partial$groupTrunc, names(NLR_partial_IDs_concat_motifs_subset)))
+stopifnot(all.equal(NLR_partial$groupTrunc, names(NLR_partial_IDs_concat_motifs_subset)))
+NLR_partial$score <- as.character(NLR_partial_IDs_concat_motifs_subset)
 
+NLR_partial <- NLR_partial[order(NLR_partial$seqid,
+                                 NLR_partial$start,
+                                 NLR_partial$end),]
+print(dim(NLR_partial))
+write.table(NLR_partial[,1:9],
+            file = "NLRAnnotator_genes_partial_repres_mRNA_concat_motifs.gff3",
+            quote = F, sep = "\t", row.names = F, col.names = F)
+NLR_partial_bed <- data.frame(chr = as.character(NLR_partial[,1]),
+                              start = as.integer(NLR_partial[,4]-1),
+                              end = as.integer(NLR_partial[,5]),
+                              name = as.character(NLR_partial[,9]),
+                              score = as.character(NLR_partial[,6]),
+                              strand = as.character(NLR_partial[,7]),
+                              stringsAsFactors = F)
+write.table(NLR_partial_bed,
+            file = "NLRAnnotator_genes_partial_repres_mRNA_concat_motifs.bed",
+            quote = F, sep = "\t", row.names = F, col.names = F)
