@@ -16,6 +16,19 @@ featureName <- unlist(strsplit(args[1],
 library(parallel)
 library(dplyr)
 
+pop_name <- c(
+              "Africa",
+              "MiddleEast",
+              "Asia",
+              "FormerSU",
+              "EasternEurope",
+              "WesternEurope",
+              "NorthAmerica",
+              "CentralAmerica",
+              "SouthAmerica",
+              "Oceania"
+             )
+
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
 chrs <- chrs[-length(chrs)]
@@ -53,6 +66,7 @@ stopifnot(identical(NLR_repres_motifs$featureID, featuresNLR$featureID))
 stopifnot(identical(NLR_concat_motifs$featureID, featuresNLR$featureID))
 featuresNLR$clustered <- ""
 featuresNLR$cluster <- as.integer("")
+featuresNLR$cluster_members <- as.integer("")
 # Determine if each NLR-encoding gene is part of a cluster of NLR-encoding genes
 # (i.e., not interrupted by more than eight genes encoding non-NLRs,
 # as defined in Richly et al. (2002) Mol. Biol. Evol. 19: https://doi.org/10.1093/oxfordjournals.molbev.a003984 )
@@ -81,12 +95,12 @@ for(x in seq_along(chrs)) {
                 as.integer(rownames(featuresNLR_chr[y,])) - 1 <=
                 8 ) {
       featuresNLR_chr[y,]$clustered <- "yes"
-      if(length(featuresNLR_chr[!is.na(featuresNLR_chr$cluster),]$cluster) > 0) {
+      if( length(featuresNLR_chr[!is.na(featuresNLR_chr$cluster),]$cluster) > 0 ) {
         featuresNLR_chr[y,]$cluster <- as.integer(featuresNLR_chr[!is.na(featuresNLR_chr$cluster),]$cluster[length(featuresNLR_chr[!is.na(featuresNLR_chr$cluster),]$cluster)] + 1)
       } else {
         featuresNLR_chr[y,]$cluster <- as.integer(1)
       }
-   } else {
+    } else {
       featuresNLR_chr[y,]$clustered <- "no"
     }
   }
@@ -98,6 +112,11 @@ for(x in seq_along(chrs)) {
     featuresNLR_chr[dim(featuresNLR_chr)[1],]$cluster <- as.integer(featuresNLR_chr[dim(featuresNLR_chr)[1]-1,]$cluster)
   } else {
     featuresNLR_chr[dim(featuresNLR_chr)[1],]$clustered <- "no"
+  }
+  for(z in 1:dim(featuresNLR_chr)[1]) {
+    if( featuresNLR_chr[z,]$clustered == "yes" ) {
+      featuresNLR_chr[z,]$cluster_members <- as.integer(dim(featuresNLR_chr[which(featuresNLR_chr$cluster == featuresNLR_chr[z,]$cluster),])[1])
+    }
   }
   featuresNLR_cl <- rbind(featuresNLR_cl, featuresNLR_chr)
 }
