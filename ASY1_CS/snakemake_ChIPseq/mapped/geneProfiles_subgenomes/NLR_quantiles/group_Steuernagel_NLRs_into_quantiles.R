@@ -38,18 +38,23 @@ chrs <- chrs[-length(chrs)]
 # Load table of NLRs including NLRAnnotator-generated motif annotation
 # Largest ("repres") set of motifs for each NLR
 NLR_repres_motifs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
-                         "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLRAnnotator/",
-                         "NLRAnnotator_genes_repres_mRNA_repres_motifs.bed"),
-                  header = F, stringsAsFactors = F)
+                                       "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLRAnnotator/",
+                                       "NLRAnnotator_genes_repres_mRNA_repres_motifs.bed"),
+                                header = F, stringsAsFactors = F)
 colnames(NLR_repres_motifs) <- c("chr", "start0based", "end", "featureID", "motifs", "strand")
 NLR_repres_motifs <- NLR_repres_motifs[NLR_repres_motifs$chr != "chrUn",]
 # Concatenated ("concat") sets of motifs for each NLR
 NLR_concat_motifs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
-                         "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLRAnnotator/",
-                         "NLRAnnotator_genes_repres_mRNA_concat_motifs.bed"),
-                  header = F, stringsAsFactors = F)
+                                       "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLRAnnotator/",
+                                       "NLRAnnotator_genes_repres_mRNA_concat_motifs.bed"),
+                                header = F, stringsAsFactors = F)
 colnames(NLR_concat_motifs) <- c("chr", "start0based", "end", "featureID", "motifs", "strand")
 NLR_concat_motifs <- NLR_concat_motifs[NLR_concat_motifs$chr != "chrUn",]
+if(length(featureName) == 1) {
+  NLR_repres_motifs <- NLR_repres_motifs[grepl(substr(featureName, 10, 10), NLR_repres_motifs$chr),]
+  NLR_concat_motifs <- NLR_concat_motifs[grepl(substr(featureName, 10, 10), NLR_concat_motifs$chr),]
+  chrs <- chrs[grepl(substr(featureName, 10, 10), chrs)]
+}
 
 # Load table of features (one for each population)
 featuresNLR_pop_list <- mclapply(seq_along(pop_name), function(x) {
