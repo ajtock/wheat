@@ -4,16 +4,17 @@
 # into quantiles based on decreasing cM/Mb, DMC1 or ASY1
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript group_Steuernagel_NLRs_into_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies
+# /applications/R/R-3.5.0/bin/Rscript group_Steuernagel_NLRs_into_quantiles.R 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide'
 
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#region <- "bodies"
 
 args <- commandArgs(trailingOnly = T)
 featureName <- unlist(strsplit(args[1],
                                split = ","))
-region <- args[2]
+
+library(parallel)
+library(dplyr)
 
 # Genomic definitions
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
@@ -107,81 +108,77 @@ featuresNLR$repres_motifs <- NLR_repres_motifs$motifs
 featuresNLR$concat_motifs <- NLR_concat_motifs$motifs
 
 # Define set of ordering factors to be used for grouping genes into 4 quantiles
-orderingFactor <- colnames([c(30, 79:103)]
+orderingFactor <- colnames(featuresNLR)[c(7:30, 79:103)]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
-outDir_list <- lapply(seq_along(outDir), function(w) {
-  sapply(seq_along(pop_name), function(x) {
-    paste0(outDir[w], pop_name[x], "/")
-  })
+plotDir <- paste0("quantiles_by_", orderingFactor, "/plots/")
+sapply(seq_along(outDir), function(w) {
+ system(paste0("[ -d ", outDir[w], " ] || mkdir ", outDir[w]))
 })
-plotDir_list <- lapply(seq_along(outDir), function(w) {
-  sapply(seq_along(pop_name), function(x) {
-    paste0(outDir_list[[w]][x], "plots/")
-  })
+sapply(seq_along(plotDir), function(w) {
+ system(paste0("[ -d ", plotDir[w], " ] || mkdir ", plotDir[w]))
 })
 
-
-featuresDF <- data.frame(featuresGR_pop_list[[x]],
-                         quantile = as.character(""),
+NLR_quants <- data.frame(featuresNLR,
+                         NLR_quantile = as.character(""),
                          stringsAsFactors = F)
 mclapply(seq_along(orderingFactor), function(w) {
   print(orderingFactor[w])
   # Assign 0s to NA values only for coverage data
   if(grepl("_in_", orderingFactor[w])) {
-    featuresDF[,which(colnames(featuresDF) == orderingFactor[w])][which(is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]))] <- 0
+    NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])][which(is.na(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]))] <- 0
   }
-  if(grepl("HudsonRM", orderingFactor[w])) {
+  if(grepl("all", orderingFactor[w])) {
+  # 2 quantiles for population genetics stats quantiles
     quantiles <- 2
   } else {
-    quantiles <- 4
+  # 4 quantiles for coverage and cM/Mb quantiles
+   quantiles <- 4
   }
   quantilesStats <- data.frame()
   for(k in 1:quantiles) {
     # First quantile should span 1 to greater than, e.g., 0.75 proportions of features
     if(k < quantiles) {
-      featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
-                  percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
-                  percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >  1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+      NLR_quants[ !is.na(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) &
+                  percent_rank(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                  percent_rank(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) >  1-(k/quantiles), ]$NLR_quantile <- paste0("Quantile ", k)
     } else {
     # Final quantile should span 0 to, e.g., 0.25 proportions of features
-      featuresDF[ !is.na(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) &
-                  percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
-                  percent_rank(featuresDF[,which(colnames(featuresDF) == orderingFactor[w])]) >= 1-(k/quantiles), ]$quantile <- paste0("Quantile ", k)
+      NLR_quants[ !is.na(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) &
+                  percent_rank(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) <= 1-((k-1)/quantiles) &
+                  percent_rank(NLR_quants[,which(colnames(NLR_quants) == orderingFactor[w])]) >= 1-(k/quantiles), ]$NLR_quantile <- paste0("Quantile ", k)
     }
-    write.table(featuresDF[featuresDF$quantile == paste0("Quantile ", k),],
-                file = paste0(outDir_list[[w]][x],
+    write.table(NLR_quants[NLR_quants$NLR_quantile == paste0("Quantile ", k),],
+                file = paste0(outDir[w],
                               "quantile", k, "_of_", quantiles,
                               "_by_", orderingFactor[w],
-                              "_of_",
-                              substring(featureName[1][1], first = 1, last = 5), "_in_",
+                              "_of_NLR_genes_in_",
                               paste0(substring(featureName, first = 10, last = 16),
                                      collapse = "_"), "_",
-                              substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                              substring(featureName[1][1], first = 18), ".txt"),
                 quote = FALSE, sep = "\t", row.names = FALSE)
     stats <- data.frame(quantile = as.integer(k),
-                        n = as.integer(dim(featuresDF[featuresDF$quantile == paste0("Quantile ", k),])[1]),
-                        mean_width = as.integer(round(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T))),
-                        total_width = as.integer(sum(featuresDF[featuresDF$quantile == paste0("Quantile ", k),]$width, na.rm = T)),
-                        mean_orderingFactor = as.numeric(mean(featuresDF[featuresDF$quantile == paste0("Quantile ", k),][,which(colnames(featuresDF) == orderingFactor[w])], na.rm = T)))
+                        n = as.integer(dim(NLR_quants[NLR_quants$NLR_quantile == paste0("Quantile ", k),])[1]),
+                        mean_width = as.integer(round(mean(NLR_quants[NLR_quants$NLR_quantile == paste0("Quantile ", k),]$width, na.rm = T))),
+                        total_width = as.integer(sum(NLR_quants[NLR_quants$NLR_quantile == paste0("Quantile ", k),]$width, na.rm = T)),
+                        mean_orderingFactor = as.numeric(mean(NLR_quants[NLR_quants$NLR_quantile == paste0("Quantile ", k),][,which(colnames(NLR_quants) == orderingFactor[w])], na.rm = T)))
     quantilesStats <- rbind(quantilesStats, stats)
   }
   write.table(quantilesStats,
-              file = paste0(outDir_list[[w]][x],
-                            "summary_", quantiles, "quantiles_by_", orderingFactor[w],
-                            "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
+              file = paste0(outDir[w],
+                            "summary_", quantiles, "quantiles",
+                            "_by_", orderingFactor[w],
+                            "_of_NLR_genes_in_",
                             paste0(substring(featureName, first = 10, last = 16),
                                    collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                            substring(featureName[1][1], first = 18), ".txt"),
               quote = FALSE, sep = "\t", row.names = FALSE)
-  write.table(featuresDF,
-              file = paste0(outDir_list[[w]][x],
+  write.table(NLR_quants,
+              file = paste0(outDir[w],
                             "features_", quantiles, "quantiles",
                             "_by_", orderingFactor[w],
-                            "_of_",
-                            substring(featureName[1][1], first = 1, last = 5), "_in_",
+                            "_of_NLR_genes_in_",
                             paste0(substring(featureName, first = 10, last = 16),
                                    collapse = "_"), "_",
-                            substring(featureName[1][1], first = 18), "_", pop_name[x], ".txt"),
+                            substring(featureName[1][1], first = 18), ".txt"),
+              quote = FALSE, sep = "\t", row.names = FALSE)
 }, mc.cores = length(orderingFactor), mc.preschedule = F)
-
