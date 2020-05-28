@@ -53,7 +53,7 @@ NLR_concat_motifs <- NLR_concat_motifs[NLR_concat_motifs$chr != "chrUn",]
 if(length(featureName) == 1) {
   NLR_repres_motifs <- NLR_repres_motifs[grepl(substr(featureName, 10, 10), NLR_repres_motifs$chr),]
   NLR_concat_motifs <- NLR_concat_motifs[grepl(substr(featureName, 10, 10), NLR_concat_motifs$chr),]
-  chrs <- chrs[grepl(substr(featureName, 10, 10), chrs)]
+  chrs <- chrs[grepl(substr(featureName, start = 10, stop = 10), chrs)]
 }
 
 # Load table of features (one for each population)
@@ -125,6 +125,8 @@ featuresNLR_pop_list <- mclapply(seq_along(pop_name), function(x) {
     for(z in 1:dim(featuresNLR_chr)[1]) {
       if( featuresNLR_chr[z,]$clustered == "yes" ) {
         featuresNLR_chr[z,]$cluster_members <- as.integer(dim(featuresNLR_chr[which(featuresNLR_chr$cluster == featuresNLR_chr[z,]$cluster),])[1])
+      } else {
+        featuresNLR_chr[z,]$cluster_members <- as.integer(1)
       }
     }
     featuresNLR_cl <- rbind(featuresNLR_cl, featuresNLR_chr)
@@ -138,7 +140,7 @@ featuresNLR_pop_list <- mclapply(seq_along(pop_name), function(x) {
 }, mc.cores = length(pop_name), mc.preschedule = F)
 
 # Define set of ordering factors to be used for grouping genes into 4 quantiles
-orderingFactor <- colnames(featuresNLR_pop_list[[1]])[c(7:30, 79:103)]
+orderingFactor <- colnames(featuresNLR_pop_list[[1]])[c(7:30, 79:103, 109)]
 outDir <- paste0("quantiles_by_", orderingFactor, "/")
 outDir_list <- lapply(seq_along(outDir), function(w) {
   sapply(seq_along(pop_name), function(x) {
