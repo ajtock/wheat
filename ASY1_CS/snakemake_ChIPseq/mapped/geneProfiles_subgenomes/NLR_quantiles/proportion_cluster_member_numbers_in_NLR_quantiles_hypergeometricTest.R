@@ -98,8 +98,8 @@ clSizes <- sort(unique(featuresDF$cluster_members))
 
 #rm(featuresDF); gc()
 
-for(yy in seq_along(motifs)) {
-  print(motifs[yy])
+for(yy in seq_along(clSizes)) {
+  print(clSizes[yy])
   genome_clSize <- featuresDF[featuresDF$cluster_members == clSizes[yy],]$featureID
 
   # Get the intersection of genome_clSize and genome_genes
@@ -191,13 +191,13 @@ for(yy in seq_along(motifs)) {
     if(libName %in% "cMMb") {
     save(hgTestResults,
          file = paste0(outDir,
-                       "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                       "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                        "_by_", libName, "_of_NLR_genes_in_",
                        genomeName, "_", region, "_hypergeomTestRes.RData"))
     } else {
     save(hgTestResults,
          file = paste0(outDir,
-                       "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                       "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                        "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                        genomeName, "_", region, "_hypergeomTestRes.RData"))
     }
@@ -205,13 +205,13 @@ for(yy in seq_along(motifs)) {
     # Generate histogram
     if(libName %in% "cMMb") {
     pdf(paste0(plotDir,
-               "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+               "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                "_by_", libName, "_of_NLR_genes_in_",
                genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
                height = 4.5, width = 5)
     } else {
     pdf(paste0(plotDir,
-               "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+               "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
                height = 4.5, width = 5)
@@ -258,7 +258,7 @@ for(yy in seq_along(motifs)) {
     mtext(side = 1,
           text = bquote("Genes"),
           line = 1.85)
-    titleText <- list(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * "-containing genes in" ~
+    titleText <- list(bquote("NLRs in" ~ .(clSizes[yy]) * "-NLR cluster in" ~
                              .(sub("_\\w+$", "", libName)) ~ "Quantile" ~ .(as.character(z)) ~
                              "(" * .(featRegion) * ") in" ~
                              .(gsub("_", " ", genomeName)) ~ .(region)),
@@ -307,12 +307,12 @@ for(yy in seq_along(motifs)) {
   for(z in quantileFirst:quantileLast) {
     if(libName %in% "cMMb") {
     load(paste0(outDir,
-                "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.RData"))
     } else {
     load(paste0(outDir,
-                "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_clusterSize", clSizes[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.RData"))
     }
@@ -362,7 +362,7 @@ for(yy in seq_along(motifs)) {
                                     fill = "transparent"),
           plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
           plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
-    ggtitle(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * "-containing genes in" ~
+    ggtitle(bquote("NLRs in" ~ .(clSizes[yy]) * "-NLR cluster in" ~
                    .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                    "(" * .(featRegion) * ") in" ~
                    .(gsub("_", " ", genomeName)) ~ .(region) ~
@@ -371,14 +371,14 @@ for(yy in seq_along(motifs)) {
                                      trim = T)) ~ " samples)"))
   if(libName %in% "cMMb") {
   ggsave(paste0(plotDir,
-                "bargraph_NLR_motif", motifs[yy], "gene_representation_among_", quantileLast,
+                "bargraph_NLR_clusterSize", clSizes[yy], "_gene_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.pdf"),
          plot = bp,
          height = 8, width = 12)
   } else {
   ggsave(paste0(plotDir,
-                "bargraph_NLR_motif", motifs[yy], "gene_representation_among_", quantileLast,
+                "bargraph_NLR_clusterSize", clSizes[yy], "_gene_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.pdf"),
          plot = bp,
