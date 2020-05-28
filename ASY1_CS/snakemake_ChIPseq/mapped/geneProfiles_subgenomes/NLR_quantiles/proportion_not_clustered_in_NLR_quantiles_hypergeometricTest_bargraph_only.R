@@ -3,7 +3,7 @@
 # For all three wheat subgenomes, load and plot as bargraphs results from
 # hypergeometric tests to determine whether each
 # NLR-encoding gene quantile is over-represented or under-represented for
-# NLRs that are part of an NLR cluster
+# NLRs that are not part of an NLR cluster
 # (e.g., is the proportion of NLR genes within a given NLR gene quantile that
 # are members of an NLR cluster significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
@@ -13,7 +13,7 @@
 # length(genome_clust) [m] + ( length(genome_genes) - length(genome_clust)) [n]
 
 # Usage
-# ./proportion_clustered_in_NLR_quantiles_hypergeometricTest_bargraph_only.R 'cMMb' 'genes' 1 4 'genomewide' 100000 'black,navy,dodgerblue4,deepskyblue'
+# ./proportion_not_clustered_in_NLR_quantiles_hypergeometricTest_bargraph_only.R 'cMMb' 'genes' 1 4 'genomewide' 100000 'black,navy,dodgerblue4,deepskyblue'
 
 library(methods)
 library(plotrix)
@@ -74,12 +74,12 @@ hg_list <- lapply(seq_along(genomeNames), function(y) {
   for(z in quantileFirst:quantileLast) {
     if(libName %in% c("cMMb", "HudsonRM_all")) {
     load(paste0(outDir,
-                "NLR_clustered_gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_not_clustered_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_NLR_genes_in_", genomeNames[y], "_",
                 region, "_hypergeomTestRes.RData"))
     } else {
     load(paste0(outDir,
-                "NLR_clustered_gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_not_clustered_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_", genomeNames[y], "_",
                 region, "_hypergeomTestRes.RData"))
     }
@@ -133,7 +133,7 @@ bp <- ggplot(data = bargraph_df,
                colour = quantileColours[4],
                inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.85, 0.85)) +
 #  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
@@ -159,7 +159,7 @@ bp <- ggplot(data = bargraph_df,
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 40.5, 5.5), "pt"),
         plot.title = element_text(size = 24, colour = "black", hjust = 0.5)) +
-  ggtitle(bquote("NLRs in an NLR cluster in" ~
+  ggtitle(bquote("NLRs not in an NLR cluster in" ~
                  .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                  "(" * .(featRegion) * ")" ~
                  "(" * .(prettyNum(samplesNum,
@@ -167,7 +167,7 @@ bp <- ggplot(data = bargraph_df,
                                    trim = T)) ~ "samples)"))
 if(libName %in% c("cMMb", "HudsonRM_all")) {
 ggsave(paste0(plotDir,
-              "combined_bargraph_NLR_clustered_gene_representation_among_", quantileLast,
+              "combined_bargraph_NLR_not_clustered_gene_representation_among_", quantileLast,
               "quantiles_by_", libName, "_of_NLR_genes_in_each_subgenome_",
               region, "_hypergeomTestRes.pdf"),
        plot = bp,
@@ -175,7 +175,7 @@ ggsave(paste0(plotDir,
 #       height = 8, width = 12)
 } else {
 ggsave(paste0(plotDir,
-              "combined_bargraph_NLR_clustered_gene_representation_among_", quantileLast,
+              "combined_bargraph_NLR_not_clustered_gene_representation_among_", quantileLast,
               "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_each_subgenome_",
               region, "_hypergeomTestRes.pdf"),
        plot = bp,
