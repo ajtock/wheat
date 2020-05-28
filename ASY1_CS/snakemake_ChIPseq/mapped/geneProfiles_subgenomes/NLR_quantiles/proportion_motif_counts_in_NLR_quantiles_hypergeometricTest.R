@@ -2,20 +2,20 @@
 
 # Perform hypergeometric tests to determine whether each
 # NLR-encoding gene quantile is over-represented or under-represented for
-# NLRs containing each of NLR motifs 1 to 20
+# each of NLR motifs 1 to 20
 # (as identified using NLRAnnotator; Steuernagel et al. 2020 Plant Physiol.)
-# using the concatenated motif sets ("concat_motifs") (concatenated motif sets
-# for a given gene correspond to multiple motif sets identified for that parent gene ID)
-# (e.g., is the proportion of NLR genes within a given NLR gene quantile that
-# contain NLR motif 1 significantly greater or smaller than expected by chance
+# using the representative motif sets ("repres_motifs") (the representative motif set
+# for a given gene corresponds to the largest motif set identified for that parent gene ID)
+# (e.g., is the proportion of motifs within a given NLR gene quantile that
+# are motif 1 significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
-# P-value is the probability of drawing >= length(quantile_motifs) [x] features
-# in a sample size of length(quantile_genes) [k] from a total feature set consisting of
-# length(genome_motifs) [m] + ( length(genome_genes) - length(genome_motifs)) [n]
+# P-value is the probability of drawing >= quantile_motifs [x] features
+# in a sample size of quantile_genes [k] from a total feature set consisting of
+# genome_motifs [m] + ( genome_genes - genome_motifs) [n]
 
 # Usage 
-# ./proportion_motifs_in_NLR_quantiles_hypergeometricTest.R 'cMMb' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_motif_counts_in_NLR_quantiles_hypergeometricTest.R 'cMMb' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -82,10 +82,19 @@ if(libName %in% "cMMb") {
 }
 featuresDF$featureID <- sub(pattern = "\\.\\d+", replacement = "",
                             x = featuresDF$featureID)
-genome_genes <- featuresDF$featureID
+# Get count of all motifs in all representative motif sets for all NLRs
+genome_genes <- length(unlist(strsplit(gsub("^_", "",
+                                            gsub("__", "_",
+                                                 paste0(featuresDF$repres_motifs,
+                                                        collapse = ""))),
+                                       split = "_")))
+# Get counts of all motifs in all representative motif sets for each NLR quantile
 quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
-  featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", x) &
-             featuresDF$featureID %in% genome_genes,]$featureID
+  length(unlist(strsplit(gsub("^_", "",
+                              gsub("__", "_",
+                                   paste0(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", x),]$repres_motifs,
+                                          collapse = ""))),
+                         split = "_"))) 
 })
 
 ## Subset chrs to only those within a given subgenome
@@ -98,18 +107,17 @@ quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
 
 # Define motif names
 motifs <- as.character(paste0("_", c(1:20), "_"))
+motifsNum <- gsub("_", "", motifs)
 
 #rm(featuresDF); gc()
 
 for(yy in seq_along(motifs)) {
   print(motifs[yy])
-  genome_motifs <- featuresDF[grepl(pattern = motifs[yy],
-                                    x = featuresDF$concat_motifs,
-                                    fixed = T),]$featureID
-
-  # Get the intersection of genome_motifs and genome_genes
-  # (this excludes genome_motifs genes not assigned to a chromosome)
-  genome_motifs <- intersect(genome_motifs, genome_genes)
+  genome_motifs <- sum(unlist(strsplit(gsub("^_", "",
+                                            gsub("__", "_",
+                                                 paste0(featuresDF$repres_motifs,
+                                                        collapse = ""))),
+                                       split = "_")) == motifsNum[yy])
 
   # Set class for hypergeometric test results object
   setClass("hypergeomTest",
@@ -125,53 +133,57 @@ for(yy in seq_along(motifs)) {
                           random_proportions_of_quantile = "numeric",
                           hypergeomDist = "numeric"))
 
-  # P-value is the probability of drawing >= length(quantile_motifs) [x] features
-  # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
-  # length(genome_motifs) [m] + ( length(genome_genes) - length(genome_motifs)) [n]
+  # P-value is the probability of drawing >= quantile_motifs [x] features
+  # in a sample size of quantile_genes [k] from a total feature set consisting of
+  # genome_motifs [m] + ( genome_genes - genome_motifs) [n]
   
   # From Karl Broman's answer at
   # https://stats.stackexchange.com/questions/16247/calculating-the-probability-of-gene-list-overlap-between-an-rna-seq-and-a-chip-c:
   # dhyper(x, m, n, k) gives the probability of drawing exactly x.
   # So P-value is given by the sum of the probabilities of drawing
-  # length(quantile_motifs) to length(quantile_genes)
+  # quantile_motifs to quantile_genes
   
   #lapply(seq_along(quantile_genes_list), function(z) {
   for(z in seq_along(quantile_genes_list)) {
     quantile_genes <- quantile_genes_list[[z]]
-    # Get intersection of gene IDs in quantile z and gene IDs of NLRs
-    quantile_motifs <- intersect(quantile_genes, genome_motifs)
-  
+    # Get number of occurrences of motifs[yy] in quantile z
+    quantile_motifs <- sum(unlist(strsplit(gsub("^_", "",
+                                                gsub("__", "_",
+                                                     paste0(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", z),]$repres_motifs,
+                                                            collapse = ""))),
+                                           split = "_")) == motifsNum[yy])
+
     # Calculate the P-values for over-representation and under-representation
     # of NLRs among quantile z genes
     set.seed(2847502)
     # Over-representation:
-    Pval_overrep <- sum(dhyper(x = length(quantile_motifs):length(quantile_genes),
-                               m = length(genome_motifs),
-                               n = length(genome_genes) - length(genome_motifs),
-                               k = length(quantile_genes)))
+    Pval_overrep <- sum(dhyper(x = quantile_motifs:quantile_genes,
+                               m = genome_motifs,
+                               n = genome_genes - genome_motifs,
+                               k = quantile_genes))
     print(Pval_overrep)
   
-    # Or by 1 minus the sum of the probabilities of drawing 0:(length(quantile_motifs)-1)
-    print(1 - sum(dhyper(x = 0:(length(quantile_motifs)-1),
-                         m = length(genome_motifs),
-                         n = length(genome_genes) - length(genome_motifs),
-                         k = length(quantile_genes))))
+    # Or by 1 minus the sum of the probabilities of drawing 0:(quantile_motifs-1)
+    print(1 - sum(dhyper(x = 0:(quantile_motifs-1),
+                         m = genome_motifs,
+                         n = genome_genes - genome_motifs,
+                         k = quantile_genes)))
   
     # Under-representation
-    Pval_underrep <- phyper(q = length(quantile_motifs),
-                            m = length(genome_motifs),
-                            n = length(genome_genes) - length(genome_motifs),
-                            k = length(quantile_genes))
+    Pval_underrep <- phyper(q = quantile_motifs,
+                            m = genome_motifs,
+                            n = genome_genes - genome_motifs,
+                            k = quantile_genes)
     print(Pval_underrep)
   
     # Sample without replacement
     hgDist <- rhyper(nn = samplesNum,
-                     m = length(genome_motifs),
-                     n = length(genome_genes) - length(genome_motifs),
-                     k = length(quantile_genes))
+                     m = genome_motifs,
+                     n = genome_genes - genome_motifs,
+                     k = quantile_genes)
   
     # Calculate P-values and significance levels
-    if(length(quantile_motifs) > mean(hgDist)) {
+    if(quantile_motifs > mean(hgDist)) {
       Pval <- Pval_overrep
       MoreOrLessThanRandom <- "MoreThanRandom"
       alpha0.05 <- quantile(hgDist, probs = 0.95)[[1]]
@@ -185,24 +197,24 @@ for(yy in seq_along(motifs)) {
                          alternative = MoreOrLessThanRandom,
                          alpha0.05 = alpha0.05,
                          pval = Pval,
-                         observed = length(quantile_motifs),
+                         observed = quantile_motifs,
                          expected = mean(hgDist),
-                         log2obsexp = log2( (length(quantile_motifs)+1) / (mean(hgDist)+1) ),
+                         log2obsexp = log2( (quantile_motifs+1) / (mean(hgDist)+1) ),
                          log2alpha  = log2( (alpha0.05+1) / (mean(hgDist)+1) ),
-                         quantile_genes = length(quantile_genes),
-                         proportion_of_quantile = length(quantile_motifs) / length(quantile_genes),
-                         random_proportions_of_quantile = hgDist / length(quantile_genes),
+                         quantile_genes = quantile_genes,
+                         proportion_of_quantile = quantile_motifs / quantile_genes,
+                         random_proportions_of_quantile = hgDist / quantile_genes,
                          hypergeomDist = hgDist)
     if(libName %in% "cMMb") {
     save(hgTestResults,
          file = paste0(outDir,
-                       "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                       "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                        "_by_", libName, "_of_NLR_genes_in_",
                        genomeName, "_", region, "_hypergeomTestRes.RData"))
     } else {
     save(hgTestResults,
          file = paste0(outDir,
-                       "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                       "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                        "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                        genomeName, "_", region, "_hypergeomTestRes.RData"))
     }
@@ -210,13 +222,13 @@ for(yy in seq_along(motifs)) {
     # Generate histogram
     if(libName %in% "cMMb") {
     pdf(paste0(plotDir,
-               "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+               "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                "_by_", libName, "_of_NLR_genes_in_",
                genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
                height = 4.5, width = 5)
     } else {
     pdf(paste0(plotDir,
-               "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+               "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                genomeName, "_", region, "_hypergeomTestRes_hist.pdf"),
                height = 4.5, width = 5)
@@ -263,7 +275,7 @@ for(yy in seq_along(motifs)) {
     mtext(side = 1,
           text = bquote("Genes"),
           line = 1.85)
-    titleText <- list(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * "-containing genes in" ~
+    titleText <- list(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * " counts in" ~
                              .(sub("_\\w+$", "", libName)) ~ "Quantile" ~ .(as.character(z)) ~
                              "(" * .(featRegion) * ") in" ~
                              .(gsub("_", " ", genomeName)) ~ .(region)),
@@ -312,12 +324,12 @@ for(yy in seq_along(motifs)) {
   for(z in quantileFirst:quantileLast) {
     if(libName %in% "cMMb") {
     load(paste0(outDir,
-                "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.RData"))
     } else {
     load(paste0(outDir,
-                "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
+                "NLR_motif", motifs[yy], "count_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.RData"))
     }
@@ -341,7 +353,7 @@ for(yy in seq_along(motifs)) {
                              y = log2alpha0.05),
                position = position_dodge(0.9),
                shape = "-", colour  = "grey80", size = 20) +
-    labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
+    labs(y = bquote("Log"[2]*"(observed/expected) motifs in quantile")) +
   #  scale_y_continuous(limits = c(-1.5, 1.5)) +
     scale_x_discrete(position = "top") +
     guides(fill = guide_legend(direction = "horizontal",
@@ -367,7 +379,7 @@ for(yy in seq_along(motifs)) {
                                     fill = "transparent"),
           plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
           plot.title = element_text(size = 16, colour = "black", hjust = 0.5)) +
-    ggtitle(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * "-containing genes in" ~
+    ggtitle(bquote("NLR motif" ~ .(gsub("_", "", motifs[yy])) * " counts in" ~
                    .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                    "(" * .(featRegion) * ") in" ~
                    .(gsub("_", " ", genomeName)) ~ .(region) ~
@@ -376,14 +388,14 @@ for(yy in seq_along(motifs)) {
                                      trim = T)) ~ " samples)"))
   if(libName %in% "cMMb") {
   ggsave(paste0(plotDir,
-                "bargraph_NLR_motif", motifs[yy], "gene_representation_among_", quantileLast,
+                "bargraph_NLR_motif", motifs[yy], "count_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.pdf"),
          plot = bp,
          height = 8, width = 12)
   } else {
   ggsave(paste0(plotDir,
-                "bargraph_NLR_motif", motifs[yy], "gene_representation_among_", quantileLast,
+                "bargraph_NLR_motif", motifs[yy], "count_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_NLR_genes_in_",
                 genomeName, "_", region, "_hypergeomTestRes.pdf"),
          plot = bp,
