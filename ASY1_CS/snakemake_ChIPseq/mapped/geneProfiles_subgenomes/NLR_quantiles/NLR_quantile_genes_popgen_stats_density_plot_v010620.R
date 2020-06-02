@@ -5,14 +5,15 @@
 # Usage:
 # /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 RozasR2_all "Rozas' R 2" 0.95 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 CLR_all "CLR" 0.99 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
 # /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.3f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.2f' 0.65
 
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 nSegregatingSites_all "Norm. seg. sites" 0.99 0.05 '%1.1f' '%1.1f' '%1.1f' 0.65
 
 #libName <- "cluster_members"
 #featureName <- unlist(strsplit("NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide",
