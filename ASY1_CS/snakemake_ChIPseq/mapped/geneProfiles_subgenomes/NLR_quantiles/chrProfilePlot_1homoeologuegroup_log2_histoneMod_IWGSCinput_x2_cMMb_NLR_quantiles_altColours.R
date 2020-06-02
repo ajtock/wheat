@@ -5,9 +5,9 @@
 # Change xblocks height to 0.62 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R H3K27me3 H3K27me3_ChIP_SRR6350666 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 grey30 limegreen 020620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R ASY1_CS ASY1_CS_Rep1_ChIP DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 darkgreen limegreen 020620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 020620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R H3K27me3 H3K27me3_ChIP_SRR6350666 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 grey30 limegreen 020620 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R ASY1_CS ASY1_CS_Rep1_ChIP DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 darkgreen limegreen 020620 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_NLR_quantiles_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 020620 'chr3A,chr3B,chr3D' cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4
 
 #markChIPA <- "H3K27me3"
 #libNameChIPA <- "H3K27me3_ChIP_SRR6350666"
@@ -626,10 +626,10 @@ for(x in which(chrs %in% chrName)) {
                                         min1B = -max((minCPMB*-1), maxCPMB),
                                         max1B = max((minCPMB*-1), maxCPMB),
                                         legendLoc = "bottomright",
-                                        legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", quantileNames),
+                                        legendLabs = c(quantileNames, sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb"),
                                         xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                         dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                        col2A = "cyan2",
+                                        col2A = "darkorange1",
                                         dat2B = filt_chrProfilesFeatureB[[x]],
                                         col2B = quantileColours,
                                         Ylab2 = "",
@@ -679,10 +679,10 @@ for(x in which(chrs %in% chrs)) {
                                         min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),
                                         max1B = max((minCPMB_chrs*-1), maxCPMB_chrs),
                                         legendLoc = "bottomright",
-                                        legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", quantileNames),
+                                        legendLabs = c(quantileNames, sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb"),
                                         xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                         dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                        col2A = "cyan2",
+                                        col2A = "darkorange1",
                                         dat2B = filt_chrProfilesFeatureB[[x]],
                                         col2B = quantileColours,
                                         Ylab2 = "",
