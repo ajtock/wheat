@@ -36,7 +36,7 @@ plotDir <- "./bar_graphs/"
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 otherNamesPlot <- c(
-                    "ASY1",
+                    "ASY1/DMC1",
                     "H3K4me3",
                     "H3K9me2",
                     "H3K27me1",
@@ -478,32 +478,33 @@ bp <- ggplot(data = df,
                                pt3Names)) +
   geom_point(mapping = aes(Feature, log2alpha0.05),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey70", size = 14) +
+             shape = "-", colour  = "grey80", size = 14) +
   labs(y = expression("Log"[2]*"(observed/expected) overlap")) +
   scale_y_continuous(limits = c(-2.9, 2.9)) +
-  scale_x_discrete(position = "top") +
+  scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
-                             label.position = "top",
-                             label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
-                             nrow = 1,
+                             label.position = "right",
+                             keywidth = 3, keyheight = 3,
+                             label.theme = element_text(size = 44, hjust = 0, vjust = 0.5, angle = 0),
+                             nrow = 3,
                              byrow = TRUE)) +
   theme_bw() +
   theme(axis.line.y = element_line(size = 1, colour = "black"),
-        axis.ticks.y = element_line(size = 1, colour = "black"),
-        axis.text.y = element_text(size = 33, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
-        axis.title.y = element_text(size = 33, colour = "black"),
+        axis.ticks.y = element_blank(),
+        axis.text.y = element_text(size = 44, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
+        axis.title.y = element_text(size = 44, colour = "black"),
         axis.ticks.x = element_blank(),
-        axis.text.x = element_text(size = 33, colour = "black", hjust = 0, vjust = 0.5, angle = 90),
+        axis.text.x = element_text(size = 44, colour = "black", hjust = 0.5, vjust = 0.5, angle = 45),
         axis.title.x = element_blank(),
         panel.grid = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
-        #legend.position = c(0.05, 0.30),
+        legend.position = c(0.5, 0.2),
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
-        plot.title = element_text(size = 33, colour = "black", hjust = 0.5)) +
+        plot.title = element_text(size = 60, face = "bold", colour = "black", hjust = 0.5)) +
   ggtitle(paste0(plotTitle, " (", prettyNum(as.character(perms),
                                             big.mark = ",", trim = "T"),
                  " permutations)"))
@@ -513,7 +514,7 @@ ggsave(paste0(plotDir, "barplot_other_features_permTestResults_",
               pt1LibName, "_", pt2LibName, "_", pt3LibName,
               "_peaks_v030620.pdf"),
        plot = bp,
-       height = 10, width = 36)
+       height = 12, width = 36)
 save(bp,
      file = paste0(plotDir, "barplot_other_features_permTestResults_",
                    as.character(perms), "perms_",
