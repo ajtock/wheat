@@ -504,7 +504,7 @@ bp <- ggplot(data = df,
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
         plot.margin = unit(c(5.5, 5.5, 10.5, 5.5), "pt"),
-        plot.title = element_text(size = 60, face = "bold", colour = "black", hjust = 0.5)) +
+        plot.title = element_text(size = 70, face = "bold", colour = "black", hjust = 0.5)) +
   ggtitle(paste0(plotTitle))#, " (", prettyNum(as.character(perms),
                  #                           big.mark = ",", trim = "T"),
                  #" permutations)"))

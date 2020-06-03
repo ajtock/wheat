@@ -469,7 +469,7 @@ bp <- ggplot(data = df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 14) +
   labs(y = expression("Log"[2]*"(observed/expected) overlap")) +
-  scale_y_continuous(limits = c(-2.1, 2.1)) +
+  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "right",
