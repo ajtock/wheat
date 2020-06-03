@@ -3,7 +3,7 @@
 # Plot bar graph of log2(observed:expected) peaks overlapping other features
 
 # Usage:
-# ./others_vs_DMC1_euchromatin_heterochromatin_peaks_bargraphs_v030620.R "DMC1 peaks" Agenome Bgenome Dgenome Agenome 10000
+# ./TEfams_vs_DMC1_euchromatin_heterochromatin_peaks_bargraphs_v030620.R "DMC1 peaks" Agenome Bgenome Dgenome Agenome 10000
 
 library(ggplot2)
 library(ggthemes)
@@ -36,70 +36,59 @@ plotDir <- "./bar_graphs/"
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 otherNamesPlot <- c(
-                    "ASY1/DMC1",
-                    "H3K4me3",
-                    "H3K9me2",
-                    "H3K27me1",
-                    "H3K27me3",
-                    "H3K36me3",
-                    "H3K9ac",
-                    "H2A.Z",
-                    "H3K4me1",
-                    "H3K27ac",
-                    "MNase",
-                    "Genes",
-#13                    "Gene promoters",
-#14                    "Gene 5' ends",
-#15                    "Gene 3' ends",
-#16                    "Gene terminators",
-                    "NLR genes",
-#18                    "NLR promoters",
-#19                    "NLR 5' ends",
-#20                    "NLR 3' ends",
-#21                    "NLR terminators",
-                    "Meiotic genes"
-#23                    "Meiotic promoters",
-#24                    "Meiotic 5' ends",
-#25                    "Meiotic 3' ends",
-#26                    "Meiotic terminators"
+                    "CACTA",
+                    "Harbinger",
+                    "hAT",
+#4                    "Helitron",
+                    "Mariner",
+                    "Mutator",
+                    "MITE",
+                    "Unclass. class 2",
+                    "Unclass. TIRs",
+                    "Copia LTR",
+                    "Gypsy LTR",
+                    "LINE",
+                    "SINE",
+                    "Unclass. LTR",
+                    "Unclass. repeats"
                    )
 
 # Load permutation test results for peak set to be used for ordering
 # of other features in bar graph
-load(paste0(ptOrderDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(ptOrderDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             ptOrderLibName, "_euchromatin.RData"))
-ptOrder <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+ptOrder <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
 # Load permutation test results to be used for plotting
-load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt1LibName, "_euchromatin.RData"))
-pt1eu <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt1eu <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
-load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt2LibName, "_euchromatin.RData"))
-pt2eu <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt2eu <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
-load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(euDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt3LibName, "_euchromatin.RData"))
-pt3eu <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt3eu <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
-load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt1LibName, "_heterochromatin.RData"))
-pt1hetero <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt1hetero <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
-load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt2LibName, "_heterochromatin.RData"))
-pt2hetero <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt2hetero <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
-load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_others_in_",
+load(paste0(heteroDir, "permTest_", perms, "perms_DMC1_Rep1_ChIP_peaks_vs_TEfams_in_",
             pt3LibName, "_heterochromatin.RData"))
-pt3hetero <- ptPeaksOtherPerChrom[-c(13:16, 18:21, 23:26)]
+pt3hetero <- ptPeaksOtherPerChrom[-c(4)]
 ptPeaksOtherPerChrom <- NULL
 
 # ptOrder
@@ -138,15 +127,15 @@ ptOrder_log2ObsExp_log2alpha0.05 <- unlist(ptOrder_log2ObsExp)-unlist(ptOrder_lo
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-ptOrder_log2ObsExp_log2alpha0.05_sorted <- sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+ptOrder_log2ObsExp_sorted <- sort.int(unlist(ptOrder_log2ObsExp),
                                       decreasing = T)
-ptOrder_log2alpha0.05_sorted <- unlist(ptOrder_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+ptOrder_log2alpha0.05_sorted <- unlist(ptOrder_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                                       decreasing = T,
                                                                       index.return = T)$ix])
-#ptOrder_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#ptOrder_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                             decreasing = T,
 #                                             index.return = T)$ix]
-ptOrder_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+ptOrder_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                          decreasing = T,
                                                          index.return = T)$ix]
 
@@ -185,16 +174,16 @@ pt1eu_log2alpha0.05 <- lapply(seq_along(pt1eu_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt1eu_log2ObsExp_sorted <- unlist(pt1eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1eu_log2ObsExp_sorted <- unlist(pt1eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt1eu_log2alpha0.05_sorted <- unlist(pt1eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1eu_log2alpha0.05_sorted <- unlist(pt1eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt1eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt1eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt1eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                      decreasing = T,
                                                      index.return = T)$ix]
 
@@ -233,16 +222,16 @@ pt2eu_log2alpha0.05 <- lapply(seq_along(pt2eu_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt2eu_log2ObsExp_sorted <- unlist(pt2eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2eu_log2ObsExp_sorted <- unlist(pt2eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt2eu_log2alpha0.05_sorted <- unlist(pt2eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2eu_log2alpha0.05_sorted <- unlist(pt2eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt2eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt2eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt2eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                  decreasing = T,
                                                  index.return = T)$ix]
 
@@ -281,16 +270,16 @@ pt3eu_log2alpha0.05 <- lapply(seq_along(pt3eu_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt3eu_log2ObsExp_sorted <- unlist(pt3eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3eu_log2ObsExp_sorted <- unlist(pt3eu_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt3eu_log2alpha0.05_sorted <- unlist(pt3eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3eu_log2alpha0.05_sorted <- unlist(pt3eu_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt3eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt3eu_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt3eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3eu_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                  decreasing = T,
                                                  index.return = T)$ix]
 
@@ -329,16 +318,16 @@ pt1hetero_log2alpha0.05 <- lapply(seq_along(pt1hetero_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt1hetero_log2ObsExp_sorted <- unlist(pt1hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1hetero_log2ObsExp_sorted <- unlist(pt1hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt1hetero_log2alpha0.05_sorted <- unlist(pt1hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1hetero_log2alpha0.05_sorted <- unlist(pt1hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt1hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt1hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt1hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt1hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                      decreasing = T,
                                                      index.return = T)$ix]
 
@@ -377,16 +366,16 @@ pt2hetero_log2alpha0.05 <- lapply(seq_along(pt2hetero_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt2hetero_log2ObsExp_sorted <- unlist(pt2hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2hetero_log2ObsExp_sorted <- unlist(pt2hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt2hetero_log2alpha0.05_sorted <- unlist(pt2hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2hetero_log2alpha0.05_sorted <- unlist(pt2hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt2hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt2hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt2hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt2hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                  decreasing = T,
                                                  index.return = T)$ix]
 
@@ -425,16 +414,16 @@ pt3hetero_log2alpha0.05 <- lapply(seq_along(pt3hetero_alpha0.05), function(x) {
 
 # Order permutation test statistics and feature names by
 # decreasing log2(observed/expected) overlaps of wt treatment peaks
-pt3hetero_log2ObsExp_sorted <- unlist(pt3hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3hetero_log2ObsExp_sorted <- unlist(pt3hetero_log2ObsExp[sort.int(unlist(ptOrder_log2ObsExp),
                                                         decreasing = T,
                                                         index.return = T)$ix])
-pt3hetero_log2alpha0.05_sorted <- unlist(pt3hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3hetero_log2alpha0.05_sorted <- unlist(pt3hetero_log2alpha0.05[sort.int(unlist(ptOrder_log2ObsExp),
                                                               decreasing = T,
                                                               index.return = T)$ix])
-#pt3hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+#pt3hetero_otherNames_sorted <- otherNames[sort.int(unlist(ptOrder_log2ObsExp),
 #                                         decreasing = T,
 #                                         index.return = T)$ix]
-pt3hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp_log2alpha0.05),
+pt3hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2ObsExp),
                                                  decreasing = T,
                                                  index.return = T)$ix]
 
@@ -443,7 +432,7 @@ pt1Names <- paste0(substr(pt1LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
 pt2Names <- paste0(substr(pt2LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
 pt3Names <- paste0(substr(pt3LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
 df <- data.frame(Sample = rep(c(pt1Names, pt2Names, pt3Names),
-                              each = length(ptOrder_log2ObsExp_log2alpha0.05_sorted)),
+                              each = length(ptOrder_log2ObsExp_sorted)),
                  Feature = rep(pt1eu_otherNamesPlot_sorted, 6),
                  log2ObsExp = c(pt1eu_log2ObsExp_sorted,
                                 pt1hetero_log2ObsExp_sorted,
@@ -480,7 +469,7 @@ bp <- ggplot(data = df,
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 14) +
   labs(y = expression("Log"[2]*"(observed/expected) overlap")) +
-  scale_y_continuous(limits = c(-2.9, 2.9)) +
+  scale_y_continuous(limits = c(-2.1, 2.1)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "right",
@@ -499,7 +488,7 @@ bp <- ggplot(data = df,
         panel.grid = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
-        legend.position = c(0.5, 0.2),
+        legend.position = c(0.2, 0.2),
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
                                   fill = "transparent"),
@@ -508,7 +497,7 @@ bp <- ggplot(data = df,
   ggtitle(paste0(plotTitle))#, " (", prettyNum(as.character(perms),
                  #                           big.mark = ",", trim = "T"),
                  #" permutations)"))
-ggsave(paste0(plotDir, "barplot_other_features_permTestResults_",
+ggsave(paste0(plotDir, "barplot_TEfams_permTestResults_",
               as.character(perms), "perms_",
               "log2_Observed_Expected_DMC1_Rep1_ChIP_",
               pt1LibName, "_", pt2LibName, "_", pt3LibName,
@@ -516,7 +505,7 @@ ggsave(paste0(plotDir, "barplot_other_features_permTestResults_",
        plot = bp,
        height = 12, width = 36)
 save(bp,
-     file = paste0(plotDir, "barplot_other_features_permTestResults_",
+     file = paste0(plotDir, "barplot_TEfams_permTestResults_",
                    as.character(perms), "perms_",
                    "log2_Observed_Expected_DMC1_Rep1_ChIP_",
                    pt1LibName, "_", pt2LibName, "_", pt3LibName,
