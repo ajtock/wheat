@@ -3,12 +3,12 @@
 # Plot bar graph of log2(observed:expected) peaks overlapping other features
 
 # Usage:
-# ./others_vs_DMC1_euchromatin_heterochromatin_peaks_bargraphs_v030620.R "DMC1 peaks" Agenome Bgenome Dgenome Agenome 10000
+# ./others_vs_DMC1_euchromatin_heterochromatin_peaks_bargraphs_v030620.R "DMC1 peak overlap" Agenome Bgenome Dgenome Agenome 10000
 
 library(ggplot2)
 library(ggthemes)
 
-#plotTitle <- "DMC1 peaks"
+#plotTitle <- "DMC1 peak overlap"
 #pt1LibName <- "Agenome" 
 #pt2LibName <- "Bgenome"
 #pt3LibName <- "Dgenome"
@@ -442,8 +442,13 @@ pt3hetero_otherNamesPlot_sorted <- otherNamesPlot[sort.int(unlist(ptOrder_log2Ob
 pt1Names <- paste0(substr(pt1LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
 pt2Names <- paste0(substr(pt2LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
 pt3Names <- paste0(substr(pt3LibName, 1, 1), "  ", c("R1 & R3", "R2a-R2b"))
+pt1NamesPlot <- c("R1 & R3", "R2a-R2b")
+pt2NamesPlot <- c("R1 & R3", "R2a-R2b")
+pt3NamesPlot <- c("R1 & R3", "R2a-R2b")
 df <- data.frame(Sample = rep(c(pt1Names, pt2Names, pt3Names),
                               each = length(ptOrder_log2ObsExp_log2alpha0.05_sorted)),
+                 plotSample = rep(c(pt1NamesPlot, pt2NamesPlot, pt3NamesPlot),
+                                  each = length(ptOrder_log2ObsExp_log2alpha0.05_sorted)),
                  Feature = rep(pt1eu_otherNamesPlot_sorted, 6),
                  log2ObsExp = c(pt1eu_log2ObsExp_sorted,
                                 pt1hetero_log2ObsExp_sorted,
@@ -473,9 +478,9 @@ bp <- ggplot(data = df,
                     values = c("purple4", "purple1",
                                "dodgerblue4", "dodgerblue1",
                                "darkgreen", "limegreen"),
-                    labels = c(pt1Names,
-                               pt2Names,
-                               pt3Names)) +
+                    labels = c(pt1NamesPlot,
+                               pt2NamesPlot,
+                               pt3NamesPlot)) +
   geom_point(mapping = aes(Feature, log2alpha0.05),
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 14) +
