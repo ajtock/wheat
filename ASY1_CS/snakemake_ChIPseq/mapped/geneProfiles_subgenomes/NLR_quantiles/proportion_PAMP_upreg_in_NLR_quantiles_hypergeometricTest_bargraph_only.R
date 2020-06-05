@@ -52,7 +52,7 @@ makeTransparent <- function(thisColour, alpha = 180)
   })
 }
 
-if(libName %in% c("cMMb", "HudsonRM_all")) {
+if(libName %in% c("cMMb", "HudsonRM_all", "cluster_members")) {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
@@ -69,7 +69,7 @@ genomeNames <- c("Agenome_Bgenome_Dgenome", "Agenome", "Bgenome", "Dgenome")
 hg_list <- lapply(seq_along(genomeNames), function(y) {
   hg_list_quantile <- list() 
   for(z in quantileFirst:quantileLast) {
-    if(libName %in% c("cMMb", "HudsonRM_all")) {
+    if(libName %in% c("cMMb", "HudsonRM_all", "cluster_members")) {
     load(paste0(outDir,
                 "NLR_PAMP_upreg_gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_NLR_genes_in_", genomeNames[y], "_",
@@ -130,7 +130,7 @@ bp <- ggplot(data = bargraph_df,
                colour = quantileColours[4],
                inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-5.0, 5.0)) +
+  scale_y_continuous(limits = c(-1.0, 1.0)) +
 #  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
@@ -162,7 +162,7 @@ bp <- ggplot(data = bargraph_df,
                  "(" * .(prettyNum(samplesNum,
                                    big.mark = ",",
                                    trim = T)) ~ "samples)"))
-if(libName %in% c("cMMb", "HudsonRM_all")) {
+if(libName %in% c("cMMb", "HudsonRM_all", "cluster_members")) {
 ggsave(paste0(plotDir,
               "combined_bargraph_NLR_PAMP_upreg_gene_representation_among_", quantileLast,
               "quantiles_by_", libName, "_of_NLR_genes_in_each_subgenome_",
