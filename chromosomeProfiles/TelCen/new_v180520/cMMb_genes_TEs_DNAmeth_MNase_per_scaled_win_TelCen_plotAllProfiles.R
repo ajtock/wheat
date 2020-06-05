@@ -80,7 +80,7 @@ TelCenSDs <- mclapply(seq_along(TelCenDFs), function(x) {
 }, mc.cores = length(TelCenDFs))
 
 # Function to plot telomere to centromere (Tel-Cen)
-# log2(markChIP/markControl) profiles 
+# log2(markChIP/markControl) profiles
 TelCenPlot <- function(xplot,
                        profiles,
                        proportions,
@@ -92,7 +92,7 @@ TelCenPlot <- function(xplot,
                        legendLocx,
                        legendLocy) {
   # Right y-axis
-  plot(xplot, profiles[[1]], type = "l", lwd = 4, col = profileColours[1],
+  plot(xplot, profiles[[1]], type = "l", lwd = 3, lty = 1, col = profileColours[1],
        ylim = c(min(profiles[[1]], na.rm = T),
                 max(profiles[[1]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -100,7 +100,7 @@ TelCenPlot <- function(xplot,
   axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[1], col.axis = profileColours[1], line = 0.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[2]], type = "l", lwd = 4, col = profileColours[2],
+  plot(xplot, profiles[[2]], type = "l", lwd = 3, lty = 1, col = profileColours[2],
        ylim = c(min(profiles[[2]], na.rm = T),
                 max(profiles[[2]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -108,7 +108,7 @@ TelCenPlot <- function(xplot,
   axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[3]], type = "l", lwd = 4, col = profileColours[3],
+  plot(xplot, profiles[[3]], type = "l", lwd = 3, lty = 1, col = profileColours[3],
        ylim = c(min(profiles[[3]], na.rm = T),
                 max(profiles[[3]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -116,7 +116,7 @@ TelCenPlot <- function(xplot,
   axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[3], col.axis = profileColours[3], line = 3.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[4]], type = "l", lwd = 4, col = profileColours[4],
+  plot(xplot, profiles[[4]], type = "l", lwd = 3, lty = 1, col = profileColours[4],
        ylim = c(min(profiles[[4]], na.rm = T),
                 max(profiles[[4]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -128,7 +128,7 @@ TelCenPlot <- function(xplot,
 
   # Left y-axis
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[5]], type = "l", lwd = 4, col = profileColours[5],
+  plot(xplot, profiles[[5]], type = "l", lwd = 3, lty = 1, col = profileColours[5],
        ylim = c(min(profiles[[5]], na.rm = T),
                 max(profiles[[5]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -136,7 +136,7 @@ TelCenPlot <- function(xplot,
   axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[5], col.axis = profileColours[5], line = 0.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[6]], type = "l", lwd = 4, col = profileColours[6],
+  plot(xplot, profiles[[6]], type = "l", lwd = 3, lty = 1, col = profileColours[6],
        ylim = c(min(profiles[[6]], na.rm = T),
                 max(profiles[[6]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -144,7 +144,7 @@ TelCenPlot <- function(xplot,
   axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[6], col.axis = profileColours[6], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[7]], type = "l", lwd = 4, col = profileColours[7],
+  plot(xplot, profiles[[7]], type = "l", lwd = 3, lty = 1, col = profileColours[7],
        ylim = c(min(profiles[[7]], na.rm = T),
                 max(profiles[[7]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -152,7 +152,7 @@ TelCenPlot <- function(xplot,
   axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[7], col.axis = profileColours[7], line = 3.5)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[8]], type = "l", lwd = 4, col = profileColours[8],
+  plot(xplot, profiles[[8]], type = "l", lwd = 3, lty = 1, col = profileColours[8],
        ylim = c(min(profiles[[8]], na.rm = T),
                 max(profiles[[8]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -178,7 +178,6 @@ TelCenPlot <- function(xplot,
          text.font = c(rep(1, times = 9)),
          ncol = 2, cex = 0.6, lwd = 1.5, bty = "n")
 }
-
 
 # Calculate moving average of current window,
 #### (N/2) previous windows (where N is even) OR
