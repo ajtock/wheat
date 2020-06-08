@@ -31,16 +31,27 @@ library(grid)
 library(gridExtra)
 library(extrafont)
 
+
+if(libName %in% c("cMMb")) {
+outDir <- paste0("quantiles_by_", libName, "/")
+} else {
 outDir <- paste0("quantiles_by_log2_", libName,
                  "_control_in_", region, "/")
+}
 plotDir <- paste0(outDir, "plots/")
 system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define plot titles
+if(libName %in% c("cMMb")) {
+featureNamePlot <- paste0("cM/Mb ",
+                          substr(featureName[1], start = 1, stop = 4),
+                          " quantiles (", region, ")")
+} else {
 featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles (", region, ")")
+}
 ranFeatNamePlot <- paste0("Random ",
                           substr(featureName[1], start = 1, stop = 4),
                           " quantiles")
@@ -48,7 +59,7 @@ ranFeatNamePlot <- paste0("Random ",
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -66,6 +77,15 @@ chrs <- paste0(rep("chr", 21), rep(1:7, 3),
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
+if(libName %in% c("cMMb")) {
+featuresDF <- read.table(paste0(outDir, "WesternEurope/features_", quantiles, "quantiles",
+                                "_by_", libName, "_of_",
+                                substring(featureName[1][1], first = 1, last = 5), "_in_",
+                                paste0(substring(featureName, first = 10, last = 16),
+                                       collapse = "_"), "_",
+                                substring(featureName[1][1], first = 18), "_WesternEurope.txt"),
+                         header = T, sep = "\t")
+} else {
 featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                 "_by_log2_", libName, "_control_in_",
                                 region, "_of_",
@@ -74,6 +94,7 @@ featuresDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
                                        collapse = "_"), "_",
                                 substring(featureName[1][1], first = 18), ".txt"),
                          header = T, sep = "\t")
+}
 ## Load table of ranLocs grouped according to feature quantiles
 #ranLocsDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
 #                               "_by_log2_", libName, "_control_in_",
@@ -380,12 +401,24 @@ ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
                                  ggObjGA_ranFeat_mean,
                                  ncol = 2, as.table = F)
+if(libName %in% c("cMMb")) {
+ggsave(paste0(plotDir,
+              "cMMb_around_", quantiles, "quantiles",
+              "_by_", libName, "_of_",
+              substring(featureName[1][1], first = 1, last = 5), "_in_",
+              paste0(substring(featureName, first = 10, last = 16),
+                     collapse = "_"), "_",
+              substring(featureName[1][1], first = 18), "_v080620.pdf"),
+       plot = ggObjGA_combined,
+       height = 13, width = 14)
+} else {
 ggsave(paste0(plotDir,
               "cMMb_around_", quantiles, "quantiles",
               "_by_log2_", libName, "_control_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 5), "_in_",
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 18), "_v030420.pdf"),
+              substring(featureName[1][1], first = 18), "_v080620.pdf"),
        plot = ggObjGA_combined,
        height = 13, width = 14)
+}
