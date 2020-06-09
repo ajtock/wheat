@@ -125,7 +125,7 @@ ranFeatNamePlot <- paste0("Random ",
 
 # Define quantile colours
 quantileColours <- c("red", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -493,7 +493,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v070320.pdf"),
+                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v080620.pdf"),
          plot = ggObjGA_combined,
          height = 13, width = 14)
 } else {  
@@ -503,7 +503,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v070320.pdf"),
+                substring(featureName[1][1], first = 18), "_", pop_name[x], "_v080620.pdf"),
          plot = ggObjGA_combined,
          height = 13, width = 14)
 }

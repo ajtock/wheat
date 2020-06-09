@@ -1,24 +1,24 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Plot density profiles and  boxplots of population genetics statistics for each gene quantile; e.g.,
-# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
+# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_genes/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_genes_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.3f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot.R ASY1_CS_Rep1_ChIP ASY1 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.3f' 0.65
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#region <- "promoters"
+#region <- "genes"
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
@@ -126,7 +126,7 @@ ranFeatNamePlot <- paste0("Random ",
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {

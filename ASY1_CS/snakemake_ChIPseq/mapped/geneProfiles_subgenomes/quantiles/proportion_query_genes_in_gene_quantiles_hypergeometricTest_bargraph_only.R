@@ -124,25 +124,25 @@ bp <- ggplot(data = bargraph_df,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
              shape = "-", colour  = "grey80", size = 20) +
-  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
-                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
+                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
                colour = quantileColours[1],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
-                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
+                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
                colour = quantileColours[2],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
-                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
+                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
                colour = quantileColours[3],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
-                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
+  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
+                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
                colour = quantileColours[4],
                inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
 #  scale_y_continuous(limits = c(-3.2, 3.2)) +
-  scale_y_continuous(limits = c(-1.5, 1.5)) +
+  scale_y_continuous(limits = c(-0.5, 0.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
