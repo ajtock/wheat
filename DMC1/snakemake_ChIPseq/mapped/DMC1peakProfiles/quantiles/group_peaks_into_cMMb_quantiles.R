@@ -174,8 +174,6 @@ mclapply(seq_along(orderingFactor), function(w) {
   }
   if(grepl("HudsonRM", orderingFactor[w])) {
     quantiles <- 2
-  } else {
-    quantiles <- 4
   }
   quantilesStats <- data.frame()
   for(k in 1:quantiles) {
