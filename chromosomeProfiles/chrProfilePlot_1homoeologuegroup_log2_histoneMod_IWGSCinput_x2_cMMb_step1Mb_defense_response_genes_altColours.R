@@ -5,9 +5,9 @@
 # Change xblocks height to 0.62 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -23,7 +23,7 @@
 #N <- 15
 #colourA <- "dodgerblue"
 #colourB <- "limegreen"
-#date <- "220520"
+#date <- "180620"
 #superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -474,52 +474,52 @@ maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
                               "200bp_", winName, "_unsmoothed.txt"),
                        header = T)
-#featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
-#                              "200bp_", winName, "_unsmoothed.txt"),
-#                       header = T)
-featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/defense_response_gene_frequency_per_",
-                              winName, "_unsmoothed.txt"),
+featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
+                              "200bp_10Mb_step1Mb.txt"),
                        header = T)
-colnames(featureB) <- c("chr", "window", "features")
+colnames(featureA) <- c("chr", "window", "winEnd", "filt_feature")
+featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/defense_response_gene_frequency_per_10Mb_step1Mb.txt"),
+                       header = T)
+colnames(featureB) <- c("chr", "window", "filt_feature")
 
-chrProfilesFeatureA <- mclapply(seq_along(chrs), function(x) {
+filt_chrProfilesFeatureA <- mclapply(seq_along(chrs), function(x) {
   featureA[featureA$chr == chrs[x],]
 }, mc.cores = length(chrs))
 
-filt_chrProfilesFeatureA <- mclapply(seq_along(chrProfilesFeatureA), function(x) {
-  filt_chrProfileFeatureA <- stats::filter(x = chrProfilesFeatureA[[x]]$cMMb,
-                                           filter = f,
-                                           sides = 2)
-  # Given missing cM/Mb data for some of the more distal windows,
-  # need a different way of extending the leftmost and rightmost
-  # non-NA values to the ends of each chromosome, replacing NAs where they are present
-  leftFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) < N*2]
-  rightFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) > N*2]
-  filt_chrProfileFeatureA[leftFlank] <- filt_chrProfileFeatureA[leftFlank[length(leftFlank)]+1]
-  filt_chrProfileFeatureA[rightFlank] <- filt_chrProfileFeatureA[rightFlank[1]-1]
-#  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
-#  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
-  data.frame(chr = as.character(chrProfilesFeatureA[[x]]$chr),
-             window = as.integer(chrProfilesFeatureA[[x]]$windowStart),
-             filt_feature = as.numeric(filt_chrProfileFeatureA),
-             stringsAsFactors = F)
-}, mc.cores = length(chrProfilesFeatureA))
+#filt_chrProfilesFeatureA <- mclapply(seq_along(chrProfilesFeatureA), function(x) {
+#  filt_chrProfileFeatureA <- stats::filter(x = chrProfilesFeatureA[[x]]$cMMb,
+#                                           filter = f,
+#                                           sides = 2)
+#  # Given missing cM/Mb data for some of the more distal windows,
+#  # need a different way of extending the leftmost and rightmost
+#  # non-NA values to the ends of each chromosome, replacing NAs where they are present
+#  leftFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) < N*2]
+#  rightFlank <- which(is.na(filt_chrProfileFeatureA))[which(is.na(filt_chrProfileFeatureA)) > N*2]
+#  filt_chrProfileFeatureA[leftFlank] <- filt_chrProfileFeatureA[leftFlank[length(leftFlank)]+1]
+#  filt_chrProfileFeatureA[rightFlank] <- filt_chrProfileFeatureA[rightFlank[1]-1]
+##  filt_chrProfileFeatureA[1:flank] <- filt_chrProfileFeatureA[flank+1]
+##  filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank+1):length(filt_chrProfileFeatureA)] <- filt_chrProfileFeatureA[(length(filt_chrProfileFeatureA)-flank)]
+#  data.frame(chr = as.character(chrProfilesFeatureA[[x]]$chr),
+#             window = as.integer(chrProfilesFeatureA[[x]]$windowStart),
+#             filt_feature = as.numeric(filt_chrProfileFeatureA),
+#             stringsAsFactors = F)
+#}, mc.cores = length(chrProfilesFeatureA))
 
-chrProfilesFeatureB <- mclapply(seq_along(chrs), function(x) {
+filt_chrProfilesFeatureB <- mclapply(seq_along(chrs), function(x) {
   featureB[featureB$chr == chrs[x],]
 }, mc.cores = length(chrs))
 
-filt_chrProfilesFeatureB <- mclapply(seq_along(chrProfilesFeatureB), function(x) {
-  filt_chrProfileFeatureB <- stats::filter(x = chrProfilesFeatureB[[x]]$features,
-                                           filter = f,
-                                           sides = 2)
-  filt_chrProfileFeatureB[1:flank] <- filt_chrProfileFeatureB[flank+1]
-  filt_chrProfileFeatureB[(length(filt_chrProfileFeatureB)-flank+1):length(filt_chrProfileFeatureB)] <- filt_chrProfileFeatureB[(length(filt_chrProfileFeatureB)-flank)]
-  data.frame(chr = as.character(chrProfilesFeatureB[[x]]$chr),
-             window = as.integer(chrProfilesFeatureB[[x]]$window),
-             filt_feature = as.numeric(filt_chrProfileFeatureB),
-             stringsAsFactors = F)
-}, mc.cores = length(chrProfilesFeatureB))
+#filt_chrProfilesFeatureB <- mclapply(seq_along(chrProfilesFeatureB), function(x) {
+#  filt_chrProfileFeatureB <- stats::filter(x = chrProfilesFeatureB[[x]]$features,
+#                                           filter = f,
+#                                           sides = 2)
+#  filt_chrProfileFeatureB[1:flank] <- filt_chrProfileFeatureB[flank+1]
+#  filt_chrProfileFeatureB[(length(filt_chrProfileFeatureB)-flank+1):length(filt_chrProfileFeatureB)] <- filt_chrProfileFeatureB[(length(filt_chrProfileFeatureB)-flank)]
+#  data.frame(chr = as.character(chrProfilesFeatureB[[x]]$chr),
+#             window = as.integer(chrProfilesFeatureB[[x]]$window),
+#             filt_feature = as.numeric(filt_chrProfileFeatureB),
+#             stringsAsFactors = F)
+#}, mc.cores = length(chrProfilesFeatureB))
 
 minFeatureA_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesFeatureA),
   function(x) {
@@ -562,7 +562,7 @@ pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_v", date, ".pdf"),
+           "_CSxParagon_step1Mb_v", date, ".pdf"),
     height = 4, width = 10*length(chrName))
 par(mfrow = c(1, length(chrName)))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
@@ -605,7 +605,7 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_v", date, ".pdf"),
+           "_CSxParagon_step1Mb_v", date, ".pdf"),
     height = 4*7, width = 10*3)
 par(mfrow = c(7, 3))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
