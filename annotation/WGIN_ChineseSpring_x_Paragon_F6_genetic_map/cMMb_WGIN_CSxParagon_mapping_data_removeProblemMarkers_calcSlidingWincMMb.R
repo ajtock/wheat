@@ -1,18 +1,20 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./cMMb_WGIN_CSxParagon_mapping_data_removeProblemMarkers_calcAdjacentWincMMb.R 1Mb 1000000 200 15
+# ./cMMb_WGIN_CSxParagon_mapping_data_removeProblemMarkers_calcSlidingWincMMb.R 10Mb 10000000 1Mb 1000000 1
 
-#winName <- "1Mb"
-#winSize <- 1000000
-#minMarkerDist <- 200
-#N <- 15
+#winName <- "10Mb"
+#winSize <- 10000000
+#stepName <- "1Mb"
+#stepSize <- 1000000
+#minMarkerDist <- 1
 
 args <- commandArgs(trailingOnly = T)
 winName <- args[1]
 winSize <- as.numeric(args[2])
-minMarkerDist <- as.numeric(args[3])
-N <- as.numeric(args[4])
+stepName <- args[3]
+stepSize <- as.numeric(args[4])
+minMarkerDist <- as.numeric(args[5])
 
 library(parallel)
 library(doParallel)
@@ -63,29 +65,56 @@ physicalDelta <- NULL
 geneticDelta <- NULL
 for(i in 1:length(chrs)) {
   mapChr <- map[map$chromosome == chrs[i],]
-  
-  # Keep second marker in a pair of markers with an inter-marker distance >= minMarkerDist bp
-  # and with a genetic distance >= 0 cM
   mapChrMMD <-  mapChr[1,]
-  for(x in 2:dim(mapChr)[1]) {
+  # Initiate x at 2 to iterate over mapChr markers from
+  # marker 2 to third-from-last marker ( dim(mapChr)[1]-1 )
+  x <- 2
+  while(x < (dim(mapChr)[1]-1)) {
+    # Filter markers so that marker x is retained when the the following conditions are met:
+    #                       the physical distance between each pair of markers is >= minMarkerDist AND
+    #                   ( ( the genetic distance between between a marker [x] and the preceding marker [x-1] is >= 0 cM AND
+    #                       the genetic distance between between the next marker [x+1] and the original marker [x] is >= 0 cM ) OR
+    #                     ( the genetic distance between between a marker [x] and the preceding marker [x-1] is >= 0 cM AND
+    #                       the genetic distance between between the next, next marker [x+2] and the original marker [x] is >= 0 cM ) )
+    # The x+2 provision enables retention of marker x that has a cM position
+    # greater than that of x+1 but less than or equal to that of x+2
+    # I.e., rather than identifying and removing marker x as spurious,
+    # this provision enables identification and removal of marker x+1 as spurious
+    # where the cM position of x+1 is less than that of x AND greater than that of x+2 OR x+3
     mapChrRow <- mapChr[x,][mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1] >= minMarkerDist &
-                            mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0,]
-    mapChrMMD <- rbind(mapChrMMD, mapChrRow)
+                        ( ( mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0 &
+                            mapChr$geneticPosition[x+1]-mapChr$geneticPosition[x] >= 0 ) |
+                          ( mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0 &
+                            mapChr$geneticPosition[x+2]-mapChr$geneticPosition[x] >= 0 ) ),]
+    if(dim(mapChrRow)[1] != 0) {
+      mapChrMMD <- rbind(mapChrMMD, mapChrRow)
+      mapChr <- rbind(mapChrMMD, mapChr[(x+1):(dim(mapChr)[1]),])
+      x <- x+1 
+    } else {
+      mapChr <- rbind(mapChrMMD, mapChr[(x+1):(dim(mapChr)[1]),])
+    }
   }
-  mapMMD <- rbind(mapMMD, mapChrMMD)
+  # Deal with final marker
+  x <- dim(mapChr)[1]
+  mapChrRow <- mapChr[x,][mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1] >= minMarkerDist &
+                          mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0,]
+  if(dim(mapChrRow)[1] == 0) {
+    mapChr <- mapChr[-x,]
+  }
+  mapMMD <- rbind(mapMMD, mapChr)
 
   physicalDeltaChr <- as.numeric(sapply(seq(from = 1,
-                                            to = dim(mapChrMMD)[1]),
+                                            to = dim(mapChr)[1]),
     function(x) {
-      mapChrMMD$physicalPosition[x]-mapChrMMD$physicalPosition[x-1]
+      mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1]
     }
   ))
   physicalDelta <- c(physicalDelta, physicalDeltaChr)
 
   geneticDeltaChr <- as.numeric(sapply(seq(from = 1,
-                                           to = dim(mapChrMMD)[1]),
+                                           to = dim(mapChr)[1]),
     function(x) {
-      mapChrMMD$geneticPosition[x]-mapChrMMD$geneticPosition[x-1]
+      mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1]
     }
   ))
   geneticDelta <- c(geneticDelta, geneticDeltaChr)
@@ -101,7 +130,7 @@ print(paste0("Number of markers with inter-marker genetic distances >= 0 and phy
 print(dim(map_cMMb)[1])
 #[1] 7908
 
-# Remove second marker for 557 marker pairs with negative genetic distances
+# Remove second marker for 582 marker pairs with negative genetic distances
 map_cMMb <- map_cMMb[is.na(map_cMMb$geneticDelta) | map_cMMb$geneticDelta >= 0,]
 print("Number of markers with positive inter-marker genetic distances")
 print(dim(map_cMMb)[1])
