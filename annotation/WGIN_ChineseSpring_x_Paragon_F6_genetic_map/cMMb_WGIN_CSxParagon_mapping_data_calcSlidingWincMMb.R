@@ -1,7 +1,7 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Usage:
-# ./cMMb_WGIN_CSxParagon_mapping_data_removeProblemMarkers_calcSlidingWincMMb.R 10Mb 10000000 1Mb 1000000 1
+# ./cMMb_WGIN_CSxParagon_mapping_data_calcSlidingWincMMb.R 10Mb 10000000 1Mb 1000000 1
 
 #winName <- "10Mb"
 #winSize <- 10000000
@@ -67,11 +67,9 @@ for(i in 1:length(chrs)) {
   mapChr <- map[map$chromosome == chrs[i],]
   
   # Keep second marker in a pair of markers with an inter-marker distance >= minMarkerDist bp
-  # and with a genetic distance >= 0 cM
   mapChrMMD <-  mapChr[1,]
   for(x in 2:dim(mapChr)[1]) {
-    mapChrRow <- mapChr[x,][mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1] >= minMarkerDist &
-                            mapChr$geneticPosition[x]-mapChr$geneticPosition[x-1] >= 0,]
+    mapChrRow <- mapChr[x,][mapChr$physicalPosition[x]-mapChr$physicalPosition[x-1] >= minMarkerDist,]
     mapChrMMD <- rbind(mapChrMMD, mapChrRow)
   }
   mapMMD <- rbind(mapMMD, mapChrMMD)
@@ -101,16 +99,6 @@ map_cMMb <- data.frame(mapMMD,
 print(paste0("Number of markers with physical distances >= ",
              minMarkerDist, " bp"))
 print(dim(map_cMMb)[1])
-#[1] 8450
-
-# Remove second marker for 557 marker pairs with negative genetic distances
-map_cMMb <- map_cMMb[is.na(map_cMMb$geneticDelta) | map_cMMb$geneticDelta >= 0,]
-print("Number of markers with positive inter-marker genetic distances")
-print(dim(map_cMMb)[1])
-#[1] 7868
-
-## Remove second marker for pairs of markers with physical distances < minMarkerDist bp
-#map_cMMb <- map_cMMb[is.na(map_cMMb$physicalDelta) | map_cMMb$physicalDelta >= minMarkerDist,]
 
 windowsGR <- GRanges()
 for(i in 1:length(chrs)) {
