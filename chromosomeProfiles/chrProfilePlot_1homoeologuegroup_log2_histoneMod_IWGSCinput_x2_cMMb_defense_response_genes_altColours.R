@@ -472,7 +472,7 @@ maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
 
 # Feature frequency chromosome profiles
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                              "200bp_", winName, "_unsmoothed"),
+                              "200bp_", winName, "_unsmoothed.txt"),
                        header = T)
 #featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
 #                              "200bp_", winName, "_unsmoothed.txt"),
