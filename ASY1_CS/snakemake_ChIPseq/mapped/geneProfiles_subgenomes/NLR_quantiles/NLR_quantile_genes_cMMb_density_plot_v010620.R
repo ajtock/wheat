@@ -34,9 +34,15 @@ system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Define plot titles
-featureNamePlot <- paste0(substr(featureName[1], start = 1, stop = 3),
-                          " cluster size",
-                          " quantiles")
+if(libName == "cMMb") {
+  featureNamePlot <- paste0("cM/Mb ",
+                            substr(featureName[1], start = 1, stop = 3),
+                            " quantiles")
+} else if(libName == "cluster_members") {
+  featureNamePlot <- paste0(substr(featureName[1], start = 1, stop = 3),
+                            " cluster size",
+                            " quantiles")
+}
 ranFeatNamePlot <- paste0("Random ",
                           substr(featureName[1], start = 1, stop = 3),
                           " quantiles")
@@ -44,7 +50,7 @@ ranFeatNamePlot <- paste0("Random ",
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -327,7 +333,7 @@ cMMb_meanCIs <- function(dataFrame,
                 width = 0.2, size = 2, position = position_dodge(width = 0.2)) +
   scale_colour_manual(values = quantileColours) +
   scale_y_continuous(limits = c(summary_stats_min, summary_stats_max),
-                     labels = function(x) sprintf("%1.2f", x)) +
+                     labels = function(x) sprintf("%1.1f", x)) +
 #  scale_x_discrete(breaks = as.vector(dataFrame$NLR_quantile),
 #                   labels = as.vector(dataFrame$NLR_quantile)) +
   labs(x = "",
