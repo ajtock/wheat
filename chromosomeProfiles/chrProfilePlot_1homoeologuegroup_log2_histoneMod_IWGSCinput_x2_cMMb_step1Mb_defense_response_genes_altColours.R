@@ -472,11 +472,11 @@ maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
 
 # Feature frequency chromosome profiles
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                              "200bp_", winName, "_unsmoothed.txt"),
+                              "200bp_10Mb_step1Mb_alt.txt"),
                        header = T)
-featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
-                              "200bp_10Mb_step1Mb.txt"),
-                       header = T)
+#featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
+#                              "200bp_10Mb_step1Mb_alt.txt"),
+#                       header = T)
 colnames(featureA) <- c("chr", "window", "winEnd", "filt_feature")
 featureB <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/genes/defense_response_gene_frequency_per_10Mb_step1Mb.txt"),
                        header = T)
@@ -562,7 +562,7 @@ pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxParagon_step1Mb_v", date, ".pdf"),
+           "_CSxRenan_step1Mb_v", date, ".pdf"),
     height = 4, width = 10*length(chrName))
 par(mfrow = c(1, length(chrName)))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
@@ -588,8 +588,8 @@ for(x in which(chrs %in% chrName)) {
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 #col2A = "steelblue2",
-                                #col2A = "darkorange2",
-                                col2A = "cyan2",
+                                col2A = "darkorange2",
+                                #col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "purple4",
                                 col2B = "darkgreen",
@@ -605,7 +605,7 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxParagon_step1Mb_v", date, ".pdf"),
+           "_CSxRenan_step1Mb_v", date, ".pdf"),
     height = 4*7, width = 10*3)
 par(mfrow = c(7, 3))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
@@ -631,8 +631,8 @@ for(x in which(chrs %in% chrs)) {
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 #col2A = "steelblue2",
-                                #col2A = "darkorange2",
-                                col2A = "cyan2",
+                                col2A = "darkorange2",
+                                #col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "purple4",
                                 col2B = "darkgreen",

@@ -5,9 +5,9 @@
 # Change xblocks height to 0.62 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 220520 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_defense_response_genes_altColours.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 180620 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -23,7 +23,7 @@
 #N <- 15
 #colourA <- "dodgerblue"
 #colourB <- "limegreen"
-#date <- "220520"
+#date <- "180620"
 #superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -472,7 +472,7 @@ maxCPMB <- max(unlist(mclapply(which(chrs %in% chrName),
 
 # Feature frequency chromosome profiles
 featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
-                              "200bp_", winName, "_unsmoothed.txt"),
+                              "200bp_", winName, "_unsmoothed"),
                        header = T)
 #featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_WGIN_CSxParagon_mapping_data_minInterMarkerDist",
 #                              "200bp_", winName, "_unsmoothed.txt"),
@@ -588,8 +588,8 @@ for(x in which(chrs %in% chrName)) {
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 #col2A = "steelblue2",
-                                #col2A = "darkorange2",
-                                col2A = "cyan2",
+                                col2A = "darkorange2",
+                                #col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "purple4",
                                 col2B = "darkgreen",
@@ -631,8 +631,8 @@ for(x in which(chrs %in% chrs)) {
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 #col2A = "steelblue2",
-                                #col2A = "darkorange2",
-                                col2A = "cyan2",
+                                col2A = "darkorange2",
+                                #col2A = "cyan2",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 #col2B = "purple4",
                                 col2B = "darkgreen",
