@@ -5,7 +5,7 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_Steuernagel_NLR_genes_complete_and_meiotic_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 4 100kb 1 '0.02,0.96'
+# /applications/R/R-3.5.0/bin/Rscript quantile_Steuernagel_NLR_genes_complete_response_to_cold_genes_and_meiotic_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 4 100kb 1 '0.02,0.96'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -80,7 +80,7 @@ system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 subcat1NamePlot <- paste0("NLRs in ",
                           sub("_\\w+", "", dirName),
                           " quantiles")
-subcat2NamePlot <- paste0("Defense in ",
+subcat2NamePlot <- paste0("ColdRes in ",
                          sub("_\\w+", "", dirName),
                          " quantiles")
 subcat3NamePlot <- paste0("Meiotic in ",
@@ -187,39 +187,16 @@ subcat1c_IDs <- sort(unique(c(IPSanno[grepl("NB-ARC", IPSanno$`Interpro-IDs-(Des
                               IPSanno[grepl("TIR", IPSanno$`Interpro-IDs-(Description)`),]$`Gene-ID`)))
 
 # Load subcat2
-## Load regions associated with local_adaptation (LARs)
-#LARs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
-#                          "Table_S10_41588_2019_382_MOESM10_ESM.tsv"),
-#                   header = T, sep = "\t", stringsAsFactors = F)
-#colnames(LARs) <- c("chr", "start", "end", "num_top_SNPs", "env_vars", "num_env_vars")
-#LARsGR <- GRanges(seqnames = LARs$chr,
-#                  ranges = IRanges(start = LARs$start,
-#                                   end = LARs$end),
-#                  strand = "*",
-#                  env_vars = LARs$env_vars)
-#featuresGR <- GRanges(seqnames = featuresDF$seqnames,
-#                      ranges = IRanges(start = featuresDF$start,
-#                                       end = featuresDF$end),
-#                      strand = featuresDF$strand,
-#                      featureID = featuresDF$featureID,
-#                      quantile = featuresDF$quantile)
-#LARsGR_featuresGR_overlap <- findOverlaps(query = LARsGR,
-#                                          subject = featuresGR,
-#                                          type = "any",
-#                                          select = "all",
-#                                          ignore.strand = T)
-#subcat2 <- featuresGR[unique(subjectHits(LARsGR_featuresGR_overlap))]
-# Load functional annotation in order to extract defense response genes
+# Load functional annotation in order to extract "response to cold" genes
 anno <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzalez_2018_Science_GO_anno/",
                           "RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_Bgenome_Dgenome_genomewide_GO_IDs_no_chrUn.tsv"),
                    sep = "\t", stringsAsFactors = F)
 colnames(anno) <- c("featureID", "GO")
-defense_response_indices <- which(grepl(pattern = "GO:0006952", x = anno$GO))
-defense_response_indices <- sort(unique(c(defense_response_indices)))
-# Retain only defense response genes
-# Get defense response gene IDs and their row indices in features
-subcat2_IDs <- anno[defense_response_indices,]$featureID
-subcat2_IDs <- subcat2_IDs[!(subcat2_IDs %in% unique(c(subcat1b_IDs, subcat1c_IDs)))]
+response_to_cold_indices <- which(grepl(pattern = "GO:0009409", x = anno$GO))
+response_to_cold_indices <- sort(unique(c(response_to_cold_indices)))
+# Retain only "response to cold" genes
+# Get "response to cold" gene IDs and their row indices in features
+subcat2_IDs <- anno[response_to_cold_indices,]$featureID
 subcat2_ID_indices <- which(featureIDs %in% subcat2_IDs)
 
 # Load subcat3
@@ -1497,7 +1474,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -1507,7 +1484,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -2349,7 +2326,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -2359,7 +2336,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -3194,7 +3171,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -3204,7 +3181,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4040,7 +4017,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -4050,7 +4027,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4914,7 +4891,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -4924,7 +4901,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5803,7 +5780,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5813,7 +5790,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5904,7 +5881,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5914,7 +5891,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Cold_response_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 }

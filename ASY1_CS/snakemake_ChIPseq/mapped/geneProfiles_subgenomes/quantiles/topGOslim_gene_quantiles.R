@@ -33,7 +33,15 @@ region <- args[6]
 genomeName <- args[7]
 
 suppressMessages(library(topGO))
-suppressMessages(library(Rgraphviz))
+# Uninstalled Rgraphviz in R user directory due to following error
+# that occurred following OS update
+# See https://stackoverflow.com/questions/62334452/fast-math-cause-undefined-reference-to-pow-finite
+#suppressMessages(library(Rgraphviz))
+#Error: package or namespace load failed for ‘Rgraphviz’:
+#.onLoad failed in loadNamespace() for 'Rgraphviz', details:
+#call: value[[3L]](cond) error: unable to load shared object '/home/ajt200/R/x86_64-pc-linux-gnu-library/3.5/Rgraphviz/libs/Rgraphviz.so':
+#/home/ajt200/R/x86_64-pc-linux-gnu-library/3.5/Rgraphviz/libs/Rgraphviz.so: undefined symbol:  <- pow_finite
+# Rgraphviz is unable to be loaded.  This typically is a symptom of an installation problem.  From 2.x.x onwards, Graphviz ought to come bundled with Rgraphviz.
 
 targets <- lapply(seq_along(quantileFirst:quantileLast), function(x) {
   paste0("quantiles_by_", quantileBy, "/",
@@ -114,10 +122,10 @@ genesetGO <- function(target) {
                              row.names = FALSE, col.names = TRUE, quote = FALSE),
                  file="/dev/null")
   
-  # Visualise the positions of the top 5 statistically significant GOslim terms in the GO hierarchy
-  out_name2 <- paste(basename, "GOslim", ont, "enrichment", sep="_")
-  printGraph(GOdata, resultTopGO, firstSigNodes = 5,
-             fn.prefix = file.path(folder, out_name2), useInfo = "all", pdfSW = TRUE)
+  ## Visualise the positions of the top 5 statistically significant GOslim terms in the GO hierarchy
+  #out_name2 <- paste(basename, "GOslim", ont, "enrichment", sep="_")
+  #printGraph(GOdata, resultTopGO, firstSigNodes = 5,
+  #           fn.prefix = file.path(folder, out_name2), useInfo = "all", pdfSW = TRUE)
   
   # Extract gene IDs annotated with significantly enriched GOslim terms
   myTerms <- enrichRes$GO.ID

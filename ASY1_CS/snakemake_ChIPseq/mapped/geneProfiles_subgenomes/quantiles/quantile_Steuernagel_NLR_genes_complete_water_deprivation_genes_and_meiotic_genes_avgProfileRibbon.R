@@ -1474,7 +1474,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -1484,7 +1484,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -2326,7 +2326,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -2336,7 +2336,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -3171,7 +3171,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -3181,7 +3181,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4017,7 +4017,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -4027,7 +4027,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4891,7 +4891,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -4901,7 +4901,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5780,7 +5780,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5790,7 +5790,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5881,7 +5881,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5891,7 +5891,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v300320.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Drought_Meiotic_genes_v190620.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 }

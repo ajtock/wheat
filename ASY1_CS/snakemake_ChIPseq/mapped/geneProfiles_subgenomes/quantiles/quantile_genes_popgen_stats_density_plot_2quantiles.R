@@ -4,19 +4,21 @@
 # quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 2 TajimaD_all "Tajima's D" 0.99 0.2 '%1.1f' '%1.1f' '%1.2f' 0.65
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 2 RozasR2_all "Rozas' R 2" 0.90 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 CLR_all "CLR" 0.90 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 2 CLR_all "CLR" 0.95 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
-#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' bodies 2 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.2f' 0.65
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 2 nucleotideDiversity_all "Diversity pi" 0.80 0.2 '%1.3f' '%3.0f' '%1.2f' 0.65
+
+#/applications/R/R-3.5.0/bin/Rscript quantile_genes_popgen_stats_density_plot_2quantiles.R HudsonRM_all HudsonRM_all 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 2 nSegregatingSites_all "Norm. seg. sites" 0.99 0.05 '%1.1f' '%1.1f' '%1.1f' 0.65
 
 #libName <- "HudsonRM_all"
 #dirName <- "HudsonRM_all"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#region <- "bodies"
+#region <- "genes"
 #quantiles <- 2
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"

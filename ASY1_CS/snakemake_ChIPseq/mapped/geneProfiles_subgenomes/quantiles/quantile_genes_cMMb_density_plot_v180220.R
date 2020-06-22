@@ -1,16 +1,15 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
 # Plot boxplots and violin plots of recombination rate for each gene quantile; e.g.,
-# quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/features_4quantiles_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_Bgenome_Dgenome_genomewide.tx
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_cMMb_density_plot_v180220.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' promoters 4
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_cMMb_density_plot_v180220.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' genes 4
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#region <- "promoters"
+#region <- "genes"
 #quantiles <- 4
 
 args <- commandArgs(trailingOnly = T)
