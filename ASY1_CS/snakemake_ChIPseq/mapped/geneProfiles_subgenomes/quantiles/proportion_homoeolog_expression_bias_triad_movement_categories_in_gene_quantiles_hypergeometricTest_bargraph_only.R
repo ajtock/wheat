@@ -23,7 +23,7 @@
 # length(genome_category) [m] + ( length(genome_genes) - length(genome_category)) [n]
 
 # Usage 
-# ./proportion_homoeolog_expression_bias_categories_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' Agenome_Bgenome_Dgenome 100000
+# ./proportion_homoeolog_expression_bias_triad_movement_categories_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' Agenome_Bgenome_Dgenome 100000 6
 
 library(methods)
 library(plotrix)
@@ -42,6 +42,7 @@ library(parallel)
 #region <- "genomewide"
 #genomeName <- "Agenome_Bgenome_Dgenome"
 #samplesNum <- 100000
+#minConditions <- 6
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -51,20 +52,20 @@ quantileLast <- as.integer(args[4])
 region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
+minConditions <- as.numeric(args[8])
 
 if(libName %in% "cMMb") {
-  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
+  outDir1 <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/")
+  outDir2 <- paste0("quantiles_by_", libName, "/hypergeometricTests/triad_movement/")
 } else {
-  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                   "_in_", featRegion, "/hypergeometricTests/")
+  outDir1 <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                    "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/")
+  outDir2 <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                    "_in_", featRegion, "/hypergeometricTests/triad_movement/")
 }
-if(libName %in% "cMMb") {
-  outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/")
-} else {
-  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                   "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/")
-}
-dataset <- system(paste0("ls ", outDir), intern = T)
+dataset1 <- system(paste0("ls ", outDir1), intern = T)
+dataset2 <- system(paste0("ls ", outDir2), intern = T)
+dataset <- intersect(dataset1, dataset2)
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
@@ -81,53 +82,64 @@ makeTransparent <- function(thisColour, alpha = 180)
 # Subset genes in triads dataframe to only those within a given subgenome
 genomeLetter <- unlist(strsplit(gsub("genome", "", genomeName), split = "_"))
 if(length(genomeLetter) == 1) {
-  category_factor <- c("Balanced",
+  category_factor1 <- c("Balanced",
                        ".dominant", "non_dominant", ".suppressed", "non_suppressed")
-  category_factor_plot <- c("Balanced",
+  category_factor_plot1 <- c("Balanced",
                             "Dominant", "Non-dominant", "Suppressed", "Non-suppressed")
-  category_colour <- c("Balanced" = "#AAAAAA",
+  category_colour1 <- c("Balanced" = "#AAAAAA",
                        "Dominant" = "turquoise4", "Non-dominant" = "paleturquoise3", "Suppressed" = "lightgoldenrod", "Non-suppressed" = "goldenrod4")
 } else {
-  category_factor <- c("Balanced",
+  category_factor1 <- c("Balanced",
                        ".dominant", "non_dominant", ".suppressed", "non_suppressed",
                        "A.dominant", "B.dominant", "D.dominant",
                        "A.suppressed", "B.suppressed", "D.suppressed")
-  category_factor_plot <- c("Balanced",
+  category_factor_plot1 <- c("Balanced",
                             "Dominant", "Non-dominant", "Suppressed", "Non-suppressed",
                             "A dominant", "B dominant", "D dominant",
                             "A suppressed", "B suppressed", "D suppressed")
-  category_colour <- c("Balanced" = "#AAAAAA",
+  category_colour1 <- c("Balanced" = "#AAAAAA",
                        "Dominant" = "turquoise4", "Non-dominant" = "paleturquoise3", "Suppressed" = "lightgoldenrod", "Non-suppressed" = "goldenrod4",
                        "A dominant" = "#579D1C", "B dominant" = "#4B1F6F", "D dominant" = "#FF950E",
                        "A suppressed" = "#b2E08a", "B suppressed" = "#0eC7ff", "D suppressed" ="#ffCF0e")
 }
+
+category_factor2 <- c("stable", "middle", "dynamic")
+category_factor_plot2 <- c("Stable 10%", "Middle 80%", "Dynamic 10%")
+category_colour2 <- c("Stable 10%" = "green3", "Middle 80%" = "grey60", "Dynamic 10%" = "deeppink3")
+
+category_factor <- c(category_factor1, category_factor2)
+category_factor_plot <- c(category_factor_plot1, category_factor_plot2)
+category_colour <- c(category_colour1, category_colour2)
 
 options(scipen = 100)
 
 mclapply(seq_along(dataset), function(xx) {
 #for(xx in seq_along(dataset)) {
   if(libName %in% "cMMb") {
-    outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+    outDir1 <- paste0("quantiles_by_", libName, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+    outDir2 <- paste0("quantiles_by_", libName, "/hypergeometricTests/triad_movement/", dataset[xx], "/")
   } else {
-    outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
-                     "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+    outDir1 <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                      "_in_", featRegion, "/hypergeometricTests/homoeolog_exp_bias/", dataset[xx], "/")
+    outDir2 <- paste0("quantiles_by_", sub("_\\w+", "", libName),
+                      "_in_", featRegion, "/hypergeometricTests/triad_movement/", dataset[xx], "/")
   }
-  plotDir <- paste0(outDir, "plots/combined_bargraph/")
+  plotDir <- paste0(outDir1, "plots/combined_bargraph/")
   system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
   
   # Plot bar graph summarising permutation test results,
   # including subgenome-specific expression bias categories
-  hg_list <- lapply(seq_along(category_factor), function(y) {
+  hg_list1 <- lapply(seq_along(category_factor1), function(y) {
     hg_list_quantile <- list() 
     for(z in quantileFirst:quantileLast) {
       if(libName %in% "cMMb") {
-      load(paste0(outDir,
-                  dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
+      load(paste0(outDir1,
+                  dataset[xx], "_", category_factor1[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_", libName, "_of_genes_in_", genomeName, "_",
                   region, "_hypergeomTestRes.RData"))
       } else {
-      load(paste0(outDir,
-                  dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
+      load(paste0(outDir1,
+                  dataset[xx], "_", category_factor1[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
                   region, "_hypergeomTestRes.RData"))
       }
@@ -135,6 +147,25 @@ mclapply(seq_along(dataset), function(xx) {
     }
     return(hg_list_quantile)
   })
+  hg_list2 <- lapply(seq_along(category_factor2), function(y) {
+    hg_list_quantile <- list() 
+    for(z in quantileFirst:quantileLast) {
+      if(libName %in% "cMMb") {
+      load(paste0(outDir2,
+                  dataset[xx], "_", category_factor2[y], "_representation_among_quantile", z, "_of_", quantileLast,
+                  "_by_", libName, "_of_genes_in_", genomeName, "_",
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
+      } else {
+      load(paste0(outDir2,
+                  dataset[xx], "_", category_factor2[y], "_representation_among_quantile", z, "_of_", quantileLast,
+                  "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
+      }
+      hg_list_quantile <- c(hg_list_quantile, hgTestResults)
+    }
+    return(hg_list_quantile)
+  })
+  hg_list <- c(hg_list1, hg_list2)
   bargraph_df <- data.frame(Category = rep(category_factor_plot, each = quantileLast),
                             Quantile = rep(paste0("Quantile ", quantileFirst:quantileLast), times = length(category_factor_plot)),
                             log2ObsExp = c(sapply(seq_along(category_factor), function(y) {
@@ -205,7 +236,7 @@ mclapply(seq_along(dataset), function(xx) {
           axis.text.y = element_text(size = 40, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
           axis.title.y = element_text(size = 40, colour = "black"),
           axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size = 40, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
+          axis.text.x = element_text(size = 40, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
           axis.title.x = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
@@ -225,36 +256,39 @@ mclapply(seq_along(dataset), function(xx) {
                                      trim = T)) ~ "samples)"))
   if(libName %in% "cMMb") {
   ggsave(paste0(plotDir,
-                "combined_bargraph_", dataset[xx], "_homoeolog_expression_category_representation_among_", quantileLast,
+                "combined_bargraph_", dataset[xx], "_homoeolog_expresssion_variation_category_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes.pdf"),
          plot = bp,
-         height = 12.5, width = 30)
+         height = 12.5, width = 50, limitsize = F)
   } else {
   ggsave(paste0(plotDir,
-                "combined_bargraph_", dataset[xx], "_homoeolog_expression_category_representation_among_", quantileLast,
+                "combined_bargraph_", dataset[xx], "_homoeolog_expresssion_variation_category_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes.pdf"),
          plot = bp,
-         height = 12.5, width = 30)
+         height = 12.5, width = 50, limitsize = F)
   }
   # Plot bar graph summarising permutation test results,
   # excluding subgenome-specific expression bias categories
   if(length(genomeLetter) > 1) {
-  category_factor <- category_factor[1:5]
-  category_factor_plot <- category_factor_plot[1:5]
-  category_colour <- category_colour[1:5]
-  hg_list <- lapply(seq_along(category_factor), function(y) {
+  category_factor <- category_factor[-c(6:11)]
+  category_factor_plot <- category_factor_plot[-c(6:11)]
+  category_colour <- category_colour[-c(6:11)]
+  category_factor1 <- category_factor1[-c(6:11)]
+  category_factor_plot1 <- category_factor_plot1[-c(6:11)]
+  category_colour1 <- category_colour1[-c(6:11)]
+  hg_list1 <- lapply(seq_along(category_factor1), function(y) {
     hg_list_quantile <- list() 
     for(z in quantileFirst:quantileLast) {
       if(libName %in% "cMMb") {
-      load(paste0(outDir,
-                  dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
+      load(paste0(outDir1,
+                  dataset[xx], "_", category_factor1[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_", libName, "_of_genes_in_", genomeName, "_",
                   region, "_hypergeomTestRes.RData"))
       } else {
-      load(paste0(outDir,
-                  dataset[xx], "_", category_factor[y], "_representation_among_quantile", z, "_of_", quantileLast,
+      load(paste0(outDir1,
+                  dataset[xx], "_", category_factor1[y], "_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
                   region, "_hypergeomTestRes.RData"))
       }
@@ -262,6 +296,25 @@ mclapply(seq_along(dataset), function(xx) {
     }
     return(hg_list_quantile)
   })
+  hg_list2 <- lapply(seq_along(category_factor2), function(y) {
+    hg_list_quantile <- list() 
+    for(z in quantileFirst:quantileLast) {
+      if(libName %in% "cMMb") {
+      load(paste0(outDir2,
+                  dataset[xx], "_", category_factor2[y], "_representation_among_quantile", z, "_of_", quantileLast,
+                  "_by_", libName, "_of_genes_in_", genomeName, "_",
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
+      } else {
+      load(paste0(outDir2,
+                  dataset[xx], "_", category_factor2[y], "_representation_among_quantile", z, "_of_", quantileLast,
+                  "_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
+                  region, "_hypergeomTestRes_minConditions", minConditions, ".RData"))
+      }
+      hg_list_quantile <- c(hg_list_quantile, hgTestResults)
+    }
+    return(hg_list_quantile)
+  })
+  hg_list <- c(hg_list1, hg_list2)
   bargraph_df <- data.frame(Category = rep(category_factor_plot, each = quantileLast),
                             Quantile = rep(paste0("Quantile ", quantileFirst:quantileLast), times = length(category_factor_plot)),
                             log2ObsExp = c(sapply(seq_along(category_factor), function(y) {
@@ -332,7 +385,7 @@ mclapply(seq_along(dataset), function(xx) {
           axis.text.y = element_text(size = 25, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
           axis.title.y = element_text(size = 25, colour = "black"),
           axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
+          axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
           axis.title.x = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
@@ -352,18 +405,18 @@ mclapply(seq_along(dataset), function(xx) {
                                      trim = T)) ~ "samples)"))
   if(libName %in% "cMMb") {
   ggsave(paste0(plotDir,
-                "combined_bargraph_", dataset[xx], "_homoeolog_expression_category_representation_among_", quantileLast,
+                "combined_bargraph_", dataset[xx], "_homoeolog_expresssion_variation_category_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes_excl_subgenomes.pdf"),
          plot = bp,
-         height = 8, width = 20)
+         height = 8, width = 32, limitsize = F)
   } else {
   ggsave(paste0(plotDir,
-                "combined_bargraph_", dataset[xx], "_homoeolog_expression_category_representation_among_", quantileLast,
+                "combined_bargraph_", dataset[xx], "_homoeolog_expresssion_variation_category_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes_excl_subgenomes.pdf"),
          plot = bp,
-         height = 8, width = 20)
+         height = 8, width = 32, limitsize = F)
   }
   }
 #}
