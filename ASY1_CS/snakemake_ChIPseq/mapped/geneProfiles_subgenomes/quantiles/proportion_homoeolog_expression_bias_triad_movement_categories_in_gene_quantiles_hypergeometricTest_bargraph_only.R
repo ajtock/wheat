@@ -105,7 +105,7 @@ if(length(genomeLetter) == 1) {
 
 category_factor2 <- c("stable", "middle", "dynamic")
 category_factor_plot2 <- c("Stable 10%", "Middle 80%", "Dynamic 10%")
-category_colour2 <- c("Stable 10%" = "green3", "Middle 80%" = "grey60", "Dynamic 10%" = "deeppink3")
+category_colour2 <- c("Stable 10%" = "green3", "Middle 80%" = "black", "Dynamic 10%" = "deeppink3")
 
 category_factor <- c(category_factor1, category_factor2)
 category_factor_plot <- c(category_factor_plot1, category_factor_plot2)
@@ -236,7 +236,7 @@ mclapply(seq_along(dataset), function(xx) {
           axis.text.y = element_text(size = 40, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
           axis.title.y = element_text(size = 40, colour = "black"),
           axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size = 40, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
+          axis.text.x = element_text(size = 80, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
           axis.title.x = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
@@ -385,7 +385,7 @@ mclapply(seq_along(dataset), function(xx) {
           axis.text.y = element_text(size = 25, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
           axis.title.y = element_text(size = 25, colour = "black"),
           axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
+          axis.text.x = element_text(size = 50, colour = "black", hjust = 0.5, vjust = 0.5, angle = 0),
           axis.title.x = element_blank(),
           panel.grid = element_blank(),
           panel.border = element_blank(),
