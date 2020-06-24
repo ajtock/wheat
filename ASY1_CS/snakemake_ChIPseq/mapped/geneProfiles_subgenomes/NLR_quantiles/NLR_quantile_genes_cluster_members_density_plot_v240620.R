@@ -1,9 +1,9 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Plot density plots and 95% CI plots of recombination rate for each NLR quantile
+# Plot density plots and 95% CI plots of cluster size for each NLR quantile
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_cMMb_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_cluster_members_density_plot_v240620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4
 
 #libName <- "cluster_members"
 #featureName <- unlist(strsplit("NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide",
@@ -104,6 +104,7 @@ featuresDF <- read.table(paste0(outDir,
                                 substring(featureName[1][1], first = 22), "_WesternEurope.txt"),
                          header = T, sep = "\t")
 }
+
 ## Load table of ranLocs grouped according to feature quantiles
 #ranLocsDF <- read.table(paste0(outDir, "features_", quantiles, "quantiles",
 #                               "_by_log2_", libName, "_control_in_",
@@ -138,7 +139,6 @@ featuresDF <- read.table(paste0(outDir,
 
 featuresDF <- featuresDF[featuresDF$NLR_quantile != "",]
 rownames(featuresDF) <- as.character(1:dim(featuresDF)[1])
-
 # Get row indices for each feature quantile
 quantileIndices <- lapply(1:quantiles, function(k) {
   which(featuresDF$NLR_quantile == paste0("Quantile ", k))
@@ -197,10 +197,10 @@ for(k in 1:quantiles) {
 # Calculate means, SDs, SEMs and 95% CIs
 # and create dataframe of summary statistics for plotting
 featuresDF_quantileMean <- sapply(1:quantiles, function(k) {
-  mean(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cMMb, na.rm = T)
+  mean(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cluster_members, na.rm = T)
 })
 featuresDF_quantileSD <- sapply(1:quantiles, function(k) {
-  sd(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cMMb, na.rm = T)
+  sd(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cluster_members, na.rm = T)
 })
 featuresDF_quantileSEM <- sapply(1:quantiles, function(k) {
   featuresDF_quantileSD[k] / sqrt( (dim(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),])[1] - 1) )
@@ -224,10 +224,10 @@ featuresDF_summary_stats <- data.frame(NLR_quantile = paste0("Quantile ", 1:quan
                                        stringsAsFactors = F)
 
 ranFeatsDF_randomMean <- sapply(1:quantiles, function(k) {
-  mean(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cMMb, na.rm = T)
+  mean(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cluster_members, na.rm = T)
 })
 ranFeatsDF_randomSD <- sapply(1:quantiles, function(k) {
-  sd(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cMMb, na.rm = T)
+  sd(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cluster_members, na.rm = T)
 })
 ranFeatsDF_randomSEM <- sapply(1:quantiles, function(k) {
   ranFeatsDF_randomSD[k] / sqrt( (dim(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),])[1] - 1) )
@@ -253,37 +253,37 @@ summary_stats_min <- min(c(featuresDF_summary_stats$CIlower, ranFeatsDF_summary_
 summary_stats_max <- max(c(featuresDF_summary_stats$CIupper, ranFeatsDF_summary_stats$CIupper), na.rm = T)
 
 # Take top ##% of data to aid visualisation in density plots
-featuresDF <- featuresDF[which(featuresDF$cMMb <=
-                               quantile(featuresDF$cMMb,
+featuresDF <- featuresDF[which(featuresDF$cluster_members <=
+                               quantile(featuresDF$cluster_members,
                                         probs = 1.0, na.rm = T)),]
-ranFeatsDF <- ranFeatsDF[which(ranFeatsDF$cMMb <=
-                               quantile(ranFeatsDF$cMMb,
+ranFeatsDF <- ranFeatsDF[which(ranFeatsDF$cluster_members <=
+                               quantile(ranFeatsDF$cluster_members,
                                         probs = 1.0, na.rm = T)),]
-#ranLocsDF <- ranFeatsDF[which(ranLocsDF$cMMb <=
-#                               quantile(ranLocsDF$cMMb,
+#ranLocsDF <- ranFeatsDF[which(ranLocsDF$cluster_members <=
+#                               quantile(ranLocsDF$cluster_members,
 #                                        probs = 1.0, na.rm = T)),]
 
 xmin <- min(c(
-              featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb
-#              ranLocsDF[unlist(quantileIndices),]$cMMb
+              featuresDF[unlist(quantileIndices),]$cluster_members,
+              featuresDF[unlist(randomPCIndices),]$cluster_members
+#              ranLocsDF[unlist(quantileIndices),]$cluster_members
              ), na.rm = T)
 xmax <- max(c(
-              featuresDF[unlist(quantileIndices),]$cMMb,
-              featuresDF[unlist(randomPCIndices),]$cMMb
-#              ranLocsDF[unlist(quantileIndices),]$cMMb
+              featuresDF[unlist(quantileIndices),]$cluster_members,
+              featuresDF[unlist(randomPCIndices),]$cluster_members
+#              ranLocsDF[unlist(quantileIndices),]$cluster_members
              ), na.rm = T)
 minDensity <- 0
-maxDensity <- max(density(featuresDF[featuresDF$NLR_quantile == "Quantile 4",]$cMMb,
+maxDensity <- max(density(featuresDF[featuresDF$NLR_quantile == "Quantile 4",]$cluster_members,
                           na.rm = T)$y)+0.04
 maxDensity <- max(
   c(
     sapply(1:quantiles, function(k) {
-#      max(c(max(density(ranLocsDF[ranLocsDF$random == paste0("Random ", k),]$cMMb,
+#      max(c(max(density(ranLocsDF[ranLocsDF$random == paste0("Random ", k),]$cluster_members,
 #                        na.rm = T)$y),
-      max(c(max(density(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cMMb,
+      max(c(max(density(featuresDF[featuresDF$NLR_quantile == paste0("Quantile ", k),]$cluster_members,
                         na.rm = T)$y),
-            max(density(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cMMb,
+            max(density(ranFeatsDF[ranFeatsDF$random == paste0("Random ", k),]$cluster_members,
                         na.rm = T)$y)))
      })
    )
@@ -301,8 +301,8 @@ legendLabs_ranFeat <- lapply(1:quantiles, function(x) {
                     gp = gpar(col = quantileColours[x], fontsize = 22)))
 })
 
-# Recombination rate (cM/Mb) density plot function
-cMMb_plotFun <- function(lociDF,
+# Cluster size density plot function
+cluster_members_plotFun <- function(lociDF,
                          parameter,
                          parameterLab,
                          featureGroup,
@@ -349,7 +349,7 @@ cMMb_plotFun <- function(lociDF,
 }
 
 # Plot means and 95% confidence intervals
-cMMb_meanCIs <- function(dataFrame,
+cluster_members_meanCIs <- function(dataFrame,
                          parameterLab,
                          featureGroup,
                          featureNamePlot,
@@ -376,6 +376,7 @@ cMMb_meanCIs <- function(dataFrame,
         axis.ticks.x = element_blank(),
         axis.ticks.length = unit(0.25, "cm"),
         axis.text.y = element_text(size = 18, colour = "black", family = "Luxi Mono"),
+#        axis.text.x = element_text(size = 22, colour = quantileColours, hjust = 1.0, vjust = 1.0, angle = 45),
         axis.text.x = element_markdown(size = 22, colour = quantileColours, hjust = 1.0, vjust = 1.0, angle = 45),
         axis.title = element_text(size = 26, colour = "black"),
         legend.position = "none",
@@ -387,30 +388,30 @@ cMMb_meanCIs <- function(dataFrame,
   ggtitle(bquote(.(featureNamePlot)))
 }
 
-ggObjGA_feature <- cMMb_plotFun(lociDF = featuresDF,
-                                parameter = "cMMb",
-                                parameterLab = "Recombination rate (cM/Mb)",
+ggObjGA_feature <- cluster_members_plotFun(lociDF = featuresDF,
+                                parameter = "cluster_members",
+                                parameterLab = "Cluster size",
                                 featureGroup = "NLR_quantile", 
                                 featureNamePlot = featureNamePlot,
                                 legendLabs = legendLabs_feature,
                                 quantileColours = quantileColours
                                )
-ggObjGA_ranFeat <- cMMb_plotFun(lociDF = ranFeatsDF,
-                                parameter = "cMMb",
-                                parameterLab = "Recombination rate (cM/Mb)",
+ggObjGA_ranFeat <- cluster_members_plotFun(lociDF = ranFeatsDF,
+                                parameter = "cluster_members",
+                                parameterLab = "Cluster size",
                                 featureGroup = "random", 
                                 featureNamePlot = ranFeatNamePlot,
                                 legendLabs = legendLabs_ranFeat,
                                 quantileColours = quantileColours
                                )
-ggObjGA_feature_mean <- cMMb_meanCIs(dataFrame = featuresDF_summary_stats,
-                                     parameterLab = "Recombination rate (cM/Mb)",
+ggObjGA_feature_mean <- cluster_members_meanCIs(dataFrame = featuresDF_summary_stats,
+                                     parameterLab = "Cluster size",
                                      featureGroup = "NLR_quantile",
                                      featureNamePlot = featureNamePlot,
                                      quantileColours = quantileColours
                                     )
-ggObjGA_ranFeat_mean <- cMMb_meanCIs(dataFrame = ranFeatsDF_summary_stats,
-                                     parameterLab = "Recombination rate (cM/Mb)",
+ggObjGA_ranFeat_mean <- cluster_members_meanCIs(dataFrame = ranFeatsDF_summary_stats,
+                                     parameterLab = "Cluster size",
                                      featureGroup = "random",
                                      featureNamePlot = ranFeatNamePlot,
                                      quantileColours = quantileColours
@@ -422,22 +423,22 @@ ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ncol = 2, as.table = F)
 if(libName %in% c("cMMb", "cluster_members")) {
 ggsave(paste0(plotDir,
-              "cMMb_around_", quantiles, "quantiles",
+              "cluster_sizes_for_", quantiles, "quantiles",
               "_by_", libName, "_of_",
               substring(featureName[1][1], first = 1, last = 9), "_in_",
               paste0(substring(featureName, first = 14, last = 20),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 22), "_v230620.pdf"),
+              substring(featureName[1][1], first = 22), "_v240620.pdf"),
        plot = ggObjGA_combined,
        height = 13, width = 14)
 } else {
 ggsave(paste0(plotDir,
-              "cMMb_around_", quantiles, "quantiles",
+              "cluster_sizes_for_", quantiles, "quantiles",
               "_by_", libName, "_in_", region, "_of_",
               substring(featureName[1][1], first = 1, last = 9), "_in_",
               paste0(substring(featureName, first = 14, last = 20),
                      collapse = "_"), "_",
-              substring(featureName[1][1], first = 22), "_v230620.pdf"),
+              substring(featureName[1][1], first = 22), "_v240620.pdf"),
        plot = ggObjGA_combined,
        height = 13, width = 14)
 }
