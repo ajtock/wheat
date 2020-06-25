@@ -3,23 +3,23 @@
 # Plot density profiles and means and 95% CIs of population genetics statistics for each gene quantile
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 TajimaD_all "Tajima's D" 1.0 0.2 '%1.1f' '%1.1f' '%1.1f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 TajimaD_all "Tajima's D" 1.0 0.2 '%1.1f' '%1.1f' '%1.1f' 0.65
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 RozasR2_all "Rozas' R 2" 0.95 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 RozasR2_all "Rozas' R 2" 0.95 0.2 '%1.2f' '%2.0f' '%2.0f' 0.38
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 CLR_all "CLR" 1.0 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 CLR_all "CLR" 1.0 0.005 '%1.0f' '%1.2f' '%1.0f' 0.65
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 HudsonRM_all "Hudson's R M" 0.90 0.2 '%1.2f' '%2.0f' '%1.2f' 0.38
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 nucleotideDiversity_all "Diversity pi" 0.75 0.2 '%1.3f' '%3.0f' '%1.2f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 nucleotideDiversity_all "Diversity pi" 0.95 0.2 '%1.2f' '%3.0f' '%1.2f' 0.65
 
-# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_v010620.R cluster_members 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 4 nSegregatingSites_all "Norm. seg. sites" 1.0 0.05 '%1.1f' '%1.1f' '%1.1f' 0.65
+# /applications/R/R-3.5.0/bin/Rscript NLR_quantile_genes_popgen_stats_density_plot_2quantiles_v250620.R HudsonRM_all 'NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide' genes 2 nSegregatingSites_all "Norm. seg. sites" 1.0 0.05 '%1.1f' '%1.1f' '%1.1f' 0.65
 
-#libName <- "cluster_members"
+#libName <- "HudsonRM_all"
 #featureName <- unlist(strsplit("NLR_genes_in_Agenome_genomewide,NLR_genes_in_Bgenome_genomewide,NLR_genes_in_Dgenome_genomewide",
 #                               split = ","))
 #region <- "genes"
-#quantiles <- 4
+#quantiles <- 2
 #orderingFactor <- "TajimaD_all"
 ##orderingFactor <- "RozasR2_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
@@ -86,7 +86,7 @@ pop_name_plot <- c(
                   )
 pop_name <- gsub(" ", "", pop_name_plot)
 
-if(libName %in% c("cMMb", "cluster_members")) {
+if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   outDir <- paste0("quantiles_by_", libName, "/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
@@ -107,6 +107,10 @@ if(libName %in% "cMMb") {
                             substr(featureName[1], start = 1, stop = 3),
                             " cluster size",
                             " quantiles")
+} else if(libName %in% c("HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+  featureNamePlot <- bquote("Hudson's" ~ italic("R"[M]) ~
+                            .(substr(featureName[1], start = 1, stop = 3)) *
+                            " quantiles")
 } else {
   featureNamePlot <- paste0(sub("_\\w+", "", libName), " ",
                             substr(featureName[1], start = 1, stop = 3),
@@ -118,7 +122,7 @@ ranFeatNamePlot <- paste0("Random ",
 #ranLocNamePlot <- "Random locus quantiles"
 
 # Define quantile colours
-quantileColours <- c("red", "purple", "blue", "navy")
+quantileColours <- c("red", "navy")
 makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
@@ -145,7 +149,7 @@ if(length(genomeLetter) == 1) {
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control)
 mclapply(seq_along(pop_name), function(x) {
-if(libName %in% c("cMMb", "cluster_members")) {
+if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
                                   "_by_", libName, "_of_",
                                   substring(featureName[1][1], first = 1, last = 9), "_in_",
@@ -323,7 +327,7 @@ xmin <- min(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
 xmax <- max(c(featuresDF[,which(colnames(featuresDF) == orderingFactor)]),
               na.rm = T)
 minDensity <- 0
-maxDensity <- max(density(featuresDF[featuresDF$NLR_quantile == "Quantile 4",][,which(colnames(featuresDF) == orderingFactor)],
+maxDensity <- max(density(featuresDF[featuresDF$NLR_quantile == "Quantile 2",][,which(colnames(featuresDF) == orderingFactor)],
                           na.rm = T)$y)+maxDensityPlus
 maxDensity <- max(
   c(
@@ -372,8 +376,6 @@ popgen_stats_plotFun <- function(lociDF,
        y = "Density") +
   annotation_custom(legendLabs[[1]]) +
   annotation_custom(legendLabs[[2]]) +
-  annotation_custom(legendLabs[[3]]) +
-  annotation_custom(legendLabs[[4]]) +
   theme_bw() +
   theme(axis.line.y = element_line(size = 2.0, colour = "black"),
         axis.line.x = element_line(size = 2.0, colour = "black"),
@@ -469,7 +471,7 @@ ggObjGA_combined <- grid.arrange(ggObjGA_feature,
                                  ggObjGA_ranFeat,
                                  ggObjGA_ranFeat_mean,
                                  ncol = 2, as.table = F)
-if(libName %in% c("cMMb", "cluster_members")) {
+if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   ggsave(paste0(plotDir[x],
                 orderingFactor, "_densityProp", densityProp, "_around_", quantiles, "quantiles",
                 "_by_", libName, "_of_",
