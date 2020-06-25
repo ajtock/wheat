@@ -13,7 +13,7 @@
 # length(genome_clust) [m] + ( length(genome_genes) - length(genome_clust)) [n]
 
 # Usage
-# ./proportion_clustered_in_NLR_quantiles_hypergeometricTest_bargraph_only.R 'cMMb' 'genes' 1 4 'genomewide' 100000 'black,navy,dodgerblue4,deepskyblue'
+# ./proportion_clustered_in_NLR_quantiles_hypergeometricTest_bargraph_only.R 'cMMb' 'genes' 1 4 'genomewide' 100000 'black,purple4,purple,magenta'
 
 library(methods)
 library(plotrix)
@@ -30,7 +30,7 @@ library(extrafont)
 #quantileLast <- 4
 #region <- "genomewide"
 #samplesNum <- 100000
-#genomeColours <- unlist(strsplit('black,navy,dodgerblue4,deepskyblue', split = ",")) 
+#genomeColours <- unlist(strsplit('black,purple4,purple,magenta', split = ",")) 
 
 args <- commandArgs(trailingOnly = TRUE)
 libName <- args[1]
@@ -43,7 +43,7 @@ genomeColours <- unlist(strsplit(args[7], split = ","))
 
 # Define quantile colours
 quantileColours <- c("red", "purple", "blue", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -63,9 +63,6 @@ system(paste0("[ -d ", outDir, " ] || mkdir ", outDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 options(scipen = 100)
-
-featCat <- paste0("NLR_clusterSize", c(1:9))
-featCatPlot <- paste0("NLRs in ", c(1:9), "-NLR cluster")
 
 # Plot bar graph summarising permutation test results
 genomeNames <- c("Agenome_Bgenome_Dgenome", "Agenome", "Bgenome", "Dgenome")
@@ -115,25 +112,25 @@ bp <- ggplot(data = bargraph_df,
   geom_point(mapping = aes(x = Quantile,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey80", size = 20) +
-  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10,
-                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10),
+             shape = "-", colour  = "grey60", size = 20) +
+  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015,
+                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015),
                colour = quantileColours[1],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10,
-                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10),
+  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015,
+                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015),
                colour = quantileColours[2],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10,
-                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10),
+  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015,
+                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015),
                colour = quantileColours[3],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10,
-                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.10),
+  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015,
+                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015),
                colour = quantileColours[4],
                inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
-  scale_y_continuous(limits = c(-0.5, 0.5)) +
+  scale_y_continuous(limits = c(-0.4, 0.4)) +
 #  scale_y_continuous(limits = c(-1.5, 1.5)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
