@@ -3,14 +3,14 @@
 # For all three wheat subgenomes, load and plot as bargraphs results from
 # hypergeometric tests to determine whether each
 # NLR-encoding gene quantile is over-represented or under-represented for
-# NLRs that are part of an NLR cluster
+# NLRs that are upregulated under PAMP treatment
 # (e.g., is the proportion of NLR genes within a given NLR gene quantile that
-# are members of an NLR cluster significantly greater or smaller than expected by chance
+# are upregulated under PAMP treatment significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
-# P-value is the probability of drawing >= length(quantile_clust) [x] features
+# P-value is the probability of drawing >= length(quantile_upreg) [x] features
 # in a sample size of length(quantile_genes) [k] from a total feature set consisting of
-# length(genome_clust) [m] + ( length(genome_genes) - length(genome_clust)) [n]
+# length(genome_upreg) [m] + ( length(genome_genes) - length(genome_upreg)) [n]
 
 # Usage
 # ./proportion_PAMP_upreg_in_NLR_quantiles_hypergeometricTest_bargraph_only.R 'cMMb' 'genes' 1 4 'genomewide' 100000 'black,darkorange3,darkorange,goldenrod1'
