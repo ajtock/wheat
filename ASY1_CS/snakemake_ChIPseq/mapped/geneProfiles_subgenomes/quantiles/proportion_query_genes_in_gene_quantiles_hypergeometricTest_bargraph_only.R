@@ -15,12 +15,13 @@
 # length(genome_NLRs) [m] + ( length(genome_genes) - length(genome_NLRs)) [n]
 
 # Usage 
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' NLR 'NLR-encoding' 100000 'black,navy,dodgerblue4,deepskyblue'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' meiotic 'Meiotic' 100000 'black,purple4,purple,magenta'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'black,darkgreen,seagreen,springgreen'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'black,red4,red,tomato'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' disease_stress_DSR 'Disease stress responsive' 100000 'black,navy,dodgerblue4,deepskyblue'
-# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' abiotic_stress_ASR 'Disease & abiotic stress responsive' 100000 'black,red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' NLR 'NLR-encoding' 100000 'black,red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' meiotic 'Meiotic' 100000 'black,blue4,dodgerblue4,deepskyblue'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' LAR_overlapping 'LAR-overlapping' 100000 'black,darkgreen,seagreen,springgreen'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' MIR_overlapping 'MIR-overlapping' 100000 'black,red4,red,tomato'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' disease_stress_DSR 'Disease stress responsive' 100000 'black,navy,dodgerblue4,deepskyblue'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' abiotic_stress_ASR 'Disease & abiotic stress responsive' 100000 'black,purple4,purple,magenta'
+# ./proportion_query_genes_in_gene_quantiles_hypergeometricTest_bargraph_only.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' BIO06_LAR_overlapping 'BIO06 LAR-overlapping' 100000 'black,darkorange3,darkorange,goldenrod1'
 
 library(methods)
 library(plotrix)
@@ -32,7 +33,7 @@ library(gridExtra)
 library(extrafont)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
-#featRegion <- "bodies"
+#featRegion <- "genes"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
@@ -123,26 +124,45 @@ bp <- ggplot(data = bargraph_df,
   geom_point(mapping = aes(x = Quantile,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey80", size = 20) +
-  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+             shape = "-", colour  = "grey60", size = 20) +
+  geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
                colour = quantileColours[1],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+  geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
                colour = quantileColours[2],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+  geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
                colour = quantileColours[3],
                inherit.aes = F, size = 5) +
-  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+  geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05,
+                             xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.05),
                colour = quantileColours[4],
                inherit.aes = F, size = 5) +
   labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
 #  scale_y_continuous(limits = c(-3.2, 3.2)) +
-  scale_y_continuous(limits = c(-0.5, 0.5)) +
+#  For abiotic/biotic-stress-responsive genes by H3K27me3
+#  scale_y_continuous(limits = c(-1.5, 1.5)) +
+#  For abiotic/biotic-stress-responsive genes by cM/Mb or DMC1
+#  scale_y_continuous(limits = c(-0.5, 0.5)) +
+#  For abiotic/biotic-stress-responsive genes by ASY1
+#  scale_y_continuous(limits = c(-0.25, 0.25)) +
+#  For NLRs by H3K27me3, or for meiotic genes by cM/Mb
+#  scale_y_continuous(limits = c(-1.0, 1.0)) +
+#  For NLRs by cM/Mb or ASY1, or for meiotic genes by H3K27me3
+#  scale_y_continuous(limits = c(-2.7, 2.7)) +
+#  For meiotic genes by H3K27me3
+#  scale_y_continuous(limits = c(-2.6, 2.6)) +
+#  For NLRs by DMC1, and for meiotic genes by DMC1 or ASY1
+#  scale_y_continuous(limits = c(-2.0, 2.0)) +
+#  For LAR-overlapping genes by cM/Mb, DMC1, ASY1 or H3K27me3
+  scale_y_continuous(limits = c(-0.4, 0.4)) +
+#  For BIO06 LAR-overlapping genes by cM/Mb, DMC1 or ASY1
+#  scale_y_continuous(limits = c(-0.4, 0.4)) +
+#  For BIO06 LAR-overlapping genes by H3K27me3
+#  scale_y_continuous(limits = c(-0.1, 0.1)) +
   scale_x_discrete(position = "bottom") +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
