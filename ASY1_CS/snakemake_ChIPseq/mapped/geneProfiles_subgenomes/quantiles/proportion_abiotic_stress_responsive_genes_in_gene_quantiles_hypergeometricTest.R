@@ -2,9 +2,8 @@
 
 # Perform hypergeometric tests to determine whether each ASY1 or DMC1
 # gene quantile is over-represented or under-represented for
-# ASR genes (as defined by Ksenia Krasileva) and, separately,
-# meiotic-module genes (as defined in Alabdullah et al. 2019 Front. Plant Sci.)
-# (i.e., is the proportion of ASR genes or meiotic-module genes
+# abiotic-stress-responsive (ASR) genes (as defined by RamirezGonzalez ... Uauy 2018 Science)
+# (i.e., is the proportion of ASR genes
 # contained within each gene quantile significantly greater or smaller than expected by chance
 # based on the hypergeometric distribution?)
 
