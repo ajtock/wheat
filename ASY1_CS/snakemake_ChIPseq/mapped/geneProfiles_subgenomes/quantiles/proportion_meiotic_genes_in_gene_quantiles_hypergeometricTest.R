@@ -13,7 +13,7 @@
 # length(genome_meio) [m] + ( length(genome_genes) - length(genome_meio)) [n]
 
 # Usage 
-# ./proportion_meiotic_genes_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_meiotic_genes_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -25,7 +25,7 @@ library(gridExtra)
 library(extrafont)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
-#featRegion <- "bodies"
+#featRegion <- "genes"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
