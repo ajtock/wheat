@@ -1,19 +1,21 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Compare population genetics statistics for NLR-encoding genes in a given ASY1 quantile
-# with 1) those for NLR-encoding genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
+# Compare population genetics statistics for GO-term-annotated genes in a given ASY1 quantile
+# with 1) those for GO-term-annotated genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' genes 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_response_to_cold_GO_genes_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Cold_response_genes' '0009409' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#featureNamePlot <- "NLR_encoding_genes"
+#featureNamePlot <- "Cold_response_genes"
+#GO_ID <- "0009409"
 #region <- "genes"
 #quantileNo <- 1
+#firstLowerQuantile <- 3
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
@@ -40,11 +42,13 @@ dirName <- args[2]
 featureName <- unlist(strsplit(args[3],
                                split = ","))
 featureNamePlot <- args[4]
-region <- args[5]
-quantileNo <- as.numeric(args[6])
-quantiles <- as.numeric(args[7])
-orderingFactor <- args[8]
-orderingFactorName <- unlist(strsplit(args[9], split = " "))
+GO_ID <- args[5]
+region <- args[6]
+quantileNo <- as.numeric(args[7])
+firstLowerQuantile <- as.numeric(args[8])
+quantiles <- as.numeric(args[9])
+orderingFactor <- args[10]
+orderingFactorName <- unlist(strsplit(args[11], split = " "))
 if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' Z", paste(orderingFactorName, collapse = " "))) {
@@ -54,10 +58,10 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
-randomSets <- as.numeric(args[10])
-minPval <- as.numeric(args[11])
-yDec <- as.character(args[12])
-xAnn <- as.numeric(unlist(strsplit(args[13], split = ",")))
+randomSets <- as.numeric(args[12])
+minPval <- as.numeric(args[13])
+yDec <- as.character(args[14])
+xAnn <- as.numeric(unlist(strsplit(args[15], split = ",")))
 
 library(parallel)
 library(plotrix)
@@ -124,12 +128,16 @@ quantileColours <- makeTransparent(quantileColours)
 # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
 options(scipen = 100)
 
-# Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_representative_mRNA.gff3", header = F)
-# Replace gene model ID decimal suffix (e.g., ".1")
-NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
-               x = NLRs$V9)
-IDs <- as.character(NLRs$V9)
+# Load functional annotation in order to extract "response to cold" genes
+anno <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzalez_2018_Science_GO_anno/",
+                          "RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_Bgenome_Dgenome_genomewide_GO_IDs_no_chrUn.tsv"),
+                   sep = "\t", stringsAsFactors = F)
+colnames(anno) <- c("featureID", "GO")
+response_to_cold_indices <- which(grepl(pattern = GO_ID, x = anno$GO))
+response_to_cold_indices <- sort(unique(c(response_to_cold_indices)))
+# Retain only "response to cold" genes
+# Get "response to cold" gene IDs and their row indices in features
+IDs <- anno[response_to_cold_indices,]$featureID
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
@@ -172,10 +180,10 @@ for(x in seq_along(pop_name)) {
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
   featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs) &
-                                    featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
+                                    featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% IDs &
-                                       featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
-  featuresDF_annoGOIDsDF$quantile <- "Quantiles 3 & 4"
+                                       featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
+  featuresDF_annoGOIDsDF$quantile <- paste0("Quantiles ", firstLowerQuantile, " & ", quantiles)
  
   ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
@@ -212,7 +220,7 @@ for(x in seq_along(pop_name)) {
   # Add the mean orderingFactor values to the dataframe
   estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
-                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",
+                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]))
   # Add the standard error of the difference between means to the estimates dataframe
   estimates$sed <- summary(lm1)$coefficients[2,2]
@@ -221,7 +229,7 @@ for(x in seq_along(pop_name)) {
   tQuantile1 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1] - 1)
   tQuantile4 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",])[1] - 1) 
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
 
   if(estimates$mean[1] < estimates$mean[2]) {
@@ -356,7 +364,7 @@ for(x in seq_along(pop_name)) {
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
                 substring(featureName[1][1], first = 18),
-                "_meanLSD_v010720.pdf"),
+                "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD_v010720.pdf"),
          plot = ggObjGA_feature_mean,
          height = 8, width = 7)
   } else {
@@ -368,7 +376,7 @@ for(x in seq_along(pop_name)) {
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
                 substring(featureName[1][1], first = 18),
-                "_meanLSD_v010720.pdf"),
+                "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD_v010720.pdf"),
          plot = ggObjGA_feature_mean,
          height = 8, width = 7)
   }
@@ -471,7 +479,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_v010720.RData"))
 #  } else {
 #  save(nonIDs_permTestResults,
 #       file = paste0(outDir[x],
@@ -482,7 +490,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_v010720.RData"))
 #  }
 #
 #  # Generate histogram
@@ -495,7 +503,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  } else {
 #  pdf(paste0(plotDir[x],
@@ -506,7 +514,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  }
 #  par(mar = c(3.1, 3.1, 4.1, 1.1),
@@ -698,7 +706,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
               substring(featureName[1][1], first = 18),
-              "_meanLSD_v010720.pdf"),
+              "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
        height = 9, width = 35)
 } else {
@@ -710,7 +718,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               paste0(substring(featureName, first = 10, last = 16),
                      collapse = "_"), "_",
               substring(featureName[1][1], first = 18),
-              "_meanLSD_v010720.pdf"),
+              "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
        height = 9, width = 35)
 }
@@ -727,7 +735,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 #  } else {
 #  load(paste0(outDir[x],
@@ -738,7 +746,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 # }
 #}
@@ -803,7 +811,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              "_v010720.pdf"),
+#              "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_v010720.pdf"),
 #       plot = bp,
 #       height = 8, width = 14)
 #} else {
@@ -815,7 +823,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              "_v010720.pdf"),
+#              "_ann_with_GO_BP_enrichment_GO:", GO_ID, "_v010720.pdf"),
 #       plot = bp,
 #       height = 8, width = 14)
 #}

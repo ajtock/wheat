@@ -1,19 +1,20 @@
 #!/applications/R/R-3.5.0/bin/Rscript
 
-# Compare population genetics statistics for NLR-encoding genes in a given ASY1 quantile
-# with 1) those for NLR-encoding genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
+# Compare population genetics statistics for Meiotic genes in a given ASY1 quantile
+# with 1) those for Meiotic genes in another given ASY1 quantile (using LSD, t-tests, and Yuen t-tests/MWW tests), and
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' genes 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest_v2.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
-#featureNamePlot <- "NLR_encoding_genes"
+#featureNamePlot <- "Meiotic_genes"
 #region <- "genes"
 #quantileNo <- 1
+#firstLowerQuantile <- 3
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
@@ -42,9 +43,10 @@ featureName <- unlist(strsplit(args[3],
 featureNamePlot <- args[4]
 region <- args[5]
 quantileNo <- as.numeric(args[6])
-quantiles <- as.numeric(args[7])
-orderingFactor <- args[8]
-orderingFactorName <- unlist(strsplit(args[9], split = " "))
+firstLowerQuantile <- as.numeric(args[7])
+quantiles <- as.numeric(args[8])
+orderingFactor <- args[9]
+orderingFactorName <- unlist(strsplit(args[10], split = " "))
 if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' Z", paste(orderingFactorName, collapse = " "))) {
@@ -54,10 +56,10 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
-randomSets <- as.numeric(args[10])
-minPval <- as.numeric(args[11])
-yDec <- as.character(args[12])
-xAnn <- as.numeric(unlist(strsplit(args[13], split = ",")))
+randomSets <- as.numeric(args[11])
+minPval <- as.numeric(args[12])
+yDec <- as.character(args[13])
+xAnn <- as.numeric(unlist(strsplit(args[14], split = ",")))
 
 library(parallel)
 library(plotrix)
@@ -124,12 +126,15 @@ quantileColours <- makeTransparent(quantileColours)
 # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
 options(scipen = 100)
 
-# Load NLRs
-NLRs <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_representative_mRNA.gff3", header = F)
-# Replace gene model ID decimal suffix (e.g., ".1")
-NLRs$V9 <- sub(pattern = "\\.\\d+", replacement = "",
-               x = NLRs$V9)
-IDs <- as.character(NLRs$V9)
+# Load meio
+# Note: these two sets of meiotic genes share 271 common genes that are assigned to a chromosome
+meio1 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_GO_genes.tsv",
+                    header = T, stringsAsFactors = F)
+genome_meio1 <- as.character(meio1$Gene.ID)
+meio2 <- read.table("/home/ajt200/analysis/wheat/RNAseq_meiocyte_Alabdullah_Moore_2019_FrontPlantSci/Table_S4_meiotic_gene_orthologs.tsv",
+                    header = T, sep = "\t", stringsAsFactors = F)
+genome_meio2 <- as.character(meio2$Gene.ID)
+IDs <- union(genome_meio1, genome_meio2)
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
@@ -172,10 +177,10 @@ for(x in seq_along(pop_name)) {
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
   featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs) &
-                                    featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
+                                    featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% IDs &
-                                       featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
-  featuresDF_annoGOIDsDF$quantile <- "Quantiles 3 & 4"
+                                       featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
+  featuresDF_annoGOIDsDF$quantile <- paste0("Quantiles ", firstLowerQuantile, " & ", quantiles)
  
   ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
@@ -212,7 +217,7 @@ for(x in seq_along(pop_name)) {
   # Add the mean orderingFactor values to the dataframe
   estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
-                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",
+                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]))
   # Add the standard error of the difference between means to the estimates dataframe
   estimates$sed <- summary(lm1)$coefficients[2,2]
@@ -221,7 +226,7 @@ for(x in seq_along(pop_name)) {
   tQuantile1 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1] - 1)
   tQuantile4 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",])[1] - 1) 
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
 
   if(estimates$mean[1] < estimates$mean[2]) {
@@ -471,7 +476,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_v010720.RData"))
 #  } else {
 #  save(nonIDs_permTestResults,
 #       file = paste0(outDir[x],
@@ -482,7 +487,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_v010720.RData"))
 #  }
 #
 #  # Generate histogram
@@ -495,7 +500,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  } else {
 #  pdf(paste0(plotDir[x],
@@ -506,7 +511,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  }
 #  par(mar = c(3.1, 3.1, 4.1, 1.1),
@@ -727,7 +732,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 #  } else {
 #  load(paste0(outDir[x],
@@ -738,7 +743,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 # }
 #}
