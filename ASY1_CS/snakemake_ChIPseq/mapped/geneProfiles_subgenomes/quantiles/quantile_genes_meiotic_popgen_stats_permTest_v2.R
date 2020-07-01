@@ -53,6 +53,8 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' R", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2]))[.(as.numeric(orderingFactorName[3]))])
+} else if(grepl("Diversity", paste(orderingFactorName, collapse = " "))) {
+  orderingFactorName <- bquote(.(orderingFactorName[1]) ~ "(" * .(as.symbol(orderingFactorName[2])) * ")")
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
@@ -101,7 +103,7 @@ pop_name_plot <- c(
                   )
 
 if(libName %in% c("cMMb", "HudsonRM_all")) {
-  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName), "/")
+  outDir <- paste0("quantiles_by_", libName, "/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                    "_in_", region, "/")
@@ -145,7 +147,7 @@ for(x in seq_along(pop_name)) {
   print(pop_name[x])
   if(libName %in% c("cMMb", "HudsonRM_all")) {
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
-                                  "_by_", sub("_\\w+", "", libName), "_of_",
+                                  "_by_", libName, "_of_",
                                   substring(featureName[1][1], first = 1, last = 5), "_in_",
                                   paste0(substring(featureName, first = 10, last = 16),
                                          collapse = "_"), "_",
@@ -705,7 +707,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 35)
+       height = 9, width = 50, limitsize = F)
 } else {
 ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
@@ -717,7 +719,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 35)
+       height = 9, width = 50, limitsize = F)
 }
 
 ## Plot bar graph summarising permutation test results
