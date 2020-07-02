@@ -628,15 +628,9 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                        y = get(orderingFactor),
                        colour = get(featureGroup),
                        fill = get(featureGroup))) +
-  geom_violin() +
+  geom_violin(position = position_dodge(width = 1.0)) +
   scale_fill_manual(values = quantileColours, name = "") +
   scale_colour_manual(values = quantileColours, name = "") +
-  geom_point(data = dataFrame1,
-             mapping = aes(x = get(populationGroup),
-                           y = mean,
-                           group = get(featureGroup)),
-             shape = "-", size = 20, position = position_dodge(width = 1.0)) +
-  labs(colour = "") +
   geom_errorbar(data = dataFrame1,
                 mapping = aes(x = get(populationGroup),
                               y = mean,
@@ -644,6 +638,13 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                               ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
                 width = 1.0, size = 2, position = position_dodge(width = 1.0)) +
+  scale_colour_manual(values = quantileColours, name = "") +
+  geom_point(data = dataFrame1,
+             mapping = aes(x = get(populationGroup),
+                           y = mean,
+                           group = get(featureGroup)),
+             shape = "-", size = 20, position = position_dodge(width = 1.0), colour = "black") +
+  labs(colour = "") +
 #  geom_beeswarm(data = dataFrame2,
 #                mapping = aes(x = get(populationGroup),
 #                              y = get(orderingFactor),
@@ -720,7 +721,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 16, width = 50, limitsize = F)
+       height = 10, width = 35, limitsize = F)
 } else {
 ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
@@ -732,7 +733,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 16, width = 50, limitsize = F)
+       height = 10, width = 35, limitsize = F)
 }
 
 ## Plot bar graph summarising permutation test results
