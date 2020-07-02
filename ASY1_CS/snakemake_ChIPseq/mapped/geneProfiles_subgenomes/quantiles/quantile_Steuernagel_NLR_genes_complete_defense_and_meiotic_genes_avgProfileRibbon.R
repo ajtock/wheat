@@ -5,10 +5,10 @@
 # clusters_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters/cluster1_of_4_by_log2_ASY1_CS_Rep1_ChIP_control_in_promoters_of_genes_in_Agenome_genomewide.txt
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_Steuernagel_NLR_genes_complete_defense_and_meiotic_genes_avgProfileRibbon.R ASY1_CS_Rep1_ChIP ASY1_CS both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp bodies 4 100kb 1 '0.02,0.96'
+# /applications/R/R-3.5.0/bin/Rscript quantile_Steuernagel_NLR_genes_complete_defense_and_meiotic_genes_avgProfileRibbon.R cMMb cMMb both 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 3500 2000 2kb '2 kb' 20 20bp genes 4 100kb 1 '0.02,0.96'
 
-#libName <- "ASY1_CS_Rep1_ChIP"
-#dirName <- "ASY1_CS"
+#libName <- "cMMb"
+#dirName <- "cMMb"
 #align <- "both"
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
@@ -19,7 +19,7 @@
 #flankNamePlot <- "2 kb"
 #binSize <- 20
 #binName <- "20bp"
-#region <- "bodies"
+#region <- "genes"
 #quantiles <- 4
 #winName <- "100kb"
 #minMarkerDist <- 1
@@ -1497,7 +1497,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -1507,7 +1507,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -2349,7 +2349,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -2359,7 +2359,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -3194,7 +3194,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -3204,7 +3204,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4040,7 +4040,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -4050,7 +4050,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -4068,34 +4068,77 @@ gc()
 #####
 
 
-# varietal SNPclasses
+## varietal SNPclasses
+#SNPclassNames <- c(
+#                   "all",
+#                   "missense_variant",
+#                   "synonymous_variant",
+#                   "HIGH",
+#                   "MODERATE",
+#                   "LOW",
+#                   "MODIFIER",
+#                   "upstream_gene_variant",
+#                   "downstream_gene_variant",
+#                   "intron_variant",
+#                   "intergenic",
+#                   "transition",
+#                   "transversion"
+#                  )
+#SNPclassNamesPlot <- c(
+#                       "All SNPs",
+#                       "Missense SNPs",
+#                       "Synonymous SNPs",
+#                       "High-impact SNPs",
+#                       "Moderate-impact SNPs",
+#                       "Low-impact SNPs",
+#                       "Modifier-impact SNPs",
+#                       "SNPs upstream of a gene",
+#                       "SNPs downstream of a gene",
+#                       "Intronic SNPs",
+#                       "Intergenic SNPs",
+#                       "Transitions",
+#                       "Transversions"
+#                      )
+#
+## feature
+#SNPclass_featureMats <- mclapply(seq_along(SNPclassNames), function(x) {
+#  lapply(seq_along(featureName), function(y) {
+#    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
+#                                SNPclassNames[x],
+#                                "_SNPs_around_", featureName[y],
+#                                "_matrix_bin", binSize, "bp_flank", flankName, ".tab"),
+#                         header = T))
+#  })
+#}, mc.cores = length(SNPclassNames))
+## If features from all 3 subgenomes are to be analysed,
+## concatenate the 3 corresponding feature coverage matrices
+#SNPclass_featureMats <- mclapply(seq_along(SNPclass_featureMats), function(x) {
+#  if(length(featureName) == 3) {
+#    do.call(rbind, SNPclass_featureMats[[x]])
+#  } else {
+#    SNPclass_featureMats[[x]][[1]]
+#  }
+#}, mc.cores = length(SNPclass_featureMats))
+#
+## ranLoc
+#SNPclass_ranLocMats <- mclapply(seq_along(SNPclassNames), function(x) {
+#  lapply(seq_along(featureName), function(y) {
+#    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
+#                                SNPclassNames[x],
+#                                "_SNPs_around_", featureName[y],
+#                                "_ranLoc_matrix_bin", binSize, "bp_flank", flankName, ".tab"),
+#                         header = T))
+#  })
+#}, mc.cores = length(SNPclassNames))
+
+# exome SNPclasses
 SNPclassNames <- c(
                    "all",
-                   "missense_variant",
-                   "synonymous_variant",
-                   "HIGH",
-                   "MODERATE",
-                   "LOW",
-                   "MODIFIER",
-                   "upstream_gene_variant",
-                   "downstream_gene_variant",
-                   "intron_variant",
-                   "intergenic",
                    "transition",
                    "transversion"
                   )
 SNPclassNamesPlot <- c(
-                       "All SNPs",
-                       "Missense SNPs",
-                       "Synonymous SNPs",
-                       "High-impact SNPs",
-                       "Moderate-impact SNPs",
-                       "Low-impact SNPs",
-                       "Modifier-impact SNPs",
-                       "SNPs upstream of a gene",
-                       "SNPs downstream of a gene",
-                       "Intronic SNPs",
-                       "Intergenic SNPs",
+                       "Exome SNPs",
                        "Transitions",
                        "Transversions"
                       )
@@ -4103,7 +4146,7 @@ SNPclassNamesPlot <- c(
 # feature
 SNPclass_featureMats <- mclapply(seq_along(SNPclassNames), function(x) {
   lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/exome_",
                                 SNPclassNames[x],
                                 "_SNPs_around_", featureName[y],
                                 "_matrix_bin", binSize, "bp_flank", flankName, ".tab"),
@@ -4123,7 +4166,7 @@ SNPclass_featureMats <- mclapply(seq_along(SNPclass_featureMats), function(x) {
 # ranLoc
 SNPclass_ranLocMats <- mclapply(seq_along(SNPclassNames), function(x) {
   lapply(seq_along(featureName), function(y) {
-    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/",
+    as.matrix(read.table(paste0("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/geneProfiles_subgenomes/matrices/exome_",
                                 SNPclassNames[x],
                                 "_SNPs_around_", featureName[y],
                                 "_ranLoc_matrix_bin", binSize, "bp_flank", flankName, ".tab"),
@@ -4909,22 +4952,22 @@ ggObjGA_combined <- grid.arrange(grobs = c(
                                                       ))
 if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
   ggsave(paste0(plotDir,
-                "SNPclass_avgProfiles_around_", quantiles, "quantiles",
+                "exomeSNPclass_avgProfiles_around_", quantiles, "quantiles",
                 "_by_", libName, "_of_",
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 } else {
   ggsave(paste0(plotDir,
-                "SNPclass_avgProfiles_around_", quantiles, "quantiles",
+                "exomeSNPclass_avgProfiles_around_", quantiles, "quantiles",
                 "_by_log2_", libName, "_control_in_", region, "_of_",
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5803,7 +5846,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5813,7 +5856,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 63, limitsize = FALSE)
 }
@@ -5904,7 +5947,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 } else {
@@ -5914,7 +5957,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v190620.pdf"),
+                substring(featureName[1][1], first = 18), "_NLR_Defense_Meiotic_genes_v020720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 63, limitsize = FALSE)
 }

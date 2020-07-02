@@ -623,32 +623,44 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                                   populationGroup,
                                   featureGroup,
                                   featureNamePlot) {
-  ggplot(data = dataFrame1,
+  ggplot(data = dataFrame2,
          mapping = aes(x = get(populationGroup),
-                       y = mean,
-                       group = get(featureGroup))) +
+                       y = get(orderingFactor),
+                       colour = get(featureGroup),
+                       fill = get(featureGroup))) +
+  geom_violin() +
+  scale_fill_manual(values = quantileColours, name = "") +
+  scale_colour_manual(values = quantileColours, name = "") +
+  geom_point(data = dataFrame1,
+             mapping = aes(x = get(populationGroup),
+                           y = mean,
+                           group = get(featureGroup)),
+             shape = "-", size = 20, position = position_dodge(width = 1.0)) +
   labs(colour = "") +
-  geom_point(shape = "-", size = 18, position =  position_dodge(width = 0.6)) +
-  geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
-                              ymax = mean+(lsd/2)),
-                width = 0.5, size = 2, position =  position_dodge(width = 0.6)) +
-  geom_beeswarm(data = dataFrame2,
+  geom_errorbar(data = dataFrame1,
                 mapping = aes(x = get(populationGroup),
-                              y = get(orderingFactor),
-                              colour = get(featureGroup)),
-                priority = "ascending",
-                groupOnX = T,
-                dodge.width = 0.6,
-                cex = 0.2,
-                size = 1) +
-  scale_colour_manual(values = quantileColours) +
-  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
+                              y = mean,
+                              group = get(featureGroup),
+                              ymin = mean-(lsd/2),
+                              ymax = mean+(lsd/2)),
+                width = 1.0, size = 2, position = position_dodge(width = 1.0)) +
+#  geom_beeswarm(data = dataFrame2,
+#                mapping = aes(x = get(populationGroup),
+#                              y = get(orderingFactor),
+#                              colour = get(featureGroup)),
+#                priority = "ascending",
+#                groupOnX = T,
+#                dodge.width = 0.6,
+#                cex = 0.2,
+#                size = 1) +
+#  scale_colour_manual(values = quantileColours) +
+#  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
-                             label.theme = element_text(size = 22, hjust = 0, vjust = 0.5, angle = 90),
+                             label.theme = element_text(size = 22, hjust = 0, vjust = 0.5, angle = 0),
                              nrow = 1,
                              byrow = TRUE),
          colour = guide_legend(override.aes = list(size = 10))) +
@@ -690,6 +702,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
 #           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
 #                     function(x) { bquote("MWW" ~ italic("P") ~ .(dataFrame1$UtestPval[x])) }) )
 }
+
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               dataFrame2 = IDsDF_annoGOIDsDF_stat_allpops,
                                               parameterLab = bquote(.(orderingFactorName)),
@@ -707,7 +720,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 50, limitsize = F)
+       height = 16, width = 50, limitsize = F)
 } else {
 ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
@@ -719,7 +732,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 50, limitsize = F)
+       height = 16, width = 50, limitsize = F)
 }
 
 ## Plot bar graph summarising permutation test results
