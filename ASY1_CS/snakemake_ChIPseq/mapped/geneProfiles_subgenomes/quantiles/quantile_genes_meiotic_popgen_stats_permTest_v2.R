@@ -628,54 +628,53 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                        y = get(orderingFactor),
                        colour = get(featureGroup),
                        fill = get(featureGroup))) +
-  geom_violin(position = position_dodge(width = 1.0)) +
+  geom_violin(position = position_dodge(width = 0.95),
+              scale = "count") +
   scale_fill_manual(values = quantileColours, name = "") +
   scale_colour_manual(values = quantileColours, name = "") +
+  geom_beeswarm(data = dataFrame2,
+                mapping = aes(x = get(populationGroup),
+                              y = get(orderingFactor),
+                              colour = get(featureGroup)),
+                priority = "ascending",
+                groupOnX = T,
+                dodge.width = 0.95,
+                cex = 0.05,
+                size = 0.5) +
   geom_errorbar(data = dataFrame1,
                 mapping = aes(x = get(populationGroup),
                               y = mean,
                               group = get(featureGroup),
                               ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
-                width = 1.0, size = 2, position = position_dodge(width = 1.0)) +
-  scale_colour_manual(values = quantileColours, name = "") +
+                width = 0.8, size = 2, position = position_dodge(width = 0.95)) +
   geom_point(data = dataFrame1,
              mapping = aes(x = get(populationGroup),
                            y = mean,
                            group = get(featureGroup)),
-             shape = "-", size = 20, position = position_dodge(width = 1.0), colour = "black") +
-  labs(colour = "") +
-#  geom_beeswarm(data = dataFrame2,
-#                mapping = aes(x = get(populationGroup),
-#                              y = get(orderingFactor),
-#                              colour = get(featureGroup)),
-#                priority = "ascending",
-#                groupOnX = T,
-#                dodge.width = 0.6,
-#                cex = 0.2,
-#                size = 1) +
-#  scale_colour_manual(values = quantileColours) +
+             shape = "-", size = 14, position = position_dodge(width = 0.95), colour = "grey60") +
 #  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
   guides(fill = guide_legend(direction = "horizontal",
                              label.position = "top",
-                             label.theme = element_text(size = 22, hjust = 0, vjust = 0.5, angle = 0),
+                             label.theme = element_text(size = 32, hjust = 0, vjust = 0.5, angle = 0),
                              nrow = 1,
                              byrow = TRUE),
          colour = guide_legend(override.aes = list(size = 10))) +
-  labs(x = "",
+  labs(colour = "",
+       x = "",
        y = parameterLab) +
   theme_bw() +
-  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
-        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+  theme(axis.line.y = element_line(size = 1.0, colour = "black"),
+        axis.ticks.y = element_line(size = 1.0, colour = "black"),
         axis.ticks.x = element_blank(),
         axis.ticks.length = unit(0.25, "cm"),
-        axis.text.y = element_text(size = 22, colour = "black", family = "Luxi Mono"),
-        axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
-        axis.title = element_text(size = 26, colour = "black"),
-        legend.text = element_text(size = 26),
+        axis.text.y = element_text(size = 28, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
+        axis.title = element_text(size = 32, colour = "black"),
+        legend.text = element_text(size = 32),
         legend.position = "bottom",
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
