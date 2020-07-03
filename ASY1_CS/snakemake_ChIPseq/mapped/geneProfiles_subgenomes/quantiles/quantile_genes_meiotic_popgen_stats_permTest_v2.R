@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest_v2.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest_v2.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%3.1f' '5.1,4.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -26,13 +26,13 @@
 #randomSets <- 10000
 #minPval <- 0.0001
 ## For Tajima's D
-#yDec <- "%4.0f"
-#xAnn <- as.numeric(unlist(strsplit("4.1,3.5", split = ",")))
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("5.1,4.5", split = ",")))
 ## For Rozas' R2
-#yDec <- "%1.2f"
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
 ## For CLR
-#yDec <- "%4.0f"
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
@@ -108,6 +108,9 @@ if(libName %in% c("cMMb", "HudsonRM_all")) {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                    "_in_", region, "/")
 }
+plotDir_allpops <- paste0(outDir, "plots/")
+system(paste0("[ -d ", plotDir_allpops, " ] || mkdir ", plotDir_allpops))
+
 outDir <- sapply(seq_along(pop_name), function(x) {
   paste0(outDir, pop_name[x], "/")
 })
@@ -639,7 +642,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                 priority = "ascending",
                 groupOnX = T,
                 dodge.width = 0.95,
-                cex = 0.05,
+                cex = 0.1,
                 size = 0.5) +
   geom_errorbar(data = dataFrame1,
                 mapping = aes(x = get(populationGroup),
@@ -652,14 +655,14 @@ popgen_stats_meanLSDs <- function(dataFrame1,
              mapping = aes(x = get(populationGroup),
                            y = mean,
                            group = get(featureGroup)),
-             shape = "-", size = 14, position = position_dodge(width = 0.95), colour = "grey60") +
-#  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
+             shape = "-", size = 14, position = position_dodge(width = 0.95), colour = "grey80") +
+  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
   guides(fill = guide_legend(direction = "horizontal",
-                             label.position = "top",
-                             label.theme = element_text(size = 32, hjust = 0, vjust = 0.5, angle = 0),
+                             label.position = "right",
+                             label.theme = element_text(size = 30, hjust = 0, vjust = 0.5, angle = 0),
                              nrow = 1,
                              byrow = TRUE),
          colour = guide_legend(override.aes = list(size = 10))) +
@@ -671,10 +674,10 @@ popgen_stats_meanLSDs <- function(dataFrame1,
         axis.ticks.y = element_line(size = 1.0, colour = "black"),
         axis.ticks.x = element_blank(),
         axis.ticks.length = unit(0.25, "cm"),
-        axis.text.y = element_text(size = 28, colour = "black", family = "Luxi Mono"),
-        axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
-        axis.title = element_text(size = 32, colour = "black"),
-        legend.text = element_text(size = 32),
+        axis.text.y = element_text(size = 24, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 30, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.text = element_text(size = 30),
         legend.position = "bottom",
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
@@ -710,7 +713,7 @@ ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               featureGroup = "quantile",
                                               featureNamePlot = gsub("_", " ", featureNamePlot))
 if(libName %in% c("cMMb", "HudsonRM_all")) {
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
               "_in_quantile", quantileNo, "_of_", quantiles,
               "_by_", libName, "_of_",
@@ -720,9 +723,9 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 10, width = 35, limitsize = F)
+       height = 12, width = 35, limitsize = F)
 } else {
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
               "_in_quantile", quantileNo, "_of_", quantiles,
               "_by_log2_", libName, "_control_in_", region, "_of_",
@@ -732,7 +735,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 10, width = 35, limitsize = F)
+       height = 12, width = 35, limitsize = F)
 }
 
 ## Plot bar graph summarising permutation test results
@@ -815,7 +818,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #                 "(" * .(prettyNum(as.character(randomSets),
 #                                   big.mark = ",", trim = "T")) ~ "permutations)"))
 #if(libName %in% c("cMMb", "HudsonRM_all")) {
-#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
 #              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #              "_in_quantile", quantileNo, "_of_", quantiles,
 #              "_by_", libName, "_of_",
@@ -827,7 +830,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #       plot = bp,
 #       height = 8, width = 14)
 #} else {
-#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
 #              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #              "_in_quantile", quantileNo, "_of_", quantiles,
 #              "_by_log2_", libName, "_control_in_", region, "_of_",
