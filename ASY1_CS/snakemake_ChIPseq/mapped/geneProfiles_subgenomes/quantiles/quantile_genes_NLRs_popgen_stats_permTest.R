@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' genes 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_NLRs_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'NLR_encoding_genes' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%3.1f' '5.1,4.5'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -14,6 +14,7 @@
 #featureNamePlot <- "NLR_encoding_genes"
 #region <- "genes"
 #quantileNo <- 1
+#firstLowerQuantile <- 3
 #quantiles <- 4
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
@@ -25,13 +26,13 @@
 #randomSets <- 10000
 #minPval <- 0.0001
 ## For Tajima's D
-#yDec <- "%4.0f"
-#xAnn <- as.numeric(unlist(strsplit("4.1,3.5", split = ",")))
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("5.1,4.5", split = ",")))
 ## For Rozas' R2
-#yDec <- "%1.2f"
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
 ## For CLR
-#yDec <- "%4.0f"
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
@@ -42,9 +43,10 @@ featureName <- unlist(strsplit(args[3],
 featureNamePlot <- args[4]
 region <- args[5]
 quantileNo <- as.numeric(args[6])
-quantiles <- as.numeric(args[7])
-orderingFactor <- args[8]
-orderingFactorName <- unlist(strsplit(args[9], split = " "))
+firstLowerQuantile <- as.numeric(args[7])
+quantiles <- as.numeric(args[8])
+orderingFactor <- args[9]
+orderingFactorName <- unlist(strsplit(args[10], split = " "))
 if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
   orderingFactorName <- bquote(.(orderingFactorName[1]) ~ italic(.(orderingFactorName[2])))
 } else if(grepl("Rozas' Z", paste(orderingFactorName, collapse = " "))) {
@@ -56,10 +58,10 @@ if(grepl("Tajima", paste(orderingFactorName, collapse = " "))) {
 } else {
   orderingFactorName <- paste(orderingFactorName, collapse = " ")
 }
-randomSets <- as.numeric(args[10])
-minPval <- as.numeric(args[11])
-yDec <- as.character(args[12])
-xAnn <- as.numeric(unlist(strsplit(args[13], split = ",")))
+randomSets <- as.numeric(args[11])
+minPval <- as.numeric(args[12])
+yDec <- as.character(args[13])
+xAnn <- as.numeric(unlist(strsplit(args[14], split = ",")))
 
 library(parallel)
 library(plotrix)
@@ -101,11 +103,14 @@ pop_name_plot <- c(
                   )
 
 if(libName %in% c("cMMb", "HudsonRM_all")) {
-  outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName), "/")
+  outDir <- paste0("quantiles_by_", libName, "/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
                    "_in_", region, "/")
 }
+plotDir_allpops <- paste0(outDir, "plots/")
+system(paste0("[ -d ", plotDir_allpops, " ] || mkdir ", plotDir_allpops))
+
 outDir <- sapply(seq_along(pop_name), function(x) {
   paste0(outDir, pop_name[x], "/")
 })
@@ -142,7 +147,7 @@ for(x in seq_along(pop_name)) {
   print(pop_name[x])
   if(libName %in% c("cMMb", "HudsonRM_all")) {
   featuresDF <- read.table(paste0(outDir[x], "features_", quantiles, "quantiles",
-                                  "_by_", sub("_\\w+", "", libName), "_of_",
+                                  "_by_", libName, "_of_",
                                   substring(featureName[1][1], first = 1, last = 5), "_in_",
                                   paste0(substring(featureName, first = 10, last = 16),
                                          collapse = "_"), "_",
@@ -174,10 +179,10 @@ for(x in seq_along(pop_name)) {
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile != paste0("Quantile ", quantileNo),]
 #  featuresDF_nonIDsDF <- featuresDF[featuresDF$quantile == paste0("Quantile ", quantiles),]
   featuresDF_nonIDsDF <- featuresDF[!(featuresDF$featureID %in% IDs) &
-                                    featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
+                                    featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
   featuresDF_annoGOIDsDF <- featuresDF[featuresDF$featureID %in% IDs &
-                                       featuresDF$quantile %in% c("Quantile 3", "Quantile 4"),]
-  featuresDF_annoGOIDsDF$quantile <- "Quantiles 3 & 4"
+                                       featuresDF$quantile %in% c(paste0("Quantile ", firstLowerQuantile), paste0("Quantile ", quantiles)),]
+  featuresDF_annoGOIDsDF$quantile <- paste0("Quantiles ", firstLowerQuantile, " & ", quantiles)
  
   ### NOTE THAT PRE-TRIMMING THE DATA MAY MAKE YUEN T-TESTS BELOW INVALID
   ### APPLIED HERE AS A TEST DUE TO RozasR2 OUTLIERS;
@@ -214,7 +219,7 @@ for(x in seq_along(pop_name)) {
   # Add the mean orderingFactor values to the dataframe
   estimates$mean <- c(mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]),
-                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",
+                      mean(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),
                                              which(colnames(IDsDF_annoGOIDsDF) == orderingFactor)]))
   # Add the standard error of the difference between means to the estimates dataframe
   estimates$sed <- summary(lm1)$coefficients[2,2]
@@ -223,7 +228,7 @@ for(x in seq_along(pop_name)) {
   tQuantile1 <- qt(p = 1-(alpha/2),
                    df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantile ", quantileNo),])[1] - 1)
   tQuantile4 <- qt(p = 1-(alpha/2),
-                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == "Quantiles 3 & 4",])[1] - 1) 
+                   df = dim(IDsDF_annoGOIDsDF[IDsDF_annoGOIDsDF$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),])[1] - 1) 
   estimates$lsd <- c(tQuantile1*estimates$sed[1], tQuantile4*estimates$sed[2])
 
   if(estimates$mean[1] < estimates$mean[2]) {
@@ -473,7 +478,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_v010720.RData"))
 #  } else {
 #  save(nonIDs_permTestResults,
 #       file = paste0(outDir[x],
@@ -484,7 +489,7 @@ for(x in seq_along(pop_name)) {
 #                     paste0(substring(featureName, first = 10, last = 16),
 #                            collapse = "_"), "_",
 #                     substring(featureName[1][1], first = 18),
-#                     ".RData"))
+#                     "_v010720.RData"))
 #  }
 #
 #  # Generate histogram
@@ -497,7 +502,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  } else {
 #  pdf(paste0(plotDir[x],
@@ -508,7 +513,7 @@ for(x in seq_along(pop_name)) {
 #             paste0(substring(featureName, first = 10, last = 16),
 #                    collapse = "_"), "_",
 #             substring(featureName[1][1], first = 18),
-#             "_hist_v010720.pdf"), 
+#             "_hist_v010720.pdf"),
 #             height = 4.5, width = 5)
 #  }
 #  par(mar = c(3.1, 3.1, 4.1, 1.1),
@@ -618,46 +623,58 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                                   populationGroup,
                                   featureGroup,
                                   featureNamePlot) {
-  ggplot(data = dataFrame1,
+  ggplot(data = dataFrame2,
          mapping = aes(x = get(populationGroup),
-                       y = mean,
-                       group = get(featureGroup))) +
-  labs(colour = "") +
-  geom_point(shape = "-", size = 18, position =  position_dodge(width = 0.6)) +
-  geom_errorbar(mapping = aes(ymin = mean-(lsd/2),
-                              ymax = mean+(lsd/2)),
-                width = 0.5, size = 2, position =  position_dodge(width = 0.6)) +
+                       y = get(orderingFactor),
+                       colour = get(featureGroup),
+                       fill = get(featureGroup))) +
+  geom_violin(position = position_dodge(width = 0.95),
+              scale = "count") +
+  scale_fill_manual(values = quantileColours, name = "") +
+  scale_colour_manual(values = quantileColours, name = "") +
   geom_beeswarm(data = dataFrame2,
                 mapping = aes(x = get(populationGroup),
                               y = get(orderingFactor),
                               colour = get(featureGroup)),
                 priority = "ascending",
                 groupOnX = T,
-                dodge.width = 0.6,
-                cex = 0.2,
-                size = 1) +
-  scale_colour_manual(values = quantileColours) +
+                dodge.width = 0.95,
+                cex = 0.1,
+                size = 0.5) +
+  geom_errorbar(data = dataFrame1,
+                mapping = aes(x = get(populationGroup),
+                              y = mean,
+                              group = get(featureGroup),
+                              ymin = mean-(lsd/2),
+                              ymax = mean+(lsd/2)),
+                width = 0.8, size = 2, position = position_dodge(width = 0.95)) +
+  geom_point(data = dataFrame1,
+             mapping = aes(x = get(populationGroup),
+                           y = mean,
+                           group = get(featureGroup)),
+             shape = "-", size = 14, position = position_dodge(width = 0.95), colour = "grey80") +
   scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
   guides(fill = guide_legend(direction = "horizontal",
-                             label.position = "top",
-                             label.theme = element_text(size = 22, hjust = 0, vjust = 0.5, angle = 90),
+                             label.position = "right",
+                             label.theme = element_text(size = 30, hjust = 0, vjust = 0.5, angle = 0),
                              nrow = 1,
                              byrow = TRUE),
          colour = guide_legend(override.aes = list(size = 10))) +
-  labs(x = "",
+  labs(colour = "",
+       x = "",
        y = parameterLab) +
   theme_bw() +
-  theme(axis.line.y = element_line(size = 2.0, colour = "black"),
-        axis.ticks.y = element_line(size = 2.0, colour = "black"),
+  theme(axis.line.y = element_line(size = 1.0, colour = "black"),
+        axis.ticks.y = element_line(size = 1.0, colour = "black"),
         axis.ticks.x = element_blank(),
         axis.ticks.length = unit(0.25, "cm"),
-        axis.text.y = element_text(size = 22, colour = "black", family = "Luxi Mono"),
-        axis.text.x = element_text(size = 22, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
-        axis.title = element_text(size = 26, colour = "black"),
-        legend.text = element_text(size = 26),
+        axis.text.y = element_text(size = 24, colour = "black", family = "Luxi Mono"),
+        axis.text.x = element_text(size = 30, colour = "black", hjust = 0.5, vjust = 1.0, angle = 0),
+        axis.title = element_text(size = 30, colour = "black"),
+        legend.text = element_text(size = 30),
         legend.position = "bottom",
         legend.background = element_rect(fill = "transparent"),
         legend.key = element_rect(colour = "transparent",
@@ -685,6 +702,7 @@ popgen_stats_meanLSDs <- function(dataFrame1,
 #           label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
 #                     function(x) { bquote("MWW" ~ italic("P") ~ .(dataFrame1$UtestPval[x])) }) )
 }
+
 ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               dataFrame2 = IDsDF_annoGOIDsDF_stat_allpops,
                                               parameterLab = bquote(.(orderingFactorName)),
@@ -692,7 +710,7 @@ ggObjGA_feature_mean <- popgen_stats_meanLSDs(dataFrame1 = estimates_allpops,
                                               featureGroup = "quantile",
                                               featureNamePlot = gsub("_", " ", featureNamePlot))
 if(libName %in% c("cMMb", "HudsonRM_all")) {
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
               "_in_quantile", quantileNo, "_of_", quantiles,
               "_by_", libName, "_of_",
@@ -702,9 +720,9 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 35)
+       height = 12, width = 35, limitsize = F)
 } else {
-ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
               orderingFactor, "_allpops_IDs_v_annoGOIDs_for_", gsub(" ", "_", featureNamePlot),
               "_in_quantile", quantileNo, "_of_", quantiles,
               "_by_log2_", libName, "_control_in_", region, "_of_",
@@ -714,7 +732,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
               substring(featureName[1][1], first = 18),
               "_meanLSD_v010720.pdf"),
        plot = ggObjGA_feature_mean,
-       height = 9, width = 35)
+       height = 12, width = 35, limitsize = F)
 }
 
 ## Plot bar graph summarising permutation test results
@@ -729,7 +747,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 #  } else {
 #  load(paste0(outDir[x],
@@ -740,7 +758,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #              paste0(substring(featureName, first = 10, last = 16),
 #                     collapse = "_"), "_",
 #              substring(featureName[1][1], first = 18),
-#              ".RData"))
+#              "_v010720.RData"))
 #  pt_list <- c(pt_list, nonIDs_permTestResults)
 # }
 #}
@@ -797,7 +815,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #                 "(" * .(prettyNum(as.character(randomSets),
 #                                   big.mark = ",", trim = "T")) ~ "permutations)"))
 #if(libName %in% c("cMMb", "HudsonRM_all")) {
-#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
 #              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #              "_in_quantile", quantileNo, "_of_", quantiles,
 #              "_by_", libName, "_of_",
@@ -809,7 +827,7 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
 #       plot = bp,
 #       height = 8, width = 14)
 #} else {
-#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]),
+#ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
 #              orderingFactor, "_bargraph_allpops_random_nonIDs_permTest_for_", gsub(" ", "_", featureNamePlot),
 #              "_in_quantile", quantileNo, "_of_", quantiles,
 #              "_by_log2_", libName, "_control_in_", region, "_of_",
