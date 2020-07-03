@@ -12,7 +12,9 @@
 #featureName <- unlist(strsplit("genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide",
 #                               split = ","))
 #featureNamePlot <- "Cold_response_genes"
+#featureNamePlot <- "Defense_response_genes"
 #GO_ID <- "0009409"
+#GO_ID <- "0006952"
 #region <- "genes"
 #quantileNo <- 1
 #firstLowerQuantile <- 3
@@ -64,6 +66,9 @@ randomSets <- as.numeric(args[12])
 minPval <- as.numeric(args[13])
 yDec <- as.character(args[14])
 xAnn <- as.numeric(unlist(strsplit(args[15], split = ",")))
+
+print(GO_ID)
+print(class(GO_ID))
 
 library(parallel)
 library(plotrix)
@@ -133,6 +138,27 @@ quantileColours <- makeTransparent(quantileColours)
 # Disable scientific notation (e.g., 0.0001 rather than 1e-04)
 options(scipen = 100)
 
+# Load subcat1b (to be used for extracting defense response genes not corresponding to NLRs)
+subcat1b <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/",
+                              "NLRs_Steuernagel_Wulff_2020_Plant_Physiol/NLR_genes_representative_mRNA.gff3"),
+                       header = F)
+# Get NLR IDs
+subcat1b_IDs <- sub(pattern = "\\.\\d+", replacement = "",
+                    subcat1b$V9)
+# Load table of refseq v1.0 functional annotations to enable removal of NLRs among defense response genes
+library(data.table)
+IPSanno <- fread(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.0_FunctionalAnnotation_v1/",
+                        "iwgsc_refseqv1.0_FunctionalAnnotation_v1__HCgenes_v1.0-repr.TEcleaned.TAB"),
+                 sep = "\t", data.table = F)
+# Replace gene model ID decimal suffix (e.g., ".1")
+IPSanno$`Gene-ID` <- sub(pattern = "\\.\\d+", replacement = "",
+                         x = IPSanno$`Gene-ID`)
+# Replace "1G" with "2G" in gene IDs for consistency with v1.1
+IPSanno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
+                         x = IPSanno$`Gene-ID`)
+subcat1c_IDs <- sort(unique(c(IPSanno[grepl("NB-ARC", IPSanno$`Interpro-IDs-(Description)`),]$`Gene-ID`,
+                              IPSanno[grepl("TIR", IPSanno$`Interpro-IDs-(Description)`),]$`Gene-ID`)))
+
 # Load functional annotation in order to extract genes annotated with GO_ID
 anno <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzalez_2018_Science_GO_anno/",
                           "RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_Bgenome_Dgenome_genomewide_GO_IDs_no_chrUn.tsv"),
@@ -140,9 +166,9 @@ anno <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzale
 colnames(anno) <- c("featureID", "GO")
 GO_ID_anno_indices <- which(grepl(pattern = GO_ID, x = anno$GO))
 GO_ID_anno_indices <- sort(unique(c(GO_ID_anno_indices)))
-# Retain only "response to cold" genes
-# Get "response to cold" gene IDs and their row indices in features
+# Retain only genes annotated with GO_ID, excluding NLR-encoding genes
 IDs <- anno[GO_ID_anno_indices,]$featureID
+IDs <- IDs[!(IDs %in% unique(c(subcat1b_IDs, subcat1c_IDs)))]
 
 # Load table of features grouped into quantiles
 # by decreasing log2(libName/control) in region
