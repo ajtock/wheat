@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not among the meiotic genes (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '4.1,3.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_meiotic_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Meiotic_genes' bodies 1 4 TajimaD_all "Tajima's D" 10000 0.0001 '%4.0f' '5.1,4.5' '-3.0,5.75'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -18,21 +18,34 @@
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
 #orderingFactor <- "CLR_all"
+#orderingFactor <- "nSegregatingSites_all"
+#orderingFactor <- "nucleotideDiversity_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
 #orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
 #orderingFactorName <- unlist(strsplit("Tajima's D", split = " "))
 #orderingFactorName <- unlist(strsplit("Rozas' R 2", split = " "))
+#orderingFactorName <- unlist(strsplit("Norm. SNPs", split = " "))
+#orderingFactorName <- unlist(strsplit("Diversity pi", split = " "))
 #randomSets <- 10000
 #minPval <- 0.0001
-# For Tajima's D
-#yDec <- "%4.0f"
-#xAnn <- as.numeric(unlist(strsplit("4.1,3.5", split = ",")))
-# For Rozas' R2
-#yDec <- "%1.2f"
+## For Tajima's D
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("5.1,4.5", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("-3.0,5.75", split = ",")))
+## For Rozas' R2
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
-# For CLR
-#yDec <- "%4.0f"
+## For CLR
+#yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
+## For Norm. SNPs
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("16,15", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,17", split = ",")))
+## For Diversity (pi)
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("1.9,1.7", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,2", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]

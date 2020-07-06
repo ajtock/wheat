@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_GO_ID_anno_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Cold_response_genes' '0009409' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%3.1f' '5.1,4.5'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_GO_ID_anno_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Cold_response_genes' '0009409' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%3.1f' '5.1,4.5' '-3.0,5.75'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -22,21 +22,34 @@
 #orderingFactor <- "TajimaD_all"
 #orderingFactor <- "RozasR2_all"
 #orderingFactor <- "CLR_all"
+#orderingFactor <- "nSegregatingSites_all"
+#orderingFactor <- "nucleotideDiversity_all"
 #orderingFactorName <- bquote("Tajima's" ~ italic("D"))
 #orderingFactorName <- bquote("Rozas'" ~ italic("R")[2])
 #orderingFactorName <- unlist(strsplit("Tajima's D", split = " "))
 #orderingFactorName <- unlist(strsplit("Rozas' R 2", split = " "))
+#orderingFactorName <- unlist(strsplit("Norm. SNPs", split = " "))
+#orderingFactorName <- unlist(strsplit("Diversity pi", split = " "))
 #randomSets <- 10000
 #minPval <- 0.0001
 ## For Tajima's D
 #yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("5.1,4.5", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("-3.0,5.75", split = ",")))
 ## For Rozas' R2
 #yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
 ## For CLR
 #yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
+## For Norm. SNPs
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("16,15", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,17", split = ",")))
+## For Diversity (pi)
+#yDec <- "%3.1f"
+#xAnn <- as.numeric(unlist(strsplit("1.9,1.7", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,2", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
@@ -66,6 +79,7 @@ randomSets <- as.numeric(args[12])
 minPval <- as.numeric(args[13])
 yDec <- as.character(args[14])
 xAnn <- as.numeric(unlist(strsplit(args[15], split = ",")))
+yLim <- as.numeric(unlist(strsplit(args[16], split = ",")))
 
 print(GO_ID)
 print(class(GO_ID))
@@ -159,6 +173,8 @@ IPSanno$`Gene-ID` <- sub(pattern = "1G", replacement = "2G",
 subcat1c_IDs <- sort(unique(c(IPSanno[grepl("NB-ARC", IPSanno$`Interpro-IDs-(Description)`),]$`Gene-ID`,
                               IPSanno[grepl("TIR", IPSanno$`Interpro-IDs-(Description)`),]$`Gene-ID`)))
 
+# "response to cold" GO_ID: "0009409"
+# "defense response" GO_ID: "0006952"
 # Load functional annotation in order to extract genes annotated with GO_ID
 anno <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/RamirezGonzalez_2018_Science_GO_anno/",
                           "RamirezGonzalez_2018_iwgsc_refseqv1.0_OntologiesForGenes_FunctionalAnnotation_HCgenes_in_Agenome_Bgenome_Dgenome_genomewide_GO_IDs_no_chrUn.tsv"),
@@ -171,7 +187,6 @@ IDs <- anno[GO_ID_anno_indices,]$featureID
 IDs <- IDs[!(IDs %in% unique(c(subcat1b_IDs, subcat1c_IDs)))]
 
 # Load table of features grouped into quantiles
-# by decreasing log2(libName/control) in region
 #mclapply(seq_along(pop_name), function(x) {
 estimates_allpops <- data.frame()
 IDsDF_annoGOIDsDF_stat_allpops <- data.frame() 
@@ -661,31 +676,31 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                        colour = get(featureGroup),
                        fill = get(featureGroup))) +
   geom_violin(position = position_dodge(width = 0.95),
+              colour = NA,
               scale = "count") +
-  scale_fill_manual(values = quantileColours, name = "") +
-  scale_colour_manual(values = quantileColours, name = "") +
   geom_beeswarm(data = dataFrame2,
-                mapping = aes(x = get(populationGroup),
-                              y = get(orderingFactor),
-                              colour = get(featureGroup)),
                 priority = "ascending",
                 groupOnX = T,
                 dodge.width = 0.95,
-                cex = 0.1,
-                size = 0.5) +
+                cex = 0.03,
+                size = 0.25) +
+  scale_fill_manual(values = quantileColours, name = "") +
+  scale_colour_manual(values = quantileColours, name = "") +
   geom_errorbar(data = dataFrame1,
                 mapping = aes(x = get(populationGroup),
                               y = mean,
                               group = get(featureGroup),
                               ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
-                width = 0.8, size = 2, position = position_dodge(width = 0.95)) +
+                width = 0.8, size = 1.5, position = position_dodge(width = 0.95), colour = "black", alpha = 0.8) +
   geom_point(data = dataFrame1,
              mapping = aes(x = get(populationGroup),
                            y = mean,
                            group = get(featureGroup)),
-             shape = "-", size = 14, position = position_dodge(width = 0.95), colour = "grey80") +
-  scale_y_continuous(labels = function(x) sprintf(yDec, x)) +
+             shape = "-", size = 14, position = position_dodge(width = 0.955), colour = "grey70", alpha = 0.8) +
+  scale_y_continuous(
+                     limits = c(yLim[1], yLim[2]),
+                     labels = function(x) sprintf(yDec, x)) +
 #  scale_x_discrete(position = "bottom",
 #                   breaks = levels(dataFrame1$population),
 #                   labels = levels(dataFrame1$population)) +
@@ -766,6 +781,19 @@ ggsave(paste0(sub("\\w+\\/$", "", outDir[1]), "plots/",
        plot = ggObjGA_feature_mean,
        height = 12, width = 35, limitsize = F)
 }
+
+print(paste0(gsub("_", " ", featureNamePlot), " in Quantile ", quantileNo, ":"))
+print(dim(IDsDF_annoGOIDsDF_stat_allpops[IDsDF_annoGOIDsDF_stat_allpops$quantile == paste0("Quantile ", quantileNo) &
+                                         IDsDF_annoGOIDsDF_stat_allpops$population == "Western Europe",])[1])
+print(paste0("Mean ", orderingFactor, " for ", gsub("_", " ", featureNamePlot), " in Quantile ", quantileNo, ":"))
+print(mean(IDsDF_annoGOIDsDF_stat_allpops[IDsDF_annoGOIDsDF_stat_allpops$quantile == paste0("Quantile ", quantileNo),][,2], na.rm = T))
+print(paste0(gsub("_", " ", featureNamePlot), " in Quantiles ", firstLowerQuantile, " & ", quantiles, ":"))
+print(dim(IDsDF_annoGOIDsDF_stat_allpops[IDsDF_annoGOIDsDF_stat_allpops$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles) &
+                                         IDsDF_annoGOIDsDF_stat_allpops$population == "Western Europe",])[1])
+print(paste0("Mean ", orderingFactor, " for ", gsub("_", " ", featureNamePlot), " in Quantiles ", firstLowerQuantile, " & ", quantiles, ":"
+))
+print(mean(IDsDF_annoGOIDsDF_stat_allpops[IDsDF_annoGOIDsDF_stat_allpops$quantile == paste0("Quantiles ", firstLowerQuantile, " & ", quantiles),][,2], na.rm = T))
+
 
 ## Plot bar graph summarising permutation test results
 #pt_list <- list()
