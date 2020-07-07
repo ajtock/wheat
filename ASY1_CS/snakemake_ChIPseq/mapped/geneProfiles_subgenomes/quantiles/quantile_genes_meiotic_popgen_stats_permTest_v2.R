@@ -35,7 +35,8 @@
 #yLim <- as.numeric(unlist(strsplit("-3.0,5.75", split = ",")))
 ## For Rozas' R2
 #yDec <- "%3.1f"
-#xAnn <- as.numeric(unlist(strsplit("0.26,0.23", split = ",")))
+#xAnn <- as.numeric(unlist(strsplit("0.29,0.26", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,3.0", split = ",")))
 ## For CLR
 #yDec <- "%3.1f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
@@ -45,8 +46,12 @@
 #yLim <- as.numeric(unlist(strsplit("0,17", split = ",")))
 ## For Diversity (pi)
 #yDec <- "%3.1f"
-#xAnn <- as.numeric(unlist(strsplit("1.9,1.7", split = ",")))
-#yLim <- as.numeric(unlist(strsplit("0,2", split = ",")))
+# Where grouped by HudsonRM_all
+#xAnn <- as.numeric(unlist(strsplit("0.9,0.8", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,1.0", split = ",")))
+# Where grouped by DMC1 or ASY1
+#xAnn <- as.numeric(unlist(strsplit("0.4,0.3", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("0,0.5", split = ",")))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
