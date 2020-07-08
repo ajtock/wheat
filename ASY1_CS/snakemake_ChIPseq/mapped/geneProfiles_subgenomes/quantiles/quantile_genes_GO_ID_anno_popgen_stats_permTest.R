@@ -5,7 +5,7 @@
 #      2) those for randomSets sets of randomly selected genes in another given ASY1 quantile and not encoding NLRs (using permutation tests)
 
 # Usage:
-# /applications/R/R-3.5.0/bin/Rscript quantile_genes_GO_ID_anno_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Cold_response_genes' '0009409' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%3.1f' '5.1,4.5' '-3.0,5.75'
+# /applications/R/R-3.5.0/bin/Rscript quantile_genes_GO_ID_anno_popgen_stats_permTest.R ASY1_CS_Rep1_ChIP ASY1_CS 'genes_in_Agenome_genomewide,genes_in_Bgenome_genomewide,genes_in_Dgenome_genomewide' 'Cold_response_genes' '0009409' genes 1 3 4 TajimaD_all "Tajima's D" 10000 0.0001 '%5.2f' '4.9,4.5' '-3.0,5.0'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
@@ -33,22 +33,22 @@
 #randomSets <- 10000
 #minPval <- 0.0001
 ## For Tajima's D
-#yDec <- "%3.1f"
-#xAnn <- as.numeric(unlist(strsplit("5.1,4.5", split = ",")))
-#yLim <- as.numeric(unlist(strsplit("-3.0,5.75", split = ",")))
+#yDec <- "%5.2f"
+#xAnn <- as.numeric(unlist(strsplit("4.9,4.5", split = ",")))
+#yLim <- as.numeric(unlist(strsplit("-3.0,5.0", split = ",")))
 ## For Rozas' R2
-#yDec <- "%3.1f"
+#yDec <- "%5.2f"
 #xAnn <- as.numeric(unlist(strsplit("0.29,0.26", split = ",")))
 #yLim <- as.numeric(unlist(strsplit("0,3.0", split = ",")))
 ## For CLR
-#yDec <- "%3.1f"
+#yDec <- "%5.2f"
 #xAnn <- as.numeric(unlist(strsplit("350,325", split = ",")))
 ## For Norm. SNPs
-#yDec <- "%3.1f"
+#yDec <- "%5.2f"
 #xAnn <- as.numeric(unlist(strsplit("16,15", split = ",")))
 #yLim <- as.numeric(unlist(strsplit("0,17", split = ",")))
 ## For Diversity (pi)
-#yDec <- "%3.1f"
+#yDec <- "%5.2f"
 # Where grouped by HudsonRM_all
 #xAnn <- as.numeric(unlist(strsplit("0.9,0.8", split = ",")))
 #yLim <- as.numeric(unlist(strsplit("0,1.0", split = ",")))
@@ -144,7 +144,9 @@ plotDir <- paste0(outDir, "plots/")
 
 # Define quantile colours
 quantileColours <- c("red", "navy")
-makeTransparent <- function(thisColour, alpha = 180)
+# Where geom_beeswarm is used for all populations violin plots,
+# make alpha = 180
+makeTransparent <- function(thisColour, alpha = 250)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -683,12 +685,12 @@ popgen_stats_meanLSDs <- function(dataFrame1,
   geom_violin(position = position_dodge(width = 0.95),
               colour = NA,
               scale = "count") +
-  geom_beeswarm(data = dataFrame2,
-                priority = "ascending",
-                groupOnX = T,
-                dodge.width = 0.95,
-                cex = 0.03,
-                size = 0.25) +
+#  geom_beeswarm(data = dataFrame2,
+#                priority = "ascending",
+#                groupOnX = T,
+#                dodge.width = 0.95,
+#                cex = 0.03,
+#                size = 0.25) +
   scale_fill_manual(values = quantileColours, name = "") +
   scale_colour_manual(values = quantileColours, name = "") +
   geom_errorbar(data = dataFrame1,
@@ -697,12 +699,12 @@ popgen_stats_meanLSDs <- function(dataFrame1,
                               group = get(featureGroup),
                               ymin = mean-(lsd/2),
                               ymax = mean+(lsd/2)),
-                width = 0.8, size = 1.5, position = position_dodge(width = 0.95), colour = "black", alpha = 0.8) +
+                width = 0.8, size = 1.5, position = position_dodge(width = 0.95), colour = "grey40", alpha = 1.0) +
   geom_point(data = dataFrame1,
              mapping = aes(x = get(populationGroup),
                            y = mean,
                            group = get(featureGroup)),
-             shape = "-", size = 14, position = position_dodge(width = 0.955), colour = "grey70", alpha = 0.8) +
+             shape = "-", size = 14, position = position_dodge(width = 0.955), colour = "grey60", alpha = 1.0) +
   scale_y_continuous(
                      limits = c(yLim[1], yLim[2]),
                      labels = function(x) sprintf(yDec, x)) +
@@ -738,14 +740,14 @@ popgen_stats_meanLSDs <- function(dataFrame1,
         plot.title = element_text(hjust = 0.5, size = 30)) +
   ggtitle(bquote(.(featureNamePlot))) +
   annotate(geom = "text",
-           size = 8,
+           size = 10,
            x = seq_along(pop_name),
            y = xAnn[1], angle = 0,
            parse = T,
            label = lapply(sapply(seq_along(pop_name)-1, function(w) { (w+1)+w }),
                      function(x) { bquote(italic("t") * "-test" ~ italic("P") ~ .(dataFrame1$ttestPval[x])) }) ) +
   annotate(geom = "text",
-           size = 8,
+           size = 10,
            x = seq_along(pop_name),
            y = xAnn[2], angle = 0,
            parse = T,
