@@ -508,7 +508,7 @@ filt_chrProfilesFeatureA <- mclapply(seq_along(chrs), function(x) {
 
 filt_chrProfilesFeatureB <- mclapply(seq_along(chrs), function(x) {
   featureB[featureB$chr == chrs[x] &
-           featureB[featureB$chr == chrs[x],]$window %in% featureA[featureA$chr == chrs[x],]$window,]
+           featureB$window %in% featureA[featureA$chr == chrs[x],]$window,]
 }, mc.cores = length(chrs))
 
 #filt_chrProfilesFeatureB <- mclapply(seq_along(chrProfilesFeatureB), function(x) {
