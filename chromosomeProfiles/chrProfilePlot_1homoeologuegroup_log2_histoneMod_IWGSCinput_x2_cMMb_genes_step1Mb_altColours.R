@@ -612,9 +612,9 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
            "_CSxRenan_step1Mb_IWGSCanalysis_v", date, ".pdf"),
-    height = 4*7, width = 10*3)
+    height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
-par(mar = c(5.0, 9.0, 2.1, 9.0))
+par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrs)) {
   chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrs),
                                 title = sub("c", "C", chrs[x]),
@@ -627,7 +627,8 @@ for(x in which(chrs %in% chrs)) {
                                 col1A = colourA,
                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
                                 col1B = colourB,
-                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+#                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                                Ylab1 = "",
                                 min1A = -max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 max1A = max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),

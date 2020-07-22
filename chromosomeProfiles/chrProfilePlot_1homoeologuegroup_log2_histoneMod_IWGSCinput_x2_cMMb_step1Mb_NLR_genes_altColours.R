@@ -2,7 +2,8 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 2.6 in chrPartitionPlotCov2_feature2 function
+# For 3-chr plot, change xblocks height to 2.6 in chrPartitionPlotCov2_feature2 function
+# For all-chr plot, change xblocks height to 7.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_NLR_genes_altColours.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 200720 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
@@ -611,9 +612,9 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
            "_CSxRenan_step1Mb_IWGSCanalysis_v", date, ".pdf"),
-    height = 4*7, width = 10*3)
+    height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
-par(mar = c(5.0, 9.0, 2.1, 9.0))
+par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrs)) {
   chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrs),
                                 title = sub("c", "C", chrs[x]),
@@ -626,7 +627,8 @@ for(x in which(chrs %in% chrs)) {
                                 col1A = colourA,
                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
                                 col1B = colourB,
-                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+#                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                                Ylab1 = "",
                                 min1A = -max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 max1A = max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),

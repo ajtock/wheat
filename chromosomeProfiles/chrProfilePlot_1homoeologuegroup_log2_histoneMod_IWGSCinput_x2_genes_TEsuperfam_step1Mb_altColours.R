@@ -2,7 +2,7 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 360.0 in chrPartitionPlotCov2_feature2 function
+# Change xblocks height to 340.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_genes_TEsuperfam_step1Mb_altColours.R H3K4me3 H3K4me3_Rep1_ChIP H3K9me2 H3K9me2_Rep1_ChIP MNase MNase_Rep1 MNase MNase_Rep1 both 1Mb 1000000 15 red4 blue 200720 Gypsy_LTR_RLG 'chr3A,chr3B,chr3D'
@@ -592,9 +592,9 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_step1Mb_", superfam, "_chrPlot_winSize", winName, "_smooth", N,
            "_v", date, ".pdf"),
-    height = 4*7, width = 10*3)
+    height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
-par(mar = c(5.0, 9.0, 2.1, 9.0))
+par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrs)) {
   chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrs),
                                 title = sub("c", "C", chrs[x]),
@@ -607,7 +607,8 @@ for(x in which(chrs %in% chrs)) {
                                 col1A = colourA,
                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
                                 col1B = colourB,
-                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+#                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                                Ylab1 = "",
                                 min1A = -max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 max1A = max((minCPMA_chrs*-1), maxCPMA_chrs),
                                 min1B = -max((minCPMB_chrs*-1), maxCPMB_chrs),
@@ -619,7 +620,8 @@ for(x in which(chrs %in% chrs)) {
                                 col2A = "limegreen",
                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                 col2B = "navy",
-                                Ylab2 = "Feature frequency",
+#                                Ylab2 = "Feature frequency",
+                                Ylab2 = "",
                                 min2A = 0-maxFeatureA_chrs,
                                 max2A = maxFeatureA_chrs,
                                 min2B = 0-maxFeatureB_chrs,
