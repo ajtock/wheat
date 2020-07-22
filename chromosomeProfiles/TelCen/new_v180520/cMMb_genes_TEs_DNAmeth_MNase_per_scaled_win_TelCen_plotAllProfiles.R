@@ -203,8 +203,8 @@ filt_TelCenProfiles <- mclapply(seq_along(TelCenProfiles), function(x) {
 pdf(paste0(plotDir, "cMMb_genes_TEs_DNAmeth_MNase_",
            winName, "_",
            propName, "_smooth", N,
-           "_TelCenProfile_v210520.pdf"),
-    height = 7, width = 12)
+           "_TelCenProfile_v200720.pdf"),
+    height = 7, width = 10)
 par(mfrow = c(2, 1))
 par(mar = c(3.1, 10.1, 2.1, 10.1))
 par(mgp = c(3, 0.5, 0))

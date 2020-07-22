@@ -92,7 +92,7 @@ TelCenPlot <- function(xplot,
                        legendLocx,
                        legendLocy) {
   # Right y-axis
-  plot(xplot, profiles[[1]], type = "l", lwd = 3, lty = 5, col = profileColours[1],
+  plot(xplot, profiles[[1]], type = "l", lwd = 3, lty = 2, col = profileColours[1],
        ylim = c(min(profiles[[1]], na.rm = T),
                 max(profiles[[1]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -108,7 +108,7 @@ TelCenPlot <- function(xplot,
   axis(side = 4, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[2], col.axis = profileColours[2], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[3]], type = "l", lwd = 3, lty = 5, col = profileColours[3],
+  plot(xplot, profiles[[3]], type = "l", lwd = 3, lty = 2, col = profileColours[3],
        ylim = c(min(profiles[[3]], na.rm = T),
                 max(profiles[[3]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -128,7 +128,7 @@ TelCenPlot <- function(xplot,
 
   # Left y-axis
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[5]], type = "l", lwd = 3, lty = 5, col = profileColours[5],
+  plot(xplot, profiles[[5]], type = "l", lwd = 3, lty = 2, col = profileColours[5],
        ylim = c(min(profiles[[5]], na.rm = T),
                 max(profiles[[5]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -144,7 +144,7 @@ TelCenPlot <- function(xplot,
   axis(side = 2, cex.axis = 1, lwd = 2.0, lwd.tick = 2.0, col = profileColours[6], col.axis = profileColours[6], line = 2.0)
 
   par(new = T, mgp = c(3, 0.5, 0))
-  plot(xplot, profiles[[7]], type = "l", lwd = 3, lty = 5, col = profileColours[7],
+  plot(xplot, profiles[[7]], type = "l", lwd = 3, lty = 2, col = profileColours[7],
        ylim = c(min(profiles[[7]], na.rm = T),
                 max(profiles[[7]], na.rm = T)),
        xlab = "", ylab = "", main = "",
@@ -204,8 +204,8 @@ filt_TelCenProfiles <- mclapply(seq_along(TelCenProfiles), function(x) {
 pdf(paste0(plotDir, "cMMb_genes_TEs_DNAmeth_MNase_",
            winName, "_",
            propName, "_smooth", N,
-           "_TelCenProfile_v220520_altColours.pdf"),
-    height = 7, width = 12)
+           "_TelCenProfile_v200720_altColours.pdf"),
+    height = 7, width = 10)
 par(mfrow = c(2, 1))
 par(mar = c(3.1, 10.1, 2.1, 10.1))
 par(mgp = c(3, 0.5, 0))
