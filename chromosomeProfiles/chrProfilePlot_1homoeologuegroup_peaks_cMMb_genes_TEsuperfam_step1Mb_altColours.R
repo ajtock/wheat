@@ -2,7 +2,7 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 9.0 in chrPartitionPlotCov2_feature2 function
+# Change xblocks height to 10.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_peaks_cMMb_genes_TEsuperfam_step1Mb_altColours.R DMC1 DMC1_Rep1_ChIP 10Mb 1Mb limegreen 200720 'Mariner_DTT' 'chr3A,chr3B,chr3D'

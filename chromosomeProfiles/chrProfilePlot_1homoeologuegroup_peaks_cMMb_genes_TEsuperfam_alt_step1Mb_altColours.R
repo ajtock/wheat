@@ -2,7 +2,8 @@
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
-# Change xblocks height to 9.0 in chrPartitionPlotCov2_feature2 function
+# For Gypsy_LTR_RLG, change xblocks height to 70.0 in chrPartitionPlotCov2_feature2 function
+# For Mutator_DTM, change xblocks height to 10.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
 # ./chrProfilePlot_1homoeologuegroup_peaks_cMMb_genes_TEsuperfam_alt_step1Mb_altColours.R ASY1_CS ASY1_CS_Rep1_ChIP 10Mb 1Mb darkgreen 200720 'Gypsy_LTR_RLG' 'chr3A,chr3B,chr3D'
