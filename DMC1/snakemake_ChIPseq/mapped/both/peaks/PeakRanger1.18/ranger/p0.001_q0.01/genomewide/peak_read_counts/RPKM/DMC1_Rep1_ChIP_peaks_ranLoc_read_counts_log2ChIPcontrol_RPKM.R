@@ -213,12 +213,12 @@ R2CranLoc_ChIP_TPM <- R2CranLoc_ChIP_RPK/R2CranLoc_ChIP_RPKPM_scaling_factor
 
 
 # Load input BAM file
-input_reads <- readGAlignmentPairs(paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/both/",
-                                          "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_both_sort.bam")) 
-input_reads <- input_reads[seqnames(input_reads) != "chrUn"]
-save(input_reads,
-     file = paste0("H3_input_SRR6350669_readGAlignmentPairs.RData"))
-#load(paste0("H3_input_SRR6350669_readGAlignmentPairs.RData"))
+#input_reads <- readGAlignmentPairs(paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/input/snakemake_ChIPseq/mapped/both/",
+#                                          "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_both_sort.bam")) 
+#input_reads <- input_reads[seqnames(input_reads) != "chrUn"]
+#save(input_reads,
+#     file = paste0("H3_input_SRR6350669_readGAlignmentPairs.RData"))
+load(paste0("H3_input_SRR6350669_readGAlignmentPairs.RData"))
 input_lib_size <- length(input_reads)
 
 # Calculate "per million" scaling factor
