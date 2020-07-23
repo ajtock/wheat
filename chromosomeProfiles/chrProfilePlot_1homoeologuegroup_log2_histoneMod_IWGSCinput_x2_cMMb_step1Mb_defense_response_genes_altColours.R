@@ -563,48 +563,48 @@ maxFeatureB <- max(unlist(mclapply(which(chrs %in% chrName),
 }, mc.cores = length(filt_chrProfilesFeatureB))))
 
 # Plot
-#pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
-#           "_log2_", libNameChIPA, "_", libNameControlA,
-#           "_log2_", libNameChIPB, "_", libNameControlB, "_",
-#           align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, ".pdf"),
-#    height = 4, width = 10*length(chrName))
-#par(mfrow = c(1, length(chrName)))
-#par(mar = c(5.0, 9.0, 2.1, 9.0))
-#for(x in which(chrs %in% chrName)) {
-#  chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrName),
-#                                title = sub("c", "C", chrs[x]),
-#                                cenStart = centromereStart[x],
-#                                cenEnd = centromereEnd[x],
-#                                rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
-#                                rug1Col = "grey40",
-#                                xplot1 = filt_chrProfilesChIPA[[x]]$window,
-#                                dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
-#                                col1A = colourA,
-#                                dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
-#                                col1B = colourB,
-#                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
-#                                min1A = -max((minCPMA*-1), maxCPMA),
-#                                max1A = max((minCPMA*-1), maxCPMA),
-#                                min1B = -max((minCPMB*-1), maxCPMB),
-#                                max1B = max((minCPMB*-1), maxCPMB),
-#                                legendLoc = "bottomright",
-#                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
-#                                xplot2 = filt_chrProfilesFeatureA[[x]]$window,
-#                                dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-#                                #col2A = "steelblue2",
-#                                col2A = "darkorange2",
-#                                #col2A = "cyan2",
-#                                dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-#                                #col2B = "purple4",
-#                                col2B = "darkgreen",
-#                                Ylab2 = "",
-#                                min2A = 0-maxFeatureA,
-#                                max2A = maxFeatureA,
-#                                min2B = 0-maxFeatureB,
-#                                max2B = maxFeatureB)
-#}
-#dev.off()
+pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
+           "_log2_", libNameChIPA, "_", libNameControlA,
+           "_log2_", libNameChIPB, "_", libNameControlB, "_",
+           align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
+           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, ".pdf"),
+    height = 4, width = 10*length(chrName))
+par(mfrow = c(1, length(chrName)))
+par(mar = c(5.0, 9.0, 2.1, 9.0))
+for(x in which(chrs %in% chrName)) {
+  chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrName),
+                                title = sub("c", "C", chrs[x]),
+                                cenStart = centromereStart[x],
+                                cenEnd = centromereEnd[x],
+                                rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+                                rug1Col = "grey40",
+                                xplot1 = filt_chrProfilesChIPA[[x]]$window,
+                                dat1A = filt_chrProfilesChIPA[[x]]$filt_log2CPM,
+                                col1A = colourA,
+                                dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
+                                col1B = colourB,
+                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                                min1A = -max((minCPMA*-1), maxCPMA),
+                                max1A = max((minCPMA*-1), maxCPMA),
+                                min1B = -max((minCPMB*-1), maxCPMB),
+                                max1B = max((minCPMB*-1), maxCPMB),
+                                legendLoc = "bottomright",
+                                legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Defense response genes"),
+                                xplot2 = filt_chrProfilesFeatureA[[x]]$window,
+                                dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
+                                #col2A = "steelblue2",
+                                col2A = "darkorange2",
+                                #col2A = "cyan2",
+                                dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
+                                #col2B = "purple4",
+                                col2B = "darkgreen",
+                                Ylab2 = "",
+                                min2A = 0-maxFeatureA,
+                                max2A = maxFeatureA,
+                                min2B = 0-maxFeatureB,
+                                max2B = maxFeatureB)
+}
+dev.off()
 
 pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPA, "_", libNameControlA,
