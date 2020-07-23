@@ -3,10 +3,10 @@
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
 # For Gypsy_LTR_RLG, change xblocks height to 70.0 in chrPartitionPlotCov2_feature2 function
-# For Mutator_DTM, change xblocks height to 10.0 in chrPartitionPlotCov2_feature2 function
+# For Mutator_DTM, change xblocks height to 6.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_peaks_cMMb_genes_TEsuperfam_alt_step1Mb_altColours.R ASY1_CS ASY1_CS_Rep1_ChIP 10Mb 1Mb darkgreen 200720 'Gypsy_LTR_RLG' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_peaks_cMMb_genes_TEsuperfam_alt_step1Mb_altColours.R ASY1_CS ASY1_CS_Rep1_ChIP 10Mb 1Mb darkgreen 200720 'Mutator_DTM' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "ASY1_CS"
 #libNameChIPA <- "ASY1_CS_Rep1_ChIP"
@@ -14,7 +14,7 @@
 #stepName <- "1Mb"
 #colourA <- "darkgreen"
 #date <- "200720"
-#superfam <- "Gypsy_LTR_RLG"
+#superfam <- "Mutator_DTM"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
 
@@ -204,7 +204,7 @@ for(x in which(chrs %in% chrName)) {
                                 min1B = 0,
                                 max1B = maxcMMb,
                                 legendLoc = "topright",
-                                legendLabs = c(paste0(sub("_\\w+", "", markChIPA), " peaks"), "cM/Mb", "Genes", "Gypsy LTR TEs"),
+                                legendLabs = c(paste0(sub("_\\w+", "", markChIPA), " peaks"), "cM/Mb", "Genes", "Mutator TEs"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "magenta3",
@@ -243,7 +243,7 @@ for(x in which(chrs %in% chrs)) {
                                 min1B = 0,
                                 max1B = maxcMMb_chrs,
                                 legendLoc = "topright",
-                                legendLabs = c(paste0(sub("_\\w+", "", markChIPA), " peaks"), "cM/Mb", "Genes", "Gypsy LTR TEs"),
+                                legendLabs = c(paste0(sub("_\\w+", "", markChIPA), " peaks"), "cM/Mb", "Genes", "Mutator TEs"),
                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                 col2A = "magenta3",
