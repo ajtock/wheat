@@ -113,7 +113,7 @@ R2CranLoc <- lapply(seq_along(R2C), function(x) {
   read.table(paste0(inDir,
                     libName,
                     "_rangerPeaksGRmergedOverlaps_minuslog10_p0.001_q0.01_noMinWidth_in_",
-                    R2C[x], ".gff"),
+                    R2C[x], "_randomLoci.gff"),
              header = F, stringsAsFactors = F)
 })
 # Concatenate if R2CranLoc is a list of R2Cpeak sets
@@ -154,6 +154,8 @@ print(range(width(R2CranLocGR)))
 #save(ChIP_reads,
 #     file = paste0(libName, "_readGAlignmentPairs.RData"))
 load(paste0(libName, "_readGAlignmentPairs.RData"))
+ChIP_reads <- reads
+rm(reads); gc()
 ChIP_lib_size <- length(ChIP_reads)
 
 # Calculate "per million" scaling factor
@@ -182,10 +184,12 @@ R1R3ranLoc_ChIP_RPKMplus1 <- R1R3ranLoc_ChIP_RPKM+1
 R1R3peak_ChIP_RPK <- R1R3peak_ChIP_reads/(width(R1R3peaksGR)/1e+03)
 R1R3peak_ChIP_RPKPM_scaling_factor <- sum(R1R3peak_ChIP_RPK)/1e+06
 R1R3peak_ChIP_TPM <- R1R3peak_ChIP_RPK/R1R3peak_ChIP_RPKPM_scaling_factor
+R1R3peak_ChIP_TPMplus1 <- R1R3peak_ChIP_TPM+1
 
 R1R3ranLoc_ChIP_RPK <- R1R3ranLoc_ChIP_reads/(width(R1R3ranLocGR)/1e+03)
 R1R3ranLoc_ChIP_RPKPM_scaling_factor <- sum(R1R3ranLoc_ChIP_RPK)/1e+06
 R1R3ranLoc_ChIP_TPM <- R1R3ranLoc_ChIP_RPK/R1R3ranLoc_ChIP_RPKPM_scaling_factor
+R1R3ranLoc_ChIP_TPMplus1 <- R1R3ranLoc_ChIP_TPM+1
 
 # Calculate RPM and RPKM for each R2Cpeak and R2CranLoc
 R2Cpeak_ChIP_reads <- countOverlaps(query = R2CpeaksGR,
@@ -206,10 +210,12 @@ R2CranLoc_ChIP_RPKMplus1 <- R2CranLoc_ChIP_RPKM+1
 R2Cpeak_ChIP_RPK <- R2Cpeak_ChIP_reads/(width(R2CpeaksGR)/1e+03)
 R2Cpeak_ChIP_RPKPM_scaling_factor <- sum(R2Cpeak_ChIP_RPK)/1e+06
 R2Cpeak_ChIP_TPM <- R2Cpeak_ChIP_RPK/R2Cpeak_ChIP_RPKPM_scaling_factor
+R2Cpeak_ChIP_TPMplus1 <- R2Cpeak_ChIP_TPM+1
 
 R2CranLoc_ChIP_RPK <- R2CranLoc_ChIP_reads/(width(R2CranLocGR)/1e+03)
 R2CranLoc_ChIP_RPKPM_scaling_factor <- sum(R2CranLoc_ChIP_RPK)/1e+06
 R2CranLoc_ChIP_TPM <- R2CranLoc_ChIP_RPK/R2CranLoc_ChIP_RPKPM_scaling_factor
+R2CranLoc_ChIP_TPMplus1 <- R2CranLoc_ChIP_TPM+1
 
 
 # Load input BAM file
@@ -247,10 +253,12 @@ R1R3ranLoc_input_RPKMplus1 <- R1R3ranLoc_input_RPKM+1
 R1R3peak_input_RPK <- R1R3peak_input_reads/(width(R1R3peaksGR)/1e+03)
 R1R3peak_input_RPKPM_scaling_factor <- sum(R1R3peak_input_RPK)/1e+06
 R1R3peak_input_TPM <- R1R3peak_input_RPK/R1R3peak_input_RPKPM_scaling_factor
+R1R3peak_input_TPMplus1 <- R1R3peak_input_TPM+1
 
 R1R3ranLoc_input_RPK <- R1R3ranLoc_input_reads/(width(R1R3ranLocGR)/1e+03)
 R1R3ranLoc_input_RPKPM_scaling_factor <- sum(R1R3ranLoc_input_RPK)/1e+06
 R1R3ranLoc_input_TPM <- R1R3ranLoc_input_RPK/R1R3ranLoc_input_RPKPM_scaling_factor
+R1R3ranLoc_input_TPMplus1 <- R1R3ranLoc_input_TPM+1
 
 # Calculate RPM and RPKM for each R2Cpeak and R2CranLoc
 R2Cpeak_input_reads <- countOverlaps(query = R2CpeaksGR,
@@ -271,15 +279,34 @@ R2CranLoc_input_RPKMplus1 <- R2CranLoc_input_RPKM+1
 R2Cpeak_input_RPK <- R2Cpeak_input_reads/(width(R2CpeaksGR)/1e+03)
 R2Cpeak_input_RPKPM_scaling_factor <- sum(R2Cpeak_input_RPK)/1e+06
 R2Cpeak_input_TPM <- R2Cpeak_input_RPK/R2Cpeak_input_RPKPM_scaling_factor
+R2Cpeak_input_TPMplus1 <- R2Cpeak_input_TPM+1
 
 R2CranLoc_input_RPK <- R2CranLoc_input_reads/(width(R2CranLocGR)/1e+03)
 R2CranLoc_input_RPKPM_scaling_factor <- sum(R2CranLoc_input_RPK)/1e+06
 R2CranLoc_input_TPM <- R2CranLoc_input_RPK/R2CranLoc_input_RPKPM_scaling_factor
+R2CranLoc_input_TPMplus1 <- R2CranLoc_input_TPM+1
 
+# Calculate log2(ChIP/input) coverage for R1R3peaks and R1R3ranLoc
+log2_R1R3peak_ChIP_input_RPKMplus1 <- log2(R1R3peak_ChIP_RPKMplus1/R1R3peak_input_RPKMplus1)
+log2_R1R3peak_ChIP_input_RPMplus1 <- log2(R1R3peak_ChIP_RPMplus1/R1R3peak_input_RPMplus1)
+log2_R1R3peak_ChIP_input_TPMplus1 <- log2((R1R3peak_ChIP_TPMplus1)/R1R3peak_input_TPMplus1)
+
+log2_R1R3ranLoc_ChIP_input_RPKMplus1 <- log2(R1R3ranLoc_ChIP_RPKMplus1/R1R3ranLoc_input_RPKMplus1)
+log2_R1R3ranLoc_ChIP_input_RPMplus1 <- log2(R1R3ranLoc_ChIP_RPMplus1/R1R3ranLoc_input_RPMplus1)
+log2_R1R3ranLoc_ChIP_input_TPMplus1 <- log2((R1R3ranLoc_ChIP_TPMplus1)/R1R3ranLoc_input_TPMplus1)
+
+# Calculate log2(ChIP/input) coverage for R2Cpeaks and R2CranLoc
+log2_R2Cpeak_ChIP_input_RPKMplus1 <- log2(R2Cpeak_ChIP_RPKMplus1/R2Cpeak_input_RPKMplus1)
+log2_R2Cpeak_ChIP_input_RPMplus1 <- log2(R2Cpeak_ChIP_RPMplus1/R2Cpeak_input_RPMplus1)
+log2_R2Cpeak_ChIP_input_TPMplus1 <- log2((R2Cpeak_ChIP_TPMplus1)/R2Cpeak_input_TPMplus1)
+
+log2_R2CranLoc_ChIP_input_RPKMplus1 <- log2(R2CranLoc_ChIP_RPKMplus1/R2CranLoc_input_RPKMplus1)
+log2_R2CranLoc_ChIP_input_RPMplus1 <- log2(R2CranLoc_ChIP_RPMplus1/R2CranLoc_input_RPMplus1)
+log2_R2CranLoc_ChIP_input_TPMplus1 <- log2((R2CranLoc_ChIP_TPMplus1)/R2CranLoc_input_TPMplus1)
 
 
 # Define function for making colours transparent (for peak width histograms)
-makeTransparent <- function(thisColour, alpha = 210)
+makeTransparent <- function(thisColour, alpha = 180)
 {
   newColour <- col2rgb(thisColour)
   apply(newColour, 2, function(x) {
@@ -291,22 +318,29 @@ makeTransparent <- function(thisColour, alpha = 210)
 
 
 # Plot peak width histogram, and RPKM+1 or RPM+1 vs loci width and cumulative fraction of loci (peaks and random)
-pdf(file = paste0(libName, "_",
-                  paste0(featureName, collapse = "_"),
-                  "_peak_width_hist_and_RPKMplus1_or_RPMplus1_vs_ecdf_and_locus_width_",
+pdf(file = paste0(libName,
+                  "_peak_width_hist_and_log2ChIPinput_RPKMplus1_or_RPMplus1_or_TPMplus1_vs_ecdf_and_locus_width_",
                   chrs, ".pdf"),
                   height = 8, width = 12)
-par(mfrow = c(2, 3), mar =  c(6, 6, 2, 2), mgp = c(4, 1.5, 0))
+par(mfrow = c(2, 3), mar =  c(6, 6, 2, 2), mgp = c(3, 1, 0))
 # RPKM+1
-hist(width(R1R3peaksGR), breaks = 1000, col = makeTransparent("red"), border = NA, lwd = 2,
-     xlab = "Peak width (bp)", ylab = "Peaks", main = "", cex.lab = 2, cex.axis = 2,
-     xlim = c(0, 1500))
-abline(v = mean(width(peaksGR)), col = "red", lty = 2, lwd = 2)
+minBreak <- min(c(width(R1R3peaksGR), width(R2CpeaksGR))) - 0.001
+maxBreak <- max(c(width(R1R3peaksGR), width(R2CpeaksGR)))
+vecBreak <- pretty(minBreak:maxBreak, n = 1000)
+histR1R3 <- hist(width(R1R3peaksGR), breaks = vecBreak, plot = F)
+histR2C <- hist(width(R2CpeaksGR), breaks = vecBreak, plot = F)
+plot(histR2C, col = makeTransparent("red4"), border = NA, lwd = 2,
+     xlab = "Peak width (bp)", ylab = "Peaks", main = "", xlim = c(0, 1500),
+     cex.lab = 2, cex.axis = 2)
+plot(add = T, histR1R3, col = makeTransparent("red"), border = NA, lwd = 2, xlim = c(0, 1500))
+abline(v = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
 legend("topright",
-       legend = paste0("Mean = ", mean(width(peaksGR))),
+       legend = c(paste0("R1 & R3 peaks mean = ", round(mean(width(R1R3peaksGR))), " bp"),
+                  paste0("R2a-R2b peaks mean = ", round(mean(width(R2CpeaksGR))), " bp")),
        col = "white",
-       text.col = "red",
+       text.col = c("red", "red4"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
+dev.off()
 
 plot(ecdf(ranLoc_ChIP_RPKMplus1), log = "x", xlim = c(1, 4), xaxt = "n", yaxt = "n", pch = ".",
      xlab = "", ylab = "", main = "", col = "black")
