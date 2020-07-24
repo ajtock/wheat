@@ -267,6 +267,54 @@ makeTransparent <- function(thisColour, alpha = 180)
   })
 }
 
+# Calculate peak heat vs width correlation coefficients
+# Standardise P-values to a sample size of 100 (q-values) as proposed by
+# Good (1982) Standardized tail-area probabilities. Journal of Computation and Simulation 16: 65-66
+# and summarised by Woolley (2003):
+# https://stats.stackexchange.com/questions/22233/how-to-choose-significance-level-for-a-large-data-set
+# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.518.5341&rep=rep1&type=pdf
+# Woolley (2003): "Clearly, the meaningfulness of the p-value diminishes as the sample size increases";
+# Anne Z. (2012, Pearson eCollege, Denver): "In the real world, there are unlikely to be semi-partial correlations
+# that are exactly zero, which is the null hypothesis in testing significance of a regression coefficient."
+# Formally, the standardised p-value is defined as:
+# q = min(0.5, p * sqrt( (n/100) ))
+# Woolley (2003): "The value of 0.5 is somewhat arbitrary, though its purpose is to avoid q-values of greater than 1."
+R1R3peak_L2FC_RPKMplus1_r <- round(cor.test(x = log2_R1R3peak_ChIP_input_RPKMplus1, y = width(R1R3peaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3peak_L2FC_RPKMplus1_p <- round(min(0.5, cor.test(x = log2_R1R3peak_ChIP_input_RPKMplus1, y = width(R1R3peaksGR), method = "spearman")$p.value * sqrt( (length(R1R3peaksGR)/100) )), digits = 4)
+R2Cpeak_L2FC_RPKMplus1_r <- round(cor.test(x = log2_R2Cpeak_ChIP_input_RPKMplus1, y = width(R2CpeaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R2Cpeak_L2FC_RPKMplus1_p <- round(min(0.5, cor.test(x = log2_R2Cpeak_ChIP_input_RPKMplus1, y = width(R2CpeaksGR), method = "spearman")$p.value * sqrt( (length(R2CpeaksGR)/100) )), digits = 4)
+R1R3ranLoc_L2FC_RPKMplus1_r <- round(cor.test(x = log2_R1R3ranLoc_ChIP_input_RPKMplus1, y = width(R1R3ranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3ranLoc_L2FC_RPKMplus1_p <- round(min(0.5, cor.test(x = log2_R1R3ranLoc_ChIP_input_RPKMplus1, y = width(R1R3ranLocGR), method = "spearman")$p.value * sqrt( (length(R1R3ranLocGR)/100) )), digits = 4)
+R2CranLoc_L2FC_RPKMplus1_r <- round(cor.test(x = log2_R2CranLoc_ChIP_input_RPKMplus1, y = width(R2CranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R2CranLoc_L2FC_RPKMplus1_p <- round(min(0.5, cor.test(x = log2_R2CranLoc_ChIP_input_RPKMplus1, y = width(R2CranLocGR), method = "spearman")$p.value * sqrt( (length(R2CranLocGR)/100) )), digits = 4)
+
+R1R3peak_L2FC_RPMplus1_r <- round(cor.test(x = log2_R1R3peak_ChIP_input_RPMplus1, y = width(R1R3peaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3peak_L2FC_RPMplus1_p <- round(min(0.5, cor.test(x = log2_R1R3peak_ChIP_input_RPMplus1, y = width(R1R3peaksGR), method = "spearman")$p.value * sqrt( (length(R1R3peaksGR)/100) )), digits = 4)
+R2Cpeak_L2FC_RPMplus1_r <- round(cor.test(x = log2_R2Cpeak_ChIP_input_RPMplus1, y = width(R2CpeaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R2Cpeak_L2FC_RPMplus1_p <- round(min(0.5, cor.test(x = log2_R2Cpeak_ChIP_input_RPMplus1, y = width(R2CpeaksGR), method = "spearman")$p.value * sqrt( (length(R2CpeaksGR)/100) )), digits = 4)
+R1R3ranLoc_L2FC_RPMplus1_r <- round(cor.test(x = log2_R1R3ranLoc_ChIP_input_RPMplus1, y = width(R1R3ranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3ranLoc_L2FC_RPMplus1_p <- round(min(0.5, cor.test(x = log2_R1R3ranLoc_ChIP_input_RPMplus1, y = width(R1R3ranLocGR), method = "spearman")$p.value * sqrt( (length(R1R3ranLocGR)/100) )), digits = 4)
+R2CranLoc_L2FC_RPMplus1_r <- round(cor.test(x = log2_R2CranLoc_ChIP_input_RPMplus1, y = width(R2CranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R2CranLoc_L2FC_RPMplus1_p <- round(min(0.5, cor.test(x = log2_R2CranLoc_ChIP_input_RPMplus1, y = width(R2CranLocGR), method = "spearman")$p.value * sqrt( (length(R2CranLocGR)/100) )), digits = 4)
+
+R1R3peak_ChIP_RPKMplus1_r <- round(cor.test(x = R1R3peak_ChIP_RPKMplus1, y = width(R1R3peaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3peak_ChIP_RPKMplus1_p <- round(min(0.5, cor.test(x = R1R3peak_ChIP_RPKMplus1, y = width(R1R3peaksGR), method = "spearman")$p.value * sqrt( (length(R1R3peaksGR)/100) )), digits = 4)
+R2Cpeak_ChIP_RPKMplus1_r <- round(cor.test(x = R2Cpeak_ChIP_RPKMplus1, y = width(R2CpeaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R2Cpeak_ChIP_RPKMplus1_p <- round(min(0.5, cor.test(x = R2Cpeak_ChIP_RPKMplus1, y = width(R2CpeaksGR), method = "spearman")$p.value * sqrt( (length(R2CpeaksGR)/100) )), digits = 4)
+R1R3ranLoc_ChIP_RPKMplus1_r <- round(cor.test(x = R1R3ranLoc_ChIP_RPKMplus1, y = width(R1R3ranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3ranLoc_ChIP_RPKMplus1_p <- round(min(0.5, cor.test(x = R1R3ranLoc_ChIP_RPKMplus1, y = width(R1R3ranLocGR), method = "spearman")$p.value * sqrt( (length(R1R3ranLocGR)/100) )), digits = 4)
+R2CranLoc_ChIP_RPKMplus1_r <- round(cor.test(x = R2CranLoc_ChIP_RPKMplus1, y = width(R2CranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R2CranLoc_ChIP_RPKMplus1_p <- round(min(0.5, cor.test(x = R2CranLoc_ChIP_RPKMplus1, y = width(R2CranLocGR), method = "spearman")$p.value * sqrt( (length(R2CranLocGR)/100) )), digits = 4)
+
+R1R3peak_ChIP_RPMplus1_r <- round(cor.test(x = R1R3peak_ChIP_RPMplus1, y = width(R1R3peaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3peak_ChIP_RPMplus1_p <- round(min(0.5, cor.test(x = R1R3peak_ChIP_RPMplus1, y = width(R1R3peaksGR), method = "spearman")$p.value * sqrt( (length(R1R3peaksGR)/100) )), digits = 4)
+R2Cpeak_ChIP_RPMplus1_r <- round(cor.test(x = R2Cpeak_ChIP_RPMplus1, y = width(R2CpeaksGR), method = "spearman")$estimate[[1]], digits = 2)
+R2Cpeak_ChIP_RPMplus1_p <- round(min(0.5, cor.test(x = R2Cpeak_ChIP_RPMplus1, y = width(R2CpeaksGR), method = "spearman")$p.value * sqrt( (length(R2CpeaksGR)/100) )), digits = 4)
+R1R3ranLoc_ChIP_RPMplus1_r <- round(cor.test(x = R1R3ranLoc_ChIP_RPMplus1, y = width(R1R3ranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R1R3ranLoc_ChIP_RPMplus1_p <- round(min(0.5, cor.test(x = R1R3ranLoc_ChIP_RPMplus1, y = width(R1R3ranLocGR), method = "spearman")$p.value * sqrt( (length(R1R3ranLocGR)/100) )), digits = 4)
+R2CranLoc_ChIP_RPMplus1_r <- round(cor.test(x = R2CranLoc_ChIP_RPMplus1, y = width(R2CranLocGR), method = "spearman")$estimate[[1]], digits = 2)
+R2CranLoc_ChIP_RPMplus1_p <- round(min(0.5, cor.test(x = R2CranLoc_ChIP_RPMplus1, y = width(R2CranLocGR), method = "spearman")$p.value * sqrt( (length(R2CranLocGR)/100) )), digits = 4)
+
 
 # Plot peak width histogram, and RPKM+1 or RPM+1 vs loci width and cumulative fraction of loci (peaks and random)
 pdf(file = paste0(libName,
@@ -336,9 +384,11 @@ plot(x = log2_R1R3peak_ChIP_input_RPKMplus1, y = width(R1R3peaksGR), pch = ".", 
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
 abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
-legend("topright",
-       legend = c("R1 & R3 peaks", "R2a-R2b peaks",
-                  "R1 & R3 random loci", "R2a-R2b random loci"),
+legend("bottomright",
+       legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_L2FC_RPKMplus1_p))),
+                  bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_L2FC_RPKMplus1_p)),
+                  bquote("R1 & R3 random loci" ~ italic("r"[s]) ~ "=" ~ .(R1R3ranLoc_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3ranLoc_L2FC_RPKMplus1_p)),
+                  bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_L2FC_RPKMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
                     "blue", "navy"),
@@ -407,9 +457,11 @@ plot(x = log2_R1R3peak_ChIP_input_RPMplus1, y = width(R1R3peaksGR), pch = ".", l
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
 abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
-legend("topright",
-       legend = c("R1 & R3 peaks", "R2a-R2b peaks",
-                  "R1 & R3 random loci", "R2a-R2b random loci"),
+legend("bottomright",
+       legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_L2FC_RPMplus1_p))),
+                  bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_L2FC_RPMplus1_p)),
+                  bquote("R1 & R3 random loci" ~ italic("r"[s]) ~ "=" ~ .(R1R3ranLoc_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3ranLoc_L2FC_RPMplus1_p)),
+                  bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_L2FC_RPMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
                     "blue", "navy"),
@@ -478,9 +530,11 @@ plot(x = R1R3peak_ChIP_RPKMplus1, y = width(R1R3peaksGR), pch = ".", log = "xy",
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
 abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
-legend("topright",
-       legend = c("R1 & R3 peaks", "R2a-R2b peaks",
-                  "R1 & R3 random loci", "R2a-R2b random loci"),
+legend("bottomright",
+       legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_ChIP_RPKMplus1_p))),
+                  bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_ChIP_RPKMplus1_p)),
+                  bquote("R1 & R3 random loci" ~ italic("r"[s]) ~ "=" ~ .(R1R3ranLoc_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3ranLoc_ChIP_RPKMplus1_p)),
+                  bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_ChIP_RPKMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
                     "blue", "navy"),
@@ -549,9 +603,11 @@ plot(x = R1R3peak_ChIP_RPMplus1, y = width(R1R3peaksGR), pch = ".", log = "xy",
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
 abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
-legend("topright",
-       legend = c("R1 & R3 peaks", "R2a-R2b peaks",
-                  "R1 & R3 random loci", "R2a-R2b random loci"),
+legend("bottomright",
+       legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_ChIP_RPMplus1_p))),
+                  bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_ChIP_RPMplus1_p)),
+                  bquote("R1 & R3 random loci" ~ italic("r"[s]) ~ "=" ~ .(R1R3ranLoc_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3ranLoc_ChIP_RPMplus1_p)),
+                  bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_ChIP_RPMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
                     "blue", "navy"),
