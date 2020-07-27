@@ -179,7 +179,9 @@ othersGRL <- lapply(seq_along(otherNames), function(x) {
   TEsGRtmp
 })
 
-Mariner_DTT_GR <- othersGRL[[5]]
+CACTA_DTC_GR <- othersGRL[[1]]
+Copia_LTR_RLC_GR <- othersGRL[[10]]
+Gypsy_LTR_RLG_GR <- othersGRL[[11]]
 
 # Load introns
 intronsA <- read.table("/home/ajt200/analysis/wheat/annotation/221118_download/iwgsc_refseqv1.1_genes_2017July06/IWGSC_v1.1_HC_20170706_representative_introns_in_Agenome_genomewide.gff3",
@@ -206,57 +208,94 @@ intronsGR <- GRanges(seqnames = introns$chr,
                                       end = introns$end),
                      strand = introns$strand)
 
-# Get peaks and ranLoc that overlap Mariner
-R1R3peaks_introns_overlap <- findOverlaps(query = intronsGR,
-                                          subject = R1R3peaksGR,
+# Get peaks and ranLoc that overlap CACTA_DTC
+R1R3peaks_CACTA_DTC_overlap <- findOverlaps(query = CACTA_DTC_GR,
+                                          subject = R1R3peaksGRselect,
                                           type = "any",
                                           select = "all",
                                           ignore.strand = TRUE)
-intron_overlapping_R1R3peaksGR <- R1R3peaksGR[-unique(subjectHits(R1R3peaks_introns_overlap))]
-intron_overlapping_R1R3peaksGR_widths <- width(intron_overlapping_R1R3peaksGR)
+CACTA_DTC_overlapping_R1R3peaksGR <- R1R3peaksGRselect[unique(subjectHits(R1R3peaks_CACTA_DTC_overlap))]
+CACTA_DTC_overlapping_R1R3peaksGR_widths <- width(CACTA_DTC_overlapping_R1R3peaksGR)
 
-R2Cpeaks_introns_overlap <- findOverlaps(query = intronsGR,
-                                         subject = R2CpeaksGR,
+R2Cpeaks_CACTA_DTC_overlap <- findOverlaps(query = CACTA_DTC_GR,
+                                         subject = R2CpeaksGRselect,
                                          type = "any",
                                          select = "all",
                                          ignore.strand = TRUE)
-intron_overlapping_R2CpeaksGR <- R2CpeaksGR[-unique(subjectHits(R2Cpeaks_introns_overlap))]
-intron_overlapping_R2CpeaksGR_widths <- width(intron_overlapping_R2CpeaksGR)
+CACTA_DTC_overlapping_R2CpeaksGR <- R2CpeaksGRselect[unique(subjectHits(R2Cpeaks_CACTA_DTC_overlap))]
+CACTA_DTC_overlapping_R2CpeaksGR_widths <- width(CACTA_DTC_overlapping_R2CpeaksGR)
 
-R1R3ranLoc_introns_overlap <- findOverlaps(query = intronsGR,
+# Get peaks and ranLoc that overlap Copia_LTR_RLC
+R1R3peaks_Copia_LTR_RLC_overlap <- findOverlaps(query = Copia_LTR_RLC_GR,
+                                          subject = R1R3peaksGRselect,
+                                          type = "any",
+                                          select = "all",
+                                          ignore.strand = TRUE)
+Copia_LTR_RLC_overlapping_R1R3peaksGR <- R1R3peaksGRselect[unique(subjectHits(R1R3peaks_Copia_LTR_RLC_overlap))]
+Copia_LTR_RLC_overlapping_R1R3peaksGR_widths <- width(Copia_LTR_RLC_overlapping_R1R3peaksGR)
+
+R2Cpeaks_Copia_LTR_RLC_overlap <- findOverlaps(query = Copia_LTR_RLC_GR,
+                                         subject = R2CpeaksGRselect,
+                                         type = "any",
+                                         select = "all",
+                                         ignore.strand = TRUE)
+Copia_LTR_RLC_overlapping_R2CpeaksGR <- R2CpeaksGRselect[unique(subjectHits(R2Cpeaks_Copia_LTR_RLC_overlap))]
+Copia_LTR_RLC_overlapping_R2CpeaksGR_widths <- width(Copia_LTR_RLC_overlapping_R2CpeaksGR)
+
+# Get peaks and ranLoc that overlap Gypsy_LTR_RLG
+R1R3peaks_Gypsy_LTR_RLG_overlap <- findOverlaps(query = Gypsy_LTR_RLG_GR,
+                                          subject = R1R3peaksGRselect,
+                                          type = "any",
+                                          select = "all",
+                                          ignore.strand = TRUE)
+Gypsy_LTR_RLG_overlapping_R1R3peaksGR <- R1R3peaksGRselect[unique(subjectHits(R1R3peaks_Gypsy_LTR_RLG_overlap))]
+Gypsy_LTR_RLG_overlapping_R1R3peaksGR_widths <- width(Gypsy_LTR_RLG_overlapping_R1R3peaksGR)
+
+R2Cpeaks_Gypsy_LTR_RLG_overlap <- findOverlaps(query = Gypsy_LTR_RLG_GR,
+                                         subject = R2CpeaksGRselect,
+                                         type = "any",
+                                         select = "all",
+                                         ignore.strand = TRUE)
+Gypsy_LTR_RLG_overlapping_R2CpeaksGR <- R2CpeaksGRselect[unique(subjectHits(R2Cpeaks_Gypsy_LTR_RLG_overlap))]
+Gypsy_LTR_RLG_overlapping_R2CpeaksGR_widths <- width(Gypsy_LTR_RLG_overlapping_R2CpeaksGR)
+
+
+
+
+R1R3ranLoc_CACTA_DTC_overlap <- findOverlaps(query = CACTA_DTC_GR,
                                            subject = R1R3ranLocGR,
                                            type = "any",
                                            select = "all",
                                            ignore.strand = TRUE)
-intron_overlapping_R1R3ranLocGR <- R1R3ranLocGR[-unique(subjectHits(R1R3ranLoc_introns_overlap))]
-intron_overlapping_R1R3ranLocGR_widths <- width(intron_overlapping_R1R3ranLocGR)
+CACTA_DTC_overlapping_R1R3ranLocGR <- R1R3ranLocGRselect[unique(subjectHits(R1R3ranLoc_CACTA_DTC_overlap))]
+CACTA_DTC_overlapping_R1R3ranLocGR_widths <- width(CACTA_DTC_overlapping_R1R3ranLocGR)
 
-R2CranLoc_introns_overlap <- findOverlaps(query = intronsGR,
+R2CranLoc_CACTA_DTC_overlap <- findOverlaps(query = CACTA_DTC_GR,
                                           subject = R2CranLocGR,
                                           type = "any",
                                           select = "all",
                                           ignore.strand = TRUE)
-intron_overlapping_R2CranLocGR <- R2CranLocGR[-unique(subjectHits(R2CranLoc_introns_overlap))]
-intron_overlapping_R2CranLocGR_widths <- width(intron_overlapping_R2CranLocGR)
+CACTA_DTC_overlapping_R2CranLocGR <- R2CranLocGR[unique(subjectHits(R2CranLoc_CACTA_DTC_overlap))]
+CACTA_DTC_overlapping_R2CranLocGR_widths <- width(CACTA_DTC_overlapping_R2CranLocGR)
 
 
 # Obtain 1000-bp gene promoters
 # Get peaks that overlap gene promoters
 promotersGR <- promoters(genesGR, upstream = 1000, downstream = 0)
 R1R3peaks_promoters_overlap <- findOverlaps(query = promotersGR,
-                                            subject = R1R3peaksGR,
+                                            subject = R1R3peaksGRselect,
                                             type = "any",
                                             select = "all",
                                             ignore.strand = TRUE)
-promoter_overlapping_R1R3peaksGR <- R1R3peaksGR[-unique(subjectHits(R1R3peaks_promoters_overlap))]
+promoter_overlapping_R1R3peaksGR <- R1R3peaksGR[unique(subjectHits(R1R3peaks_promoters_overlap))]
 promoter_overlapping_R1R3peaksGR_widths <- width(promoter_overlapping_R1R3peaksGR)
 
 R2Cpeaks_promoters_overlap <- findOverlaps(query = promotersGR,
-                                           subject = R2CpeaksGR,
+                                           subject = R2CpeaksGRselect,
                                            type = "any",
                                            select = "all",
                                            ignore.strand = TRUE)
-promoter_overlapping_R2CpeaksGR <- R2CpeaksGR[-unique(subjectHits(R2Cpeaks_promoters_overlap))]
+promoter_overlapping_R2CpeaksGR <- R2CpeaksGR[unique(subjectHits(R2Cpeaks_promoters_overlap))]
 promoter_overlapping_R2CpeaksGR_widths <- width(promoter_overlapping_R2CpeaksGR)
 
 R1R3ranLoc_promoters_overlap <- findOverlaps(query = promotersGR,
