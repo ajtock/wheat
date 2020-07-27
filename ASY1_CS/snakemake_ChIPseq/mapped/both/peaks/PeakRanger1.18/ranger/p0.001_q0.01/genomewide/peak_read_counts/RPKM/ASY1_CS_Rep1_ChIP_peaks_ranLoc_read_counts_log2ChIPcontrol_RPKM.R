@@ -4,17 +4,21 @@
 # and plot summaries
 
 # Usage:
-# ./ASY1_CS_Rep1_ChIP_peaks_ranLoc_read_counts_log2ChIPcontrol_RPKM.R ASY1_CS_Rep1_ChIP ASY1_CS 'chr3B'
+# ./ASY1_CS_Rep1_ChIP_peaks_ranLoc_read_counts_log2ChIPcontrol_RPKM.R ASY1_CS_Rep1_ChIP ASY1_CS MNase_Rep1 MNase 'chr3B'
 
 #libName <- "ASY1_CS_Rep1_ChIP"
 #dirName <- "ASY1_CS"
+#covlibName <- "MNase_Rep1"
+#covdirName <- "MNase"
 #chrs <- unlist(strsplit("chr3B",
 #                        split = ","))
 
 args <- commandArgs(trailingOnly = T)
 libName <- args[1]
 dirName <- args[2]
-chrs <- unlist(strsplit(args[3],
+covlibName <- args[3]
+covdirName <- args[4]
+chrs <- unlist(strsplit(args[5],
                         split = ","))
 
 library(GenomicAlignments)
@@ -76,13 +80,13 @@ if(chrs != "allchrs") {
   R2CpeaksGR <- R2CpeaksGR[seqnames(R2CpeaksGR) %in% chrs]
 }
 
-print(paste0(libName, " R1R3peaks width mean ="))
-print(mean(width(R1R3peaksGR)))
+print(paste0(libName, " R1R3peaks width median ="))
+print(median(width(R1R3peaksGR)))
 print(paste0(libName, " R1R3peaks width range ="))
 print(range(width(R1R3peaksGR)))
 
-print(paste0(libName, " R2Cpeaks width mean ="))
-print(mean(width(R2CpeaksGR)))
+print(paste0(libName, " R2Cpeaks width median ="))
+print(median(width(R2CpeaksGR)))
 print(paste0(libName, " R2Cpeaks width range ="))
 print(range(width(R2CpeaksGR)))
 
@@ -135,25 +139,25 @@ if(chrs != "allchrs") {
   R2CranLocGR <- R2CranLocGR[seqnames(R2CranLocGR) %in% chrs]
 }
 
-print(paste0("Random loci for ", libName, " R1R3peaks width mean ="))
-print(mean(width(R1R3ranLocGR)))
+print(paste0("Random loci for ", libName, " R1R3peaks width median ="))
+print(median(width(R1R3ranLocGR)))
 print(paste0("Random loci for ", libName, " R1R3peaks width range ="))
 print(range(width(R1R3ranLocGR)))
 
-print(paste0("Random loci for ", libName, " R2Cpeaks width mean ="))
-print(mean(width(R2CranLocGR)))
+print(paste0("Random loci for ", libName, " R2Cpeaks width median ="))
+print(median(width(R2CranLocGR)))
 print(paste0("Random loci for ", libName, " R2Cpeaks width range ="))
 print(range(width(R2CranLocGR)))
 
 
 # Load ChIP BAM file
-#ChIP_reads <- readGAlignmentPairs(paste0("/home/ajt200/analysis/wheat/", dirName,
-#                                    "/snakemake_ChIPseq/mapped/both/", libName,
+#reads <- readGAlignmentPairs(paste0("/home/ajt200/analysis/wheat/", covdirName,
+#                                    "/snakemake_ChIPseq/mapped/both/", covlibName,
 #                                    "_MappedOn_wheat_v1.0_lowXM_both_sort.bam"))
-#ChIP_reads <- ChIP_reads[seqnames(ChIP_reads) != "chrUn"]
-#save(ChIP_reads,
-#     file = paste0(libName, "_readGAlignmentPairs.RData"))
-load(paste0(libName, "_readGAlignmentPairs.RData"))
+#reads <- reads[seqnames(reads) != "chrUn"]
+#save(reads,
+#     file = paste0(covlibName, "_readGAlignmentPairs.RData"))
+load(paste0(covlibName, "_readGAlignmentPairs.RData"))
 ChIP_reads <- reads
 rm(reads); gc()
 ChIP_lib_size <- length(ChIP_reads)
@@ -318,7 +322,7 @@ R2CranLoc_ChIP_RPMplus1_p <- round(min(0.5, cor.test(x = R2CranLoc_ChIP_RPMplus1
 
 # Plot peak width histogram, and RPKM+1 or RPM+1 vs loci width and cumulative fraction of loci (peaks and random)
 pdf(file = paste0(libName,
-                  "_peak_width_hist_and_log2ChIPinput_RPKMplus1_or_RPMplus1_vs_ecdf_and_locus_width_",
+                  "_peak_width_hist_and_", covlibName, "_log2ChIPinput_RPKMplus1_vs_ecdf_and_locus_width_",
                   chrs, ".pdf"),
                   height = 16, width = 12)
 par(mfrow = c(4, 3), mar =  c(6, 6, 2, 2), mgp = c(3, 1, 0))
@@ -332,12 +336,12 @@ plot(histR2C, col = makeTransparent("red4"), border = NA, lwd = 2,
      xlab = "Peak width (bp)", ylab = "Peaks", main = "", xlim = c(0, 1500),
      cex.lab = 2, cex.axis = 2)
 plot(add = T, histR1R3, col = makeTransparent("red"), border = NA, lwd = 2, xlim = c(0, 1500))
-abline(v = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(v = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("right",
-       legend = c(paste0("R1 & R3 peaks mean = ", round(mean(width(R1R3peaksGR))), " bp"),
-                  paste0("R2a-R2b peaks mean = ", round(mean(width(R2CpeaksGR))), " bp")),
+       legend = c(paste0(length(R1R3peaksGR), " R1 & R3 peaks median = ", round(median(width(R1R3peaksGR))), " bp"),
+                  paste0(length(R2CpeaksGR), " R2a-R2b peaks median = ", round(median(width(R2CpeaksGR))), " bp")),
        col = "white",
-       text.col = c("red", "red4"),
+       text.col = c("grey50", "black"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 
 plot(ecdf(log2_R2CranLoc_ChIP_input_RPKMplus1), xlim = c(-1, 1.5), xaxt = "n", yaxt = "n", pch = ".",
@@ -346,7 +350,7 @@ axis(side = 1, lwd.tick = 2, cex.axis = 2)
 axis(side = 2, at = seq(0, 1, by = 0.25), labels = c("0", "", "0.5", "", "1"), lwd.tick = 2, cex.axis = 2)
 par(new = T)
 plot(ecdf(log2_R1R3ranLoc_ChIP_input_RPKMplus1), xlim = c(-1, 1.5),xaxt = "n", yaxt = "n", pch = ".",
-     xlab = "", ylab = "", main = "", col = "blue")
+     xlab = "", ylab = "", main = "", col = "dodgerblue")
 par(new = T)
 plot(ecdf(log2_R2Cpeak_ChIP_input_RPKMplus1), xlim = c(-1, 1.5), xaxt = "n", yaxt = "n", pch = ".",
      xlab = "", ylab = "", main = "", col = "red4")
@@ -360,7 +364,7 @@ legend("right",
                   "R1 & R3 random loci", "R2a-R2b random loci"),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -372,7 +376,7 @@ axis(side = 2, at = c(seq(10, 90, by = 10), seq(100, 900, by = 100), seq(1000, 1
 par(new = T)
 plot(x = log2_R1R3ranLoc_ChIP_input_RPKMplus1, y = width(R1R3ranLocGR), pch = ".", log = "y",
      xlim = c(-1, 1.5), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
-     xlab = "", ylab = "", col = makeTransparent("blue"))
+     xlab = "", ylab = "", col = makeTransparent("dodgerblue"))
 par(new = T)
 plot(x = log2_R2Cpeak_ChIP_input_RPKMplus1, y = width(R2CpeaksGR), pch = ".", log = "y",
      xlim = c(-1, 1.5), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
@@ -383,7 +387,7 @@ plot(x = log2_R1R3peak_ChIP_input_RPKMplus1, y = width(R1R3peaksGR), pch = ".", 
      xlab = expression("Log"[2]*"(ChIP/control) RPKM"),
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
-abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(h = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("bottomright",
        legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_L2FC_RPKMplus1_p))),
                   bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_L2FC_RPKMplus1_p)),
@@ -391,7 +395,7 @@ legend("bottomright",
                   bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_L2FC_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_L2FC_RPKMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -405,12 +409,12 @@ plot(histR2C, col = makeTransparent("red4"), border = NA, lwd = 2,
      xlab = "Peak width (bp)", ylab = "Peaks", main = "", xlim = c(0, 1500),
      cex.lab = 2, cex.axis = 2)
 plot(add = T, histR1R3, col = makeTransparent("red"), border = NA, lwd = 2, xlim = c(0, 1500))
-abline(v = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(v = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("right",
-       legend = c(paste0("R1 & R3 peaks mean = ", round(mean(width(R1R3peaksGR))), " bp"),
-                  paste0("R2a-R2b peaks mean = ", round(mean(width(R2CpeaksGR))), " bp")),
+       legend = c(paste0(length(R1R3peaksGR), " R1 & R3 peaks median = ", round(median(width(R1R3peaksGR))), " bp"),
+                  paste0(length(R2CpeaksGR), " R2a-R2b peaks median = ", round(median(width(R2CpeaksGR))), " bp")),
        col = "white",
-       text.col = c("red", "red4"),
+       text.col = c("grey50", "black"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 
 plot(ecdf(log2_R2CranLoc_ChIP_input_RPMplus1), xlim = c(-0.5,0.5), xaxt = "n", yaxt = "n", pch = ".",
@@ -419,7 +423,7 @@ axis(side = 1, lwd.tick = 2, cex.axis = 2)
 axis(side = 2, at = seq(0, 1, by = 0.25), labels = c("0", "", "0.5", "", "1"), lwd.tick = 2, cex.axis = 2)
 par(new = T)
 plot(ecdf(log2_R1R3ranLoc_ChIP_input_RPMplus1), xlim = c(-0.5,0.5),xaxt = "n", yaxt = "n", pch = ".",
-     xlab = "", ylab = "", main = "", col = "blue")
+     xlab = "", ylab = "", main = "", col = "dodgerblue")
 par(new = T)
 plot(ecdf(log2_R2Cpeak_ChIP_input_RPMplus1), xlim = c(-0.5,0.5), xaxt = "n", yaxt = "n", pch = ".",
      xlab = "", ylab = "", main = "", col = "red4")
@@ -433,7 +437,7 @@ legend("right",
                   "R1 & R3 random loci", "R2a-R2b random loci"),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -445,7 +449,7 @@ axis(side = 2, at = c(seq(10, 90, by = 10), seq(100, 900, by = 100), seq(1000, 1
 par(new = T)
 plot(x = log2_R1R3ranLoc_ChIP_input_RPMplus1, y = width(R1R3ranLocGR), pch = ".", log = "y",
      xlim = c(-0.5,0.5), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
-     xlab = "", ylab = "", col = makeTransparent("blue"))
+     xlab = "", ylab = "", col = makeTransparent("dodgerblue"))
 par(new = T)
 plot(x = log2_R2Cpeak_ChIP_input_RPMplus1, y = width(R2CpeaksGR), pch = ".", log = "y",
      xlim = c(-0.5,0.5), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
@@ -456,7 +460,7 @@ plot(x = log2_R1R3peak_ChIP_input_RPMplus1, y = width(R1R3peaksGR), pch = ".", l
      xlab = expression("Log"[2]*"(ChIP/control) RPM"),
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
-abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(h = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("bottomright",
        legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_L2FC_RPMplus1_p))),
                   bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_L2FC_RPMplus1_p)),
@@ -464,7 +468,7 @@ legend("bottomright",
                   bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_L2FC_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_L2FC_RPMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -478,12 +482,12 @@ plot(histR2C, col = makeTransparent("red4"), border = NA, lwd = 2,
      xlab = "Peak width (bp)", ylab = "Peaks", main = "", xlim = c(0, 1500),
      cex.lab = 2, cex.axis = 2)
 plot(add = T, histR1R3, col = makeTransparent("red"), border = NA, lwd = 2, xlim = c(0, 1500))
-abline(v = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(v = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("right",
-       legend = c(paste0("R1 & R3 peaks mean = ", round(mean(width(R1R3peaksGR))), " bp"),
-                  paste0("R2a-R2b peaks mean = ", round(mean(width(R2CpeaksGR))), " bp")),
+       legend = c(paste0(length(R1R3peaksGR), " R1 & R3 peaks median = ", round(median(width(R1R3peaksGR))), " bp"),
+                  paste0(length(R2CpeaksGR), " R2a-R2b peaks median = ", round(median(width(R2CpeaksGR))), " bp")),
        col = "white",
-       text.col = c("red", "red4"),
+       text.col = c("grey50", "black"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 
 plot(ecdf(R2CranLoc_ChIP_RPKMplus1), log = "x", xlim = c(1, 4), xaxt = "n", yaxt = "n", pch = ".",
@@ -492,7 +496,7 @@ axis(side = 1, at = c(1:4), labels = c(1:4), lwd.tick = 2, cex.axis = 2)
 axis(side = 2, at = seq(0, 1, by = 0.25), labels = c("0", "", "0.5", "", "1"), lwd.tick = 2, cex.axis = 2)
 par(new = T)
 plot(ecdf(R1R3ranLoc_ChIP_RPKMplus1), log = "x", xlim = c(1, 4),xaxt = "n", yaxt = "n", pch = ".",
-     xlab = "", ylab = "", main = "", col = "blue")
+     xlab = "", ylab = "", main = "", col = "dodgerblue")
 par(new = T)
 plot(ecdf(R2Cpeak_ChIP_RPKMplus1), log = "x", xlim = c(1, 4), xaxt = "n", yaxt = "n", pch = ".",
      xlab = "", ylab = "", main = "", col = "red4")
@@ -506,7 +510,7 @@ legend("right",
                   "R1 & R3 random loci", "R2a-R2b random loci"),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -518,7 +522,7 @@ axis(side = 2, at = c(seq(10, 90, by = 10), seq(100, 900, by = 100), seq(1000, 1
 par(new = T)
 plot(x = R1R3ranLoc_ChIP_RPKMplus1, y = width(R1R3ranLocGR), pch = ".", log = "xy",
      xlim = c(1, 4), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
-     xlab = "", ylab = "", col = makeTransparent("blue"))
+     xlab = "", ylab = "", col = makeTransparent("dodgerblue"))
 par(new = T)
 plot(x = R2Cpeak_ChIP_RPKMplus1, y = width(R2CpeaksGR), pch = ".", log = "xy",
      xlim = c(1, 4), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
@@ -529,7 +533,7 @@ plot(x = R1R3peak_ChIP_RPKMplus1, y = width(R1R3peaksGR), pch = ".", log = "xy",
      xlab = "Coverage RPKM+1",
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
-abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(h = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("bottomright",
        legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_ChIP_RPKMplus1_p))),
                   bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_ChIP_RPKMplus1_p)),
@@ -537,7 +541,7 @@ legend("bottomright",
                   bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_ChIP_RPKMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_ChIP_RPKMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -551,12 +555,12 @@ plot(histR2C, col = makeTransparent("red4"), border = NA, lwd = 2,
      xlab = "Peak width (bp)", ylab = "Peaks", main = "", xlim = c(0, 1500),
      cex.lab = 2, cex.axis = 2)
 plot(add = T, histR1R3, col = makeTransparent("red"), border = NA, lwd = 2, xlim = c(0, 1500))
-abline(v = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(v = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("right",
-       legend = c(paste0("R1 & R3 peaks mean = ", round(mean(width(R1R3peaksGR))), " bp"),
-                  paste0("R2a-R2b peaks mean = ", round(mean(width(R2CpeaksGR))), " bp")),
+       legend = c(paste0(length(R1R3peaksGR), " R1 & R3 peaks median = ", round(median(width(R1R3peaksGR))), " bp"),
+                  paste0(length(R2CpeaksGR), " R2a-R2b peaks median = ", round(median(width(R2CpeaksGR))), " bp")),
        col = "white",
-       text.col = c("red", "red4"),
+       text.col = c("grey50", "black"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 
 plot(ecdf(R2CranLoc_ChIP_RPMplus1), log = "x", xlim = c(1, 4), xaxt = "n", yaxt = "n", pch = ".",
@@ -565,7 +569,7 @@ axis(side = 1, at = c(1:4), labels = c(1:4), lwd.tick = 2, cex.axis = 2)
 axis(side = 2, at = seq(0, 1, by = 0.25), labels = c("0", "", "0.5", "", "1"), lwd.tick = 2, cex.axis = 2)
 par(new = T)
 plot(ecdf(R1R3ranLoc_ChIP_RPMplus1), log = "x", xlim = c(1, 4),xaxt = "n", yaxt = "n", pch = ".",
-     xlab = "", ylab = "", main = "", col = "blue")
+     xlab = "", ylab = "", main = "", col = "dodgerblue")
 par(new = T)
 plot(ecdf(R2Cpeak_ChIP_RPMplus1), log = "x", xlim = c(1, 4), xaxt = "n", yaxt = "n", pch = ".",
      xlab = "", ylab = "", main = "", col = "red4")
@@ -579,7 +583,7 @@ legend("right",
                   "R1 & R3 random loci", "R2a-R2b random loci"),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
@@ -591,7 +595,7 @@ axis(side = 2, at = c(seq(10, 90, by = 10), seq(100, 900, by = 100), seq(1000, 1
 par(new = T)
 plot(x = R1R3ranLoc_ChIP_RPMplus1, y = width(R1R3ranLocGR), pch = ".", log = "xy",
      xlim = c(1, 4), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
-     xlab = "", ylab = "", col = makeTransparent("blue"))
+     xlab = "", ylab = "", col = makeTransparent("dodgerblue"))
 par(new = T)
 plot(x = R2Cpeak_ChIP_RPMplus1, y = width(R2CpeaksGR), pch = ".", log = "xy",
      xlim = c(1, 4), ylim = c(10, 10000), xaxt = "n", yaxt = "n",
@@ -602,7 +606,7 @@ plot(x = R1R3peak_ChIP_RPMplus1, y = width(R1R3peaksGR), pch = ".", log = "xy",
      xlab = "Coverage RPM+1",
      ylab = "Locus width (bp)",
      cex.lab = 2, col = makeTransparent("red"))
-abline(h = c(mean(width(R2CpeaksGR)), mean(width(R1R3peaksGR))), col = c("red4", "red"), lty = 2, lwd = 2)
+abline(h = c(median(width(R2CpeaksGR)), median(width(R1R3peaksGR))), col = c("black", "grey50"), lty = 2, lwd = 2)
 legend("bottomright",
        legend = c(as.expression(bquote("R1 & R3 peaks" ~ italic("r"[s]) ~ "=" ~ .(R1R3peak_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R1R3peak_ChIP_RPMplus1_p))),
                   bquote("R2a-R2b peaks" ~ italic("r"[s]) ~ "=" ~ .(R2Cpeak_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2Cpeak_ChIP_RPMplus1_p)),
@@ -610,7 +614,7 @@ legend("bottomright",
                   bquote("R2a-R2b random loci" ~ italic("r"[s]) ~ "=" ~ .(R2CranLoc_ChIP_RPMplus1_r) * ";" ~ italic("P =") ~ .(R2CranLoc_ChIP_RPMplus1_p))),
        col = "white",
        text.col = c("red", "red4",
-                    "blue", "navy"),
+                    "dodgerblue", "navy"),
        ncol = 1, cex = 1, lwd = 2, bty = "n")
 box(lwd = 2)
 
