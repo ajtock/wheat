@@ -56,7 +56,7 @@ ChIPNamesTable <- c(
                     "H3K4me3",
                     "H3K9me2",
                     "H3K27me1",
-                    "H2AZ",
+                    "H2A.Z",
                     "MNase",
                     "H3K9ac",
                     "H3K27me3",
@@ -156,3 +156,6 @@ colnames(alnStatsDF) <- c("Library", "Total sequenced read pairs",
 write.table(alnStatsDF,
             file = "Supplemental_TableS1_alignment_summary.tsv",
             col.names = T, row.names = F, sep = "\t", quote = F)
+write.csv(alnStatsDF,
+          file = "Supplemental_TableS1_alignment_summary.csv",
+          row.names = F, quote = F)
