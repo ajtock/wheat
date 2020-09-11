@@ -43,7 +43,7 @@ region <- args[5]
 genomeName <- args[6]
 samplesNum <- as.numeric(args[7])
 
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "cluster_members")) {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
@@ -66,10 +66,10 @@ makeTransparent <- function(thisColour, alpha = 180)
 quantileColours <- makeTransparent(quantileColours)
 
 # Load feature quantiles
-if(libName %in% "cMMb") {
+if(libName %in% c("cMMb", "cluster_members")) {
   featuresDF <- read.table(paste0(sub("hypergeometricTests/", "", outDir),
                                   "/WesternEurope/features_", quantileLast, "quantiles_by_",
-                                  sub("_\\w+$", "", libName), "_of_NLR_genes_in_",
+                                  libName, "_of_NLR_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
                            header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
 } else {
@@ -193,7 +193,7 @@ for(yy in seq_along(motifs)) {
                          proportion_of_quantile = length(quantile_motifs) / length(quantile_genes),
                          random_proportions_of_quantile = hgDist / length(quantile_genes),
                          hypergeomDist = hgDist)
-    if(libName %in% "cMMb") {
+    if(libName %in% c("cMMb", "cluster_members")) {
     save(hgTestResults,
          file = paste0(outDir,
                        "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
@@ -208,7 +208,7 @@ for(yy in seq_along(motifs)) {
     }
   
     # Generate histogram
-    if(libName %in% "cMMb") {
+    if(libName %in% c("cMMb", "cluster_members")) {
     pdf(paste0(plotDir,
                "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
                "_by_", libName, "_of_NLR_genes_in_",
@@ -310,7 +310,7 @@ for(yy in seq_along(motifs)) {
   # Plot bar graph summarising permutation test results
   pt_list <- list()
   for(z in quantileFirst:quantileLast) {
-    if(libName %in% "cMMb") {
+    if(libName %in% c("cMMb", "cluster_members")) {
     load(paste0(outDir,
                 "NLR_motif", motifs[yy], "gene_representation_among_quantile", z, "_of_", quantileLast,
                 "_by_", libName, "_of_NLR_genes_in_",
@@ -374,7 +374,7 @@ for(yy in seq_along(motifs)) {
                    "(" * .(prettyNum(samplesNum,
                                      big.mark = ",",
                                      trim = T)) ~ " samples)"))
-  if(libName %in% "cMMb") {
+  if(libName %in% c("cMMb", "cluster_members")) {
   ggsave(paste0(plotDir,
                 "bargraph_NLR_motif", motifs[yy], "gene_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_NLR_genes_in_",

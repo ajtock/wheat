@@ -112,7 +112,7 @@ bp <- ggplot(data = bargraph_df,
   geom_point(mapping = aes(x = Quantile,
                            y = log2alpha0.05),
              position = position_dodge(0.9),
-             shape = "-", colour  = "grey60", size = 20) +
+             shape = "-", colour  = "grey80", size = 20) +
   geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015,
                              xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.015),
                colour = quantileColours[1],

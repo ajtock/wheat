@@ -55,7 +55,7 @@ makeTransparent <- function(thisColour, alpha = 180)
   })
 }
 
-if(libName %in% c("cMMb", "HudsonRM_all")) {
+if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all")) {
   outDir <- paste0("quantiles_by_", libName, "/hypergeometricTests/")
 } else {
   outDir <- paste0("quantiles_by_", sub("_\\w+", "", libName),
@@ -77,7 +77,7 @@ for(yy in seq_along(featCat)) {
   hg_list <- lapply(seq_along(genomeNames), function(y) {
     hg_list_quantile <- list() 
     for(z in quantileFirst:quantileLast) {
-      if(libName %in% c("cMMb", "HudsonRM_all")) {
+      if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all")) {
       load(paste0(outDir,
                   featCat[yy], "_gene_representation_among_quantile", z, "_of_", quantileLast,
                   "_by_", libName, "_of_NLR_genes_in_", genomeNames[y], "_",
@@ -170,7 +170,7 @@ for(yy in seq_along(featCat)) {
                    "(" * .(prettyNum(samplesNum,
                                      big.mark = ",",
                                      trim = T)) ~ "samples)"))
-  if(libName %in% c("cMMb", "HudsonRM_all")) {
+  if(libName %in% c("cMMb", "cluster_members", "HudsonRM_all")) {
   ggsave(paste0(plotDir,
                 "combined_bargraph_", featCat[yy], "_gene_representation_among_", quantileLast,
                 "quantiles_by_", libName, "_of_NLR_genes_in_each_subgenome_",
