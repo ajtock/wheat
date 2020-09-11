@@ -886,7 +886,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -896,7 +896,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(log2ChIPNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -1316,7 +1316,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -1326,7 +1326,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(otherNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -1740,7 +1740,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -1750,7 +1750,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(sRNANamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -2164,7 +2164,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -2174,7 +2174,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(DNAmethNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -2438,7 +2438,7 @@ ggObj1_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
   annotation_custom(legendLabs_feature[[3]]) +
@@ -2495,7 +2495,7 @@ ggObj2_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
   annotation_custom(legendLabs_ranFeat[[3]]) +
@@ -2552,7 +2552,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
   annotation_custom(legendLabs_ranLoc[[3]]) +
@@ -2593,7 +2593,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -2603,7 +2603,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -2656,13 +2656,37 @@ gc()
 # exome SNPclasses
 SNPclassNames <- c(
                    "all",
+                   "missense_variant",
+                   "synonymous_variant",
+                   "HIGH",
+                   "MODERATE",
+                   "LOW",
+                   "MODIFIER",
+                   "upstream_gene_variant",
+                   "downstream_gene_variant",
+                   "intron_variant",
+                   "intergenic",
                    "transition",
                    "transversion"
                   )
+
 SNPclassNamesPlot <- c(
                        "Exome SNPs",
+                       "Missense SNPs",
+                       "Synonymous SNPs",
+                       "High-impact SNPs",
+                       "Moderate-impact SNPs",
+                       "Low-impact SNPs",
+                       "Modifier-impact SNPs",
+                       "SNPs upstream of a gene",
+                       "SNPs downstream of a gene",
+                       "Intronic SNPs",
+                       "Intergenic SNPs",
                        "Transitions",
-                       "Transversions"
+                       "Transversions",
+                       bquote("Log"[2]*"(dSNP/sSNP)"),
+                       bquote("Log"[2]*"(nSNP/sSNP)"),
+                       bquote("Log"[2]*"(dSNP/lSNP)")
                       )
 
 # feature
@@ -2684,6 +2708,13 @@ SNPclass_featureMats <- mclapply(seq_along(SNPclass_featureMats), function(x) {
     SNPclass_featureMats[[x]][[1]]
   }
 }, mc.cores = length(SNPclass_featureMats))
+# Calculate log2 ratios of high-impact SNPs:synonymous SNPs,
+# non-synonymous SNPs:synonymous SNPs, and
+# high-impact SNPs:low-impact SNPs
+SNPclass_featureMats <- c(SNPclass_featureMats,
+                          list(log2((SNPclass_featureMats[[4]]+1)/(SNPclass_featureMats[[3]]+1)),
+                               log2((SNPclass_featureMats[[2]]+1)/(SNPclass_featureMats[[3]]+1)),
+                               log2((SNPclass_featureMats[[4]]+1)/(SNPclass_featureMats[[6]]+1))))
 
 # ranLoc
 SNPclass_ranLocMats <- mclapply(seq_along(SNPclassNames), function(x) {
@@ -2704,6 +2735,13 @@ SNPclass_ranLocMats <- mclapply(seq_along(SNPclass_ranLocMats), function(x) {
     SNPclass_ranLocMats[[x]][[1]]
   }
 }, mc.cores = length(SNPclass_ranLocMats))
+# Calculate log2 ratios of high-impact SNPs:synonymous SNPs,
+# non-synonymous SNPs:synonymous SNPs, and
+# high-impact SNPs:low-impact SNPs
+SNPclass_ranLocMats <- c(SNPclass_ranLocMats,
+                         list(log2((SNPclass_ranLocMats[[4]]+1)/(SNPclass_ranLocMats[[3]]+1)),
+                              log2((SNPclass_ranLocMats[[2]]+1)/(SNPclass_ranLocMats[[3]]+1)),
+                              log2((SNPclass_ranLocMats[[4]]+1)/(SNPclass_ranLocMats[[6]]+1))))
 
 # Add column names
 for(x in seq_along(SNPclass_featureMats)) {
@@ -2902,7 +2940,7 @@ ggObj1_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_feature[[1]]) +
   annotation_custom(legendLabs_feature[[2]]) +
   annotation_custom(legendLabs_feature[[3]]) +
@@ -2959,7 +2997,7 @@ ggObj2_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_ranFeat[[1]]) +
   annotation_custom(legendLabs_ranFeat[[2]]) +
   annotation_custom(legendLabs_ranFeat[[3]]) +
@@ -3016,7 +3054,7 @@ ggObj3_combined_SNPclass <- mclapply(seq_along(SNPclassNamesPlot), function(x) {
              linetype = "dashed",
              size = 1) +
   labs(x = "",
-       y = SNPclassNamesPlot[x]) +
+       y = bquote(.(SNPclassNamesPlot[[x]]))) +
   annotation_custom(legendLabs_ranLoc[[1]]) +
   annotation_custom(legendLabs_ranLoc[[2]]) +
   annotation_custom(legendLabs_ranLoc[[3]]) +
@@ -3057,7 +3095,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -3067,7 +3105,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(SNPclassNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -3525,7 +3563,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 } else {
@@ -3535,7 +3573,7 @@ if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
                 substring(featureName[1][1], first = 1, last = 5), "_in_",
                 paste0(substring(featureName, first = 10, last = 16),
                        collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
+                substring(featureName[1][1], first = 18), "_v140720.pdf"),
          plot = ggObjGA_combined,
          height = 6.5*length(c(superfamNamesPlot)), width = 21, limitsize = FALSE)
 }
@@ -3552,49 +3590,49 @@ rm(
 gc()
 #####
 
-ggObjGA_combined <- grid.arrange(grobs = c(
-                                           ggObj1_combined_log2ChIP,
-                                           ggObj1_combined_other,
-                                           ggObj1_combined_sRNA,
-                                           ggObj1_combined_DNAmeth,
-                                           ggObj1_combined_SNPclass,
-                                           ggObj1_combined_superfam,
-                                           ggObj2_combined_log2ChIP,
-                                           ggObj2_combined_other,
-                                           ggObj2_combined_sRNA,
-                                           ggObj2_combined_DNAmeth,
-                                           ggObj2_combined_SNPclass,
-                                           ggObj2_combined_superfam,
-                                           ggObj3_combined_log2ChIP,
-                                           ggObj3_combined_other,
-                                           ggObj3_combined_sRNA,
-                                           ggObj3_combined_DNAmeth,
-                                           ggObj3_combined_SNPclass,
-                                           ggObj3_combined_superfam
-                                          ),
-                                 layout_matrix = cbind(
-                                                       1:length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)),
-                                                       (length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2),
-                                                       ((length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*3)
-                                                      ))
-if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
-  ggsave(paste0(plotDir,
-                "combined_avgProfiles_around_", quantiles, "quantiles",
-                "_by_", libName, "_of_",
-                substring(featureName[1][1], first = 1, last = 5), "_in_",
-                paste0(substring(featureName, first = 10, last = 16),
-                       collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
-         plot = ggObjGA_combined,
-         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
-} else {
-  ggsave(paste0(plotDir,
-                "combined_avgProfiles_around_", quantiles, "quantiles",
-                "_by_log2_", libName, "_control_in_", region, "_of_",
-                substring(featureName[1][1], first = 1, last = 5), "_in_",
-                paste0(substring(featureName, first = 10, last = 16),
-                       collapse = "_"), "_",
-                substring(featureName[1][1], first = 18), "_v030720.pdf"),
-         plot = ggObjGA_combined,
-         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
-}
+#ggObjGA_combined <- grid.arrange(grobs = c(
+#                                           ggObj1_combined_log2ChIP,
+#                                           ggObj1_combined_other,
+#                                           ggObj1_combined_sRNA,
+#                                           ggObj1_combined_DNAmeth,
+#                                           ggObj1_combined_SNPclass,
+#                                           ggObj1_combined_superfam,
+#                                           ggObj2_combined_log2ChIP,
+#                                           ggObj2_combined_other,
+#                                           ggObj2_combined_sRNA,
+#                                           ggObj2_combined_DNAmeth,
+#                                           ggObj2_combined_SNPclass,
+#                                           ggObj2_combined_superfam,
+#                                           ggObj3_combined_log2ChIP,
+#                                           ggObj3_combined_other,
+#                                           ggObj3_combined_sRNA,
+#                                           ggObj3_combined_DNAmeth,
+#                                           ggObj3_combined_SNPclass,
+#                                           ggObj3_combined_superfam
+#                                          ),
+#                                 layout_matrix = cbind(
+#                                                       1:length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)),
+#                                                       (length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2),
+#                                                       ((length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*2)+1):(length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot))*3)
+#                                                      ))
+#if(libName %in% c("cMMb", "HudsonRM_all", "HudsonRM_syn", "HudsonRM_nonsyn")) {
+#  ggsave(paste0(plotDir,
+#                "combined_avgProfiles_around_", quantiles, "quantiles",
+#                "_by_", libName, "_of_",
+#                substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                paste0(substring(featureName, first = 10, last = 16),
+#                       collapse = "_"), "_",
+#                substring(featureName[1][1], first = 18), "_v140720.pdf"),
+#         plot = ggObjGA_combined,
+#         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
+#} else {
+#  ggsave(paste0(plotDir,
+#                "combined_avgProfiles_around_", quantiles, "quantiles",
+#                "_by_log2_", libName, "_control_in_", region, "_of_",
+#                substring(featureName[1][1], first = 1, last = 5), "_in_",
+#                paste0(substring(featureName, first = 10, last = 16),
+#                       collapse = "_"), "_",
+#                substring(featureName[1][1], first = 18), "_v140720.pdf"),
+#         plot = ggObjGA_combined,
+#         height = 6.5*length(c(log2ChIPNamesPlot, otherNamesPlot, sRNANamesPlot, DNAmethNamesPlot, SNPclassNamesPlot, superfamNamesPlot)), width = 21, limitsize = FALSE)
+#}

@@ -149,14 +149,14 @@ bp <- ggplot(data = bargraph_df,
 #  scale_y_continuous(limits = c(-0.5, 0.5)) +
 #  For abiotic/biotic-stress-responsive genes by ASY1
 #  scale_y_continuous(limits = c(-0.25, 0.25)) +
-#  For NLRs by H3K27me3, or for meiotic genes by cM/Mb
-#  scale_y_continuous(limits = c(-1.0, 1.0)) +
+#  For NLRs by H3K27me3, or for meiotic genes by cM/Mb, or for disease module 12 or abiotic module 2 genes
+  scale_y_continuous(limits = c(-1.0, 1.0)) +
 #  For NLRs by cM/Mb or ASY1, or for meiotic genes by H3K27me3
 #  scale_y_continuous(limits = c(-2.7, 2.7)) +
 #  For meiotic genes by DMC1 or ASY1
 #  scale_y_continuous(limits = c(-2.0, 2.0)) +
 #  For meiotic genes by H2A.Z
-  scale_y_continuous(limits = c(-2.2, 2.2)) +
+#  scale_y_continuous(limits = c(-2.2, 2.2)) +
 #  For NLRs by DMC1, and for meiotic genes by DMC1 or ASY1
 #  scale_y_continuous(limits = c(-2.0, 2.0)) +
 #  For LAR-overlapping genes by cM/Mb, DMC1, ASY1 or H3K27me3

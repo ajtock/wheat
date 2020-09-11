@@ -13,7 +13,7 @@
 # length(genome_LARs) [m] + ( length(genome_genes) - length(genome_LARs)) [n]
 
 # Usage 
-# ./proportion_overlapping_local_adaptation_regions_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_overlapping_local_adaptation_regions_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -26,7 +26,7 @@ library(extrafont)
 library(GenomicRanges)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
-#featRegion <- "bodies"
+#featRegion <- "genes"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
@@ -90,7 +90,7 @@ quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
 rm(featuresDF); gc()
 
 # Load regions assocaited with local_adaptation (LARs)
-LARs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
+LARs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
                           "Table_S10_41588_2019_382_MOESM10_ESM.tsv"),
                    header = T, sep = "\t", stringsAsFactors = F)
 colnames(LARs) <- c("chr", "start", "end", "num_top_SNPs", "env_vars", "num_env_vars")

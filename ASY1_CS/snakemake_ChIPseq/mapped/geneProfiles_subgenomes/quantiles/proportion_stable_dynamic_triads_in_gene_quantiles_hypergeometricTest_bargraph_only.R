@@ -93,7 +93,7 @@ makeTransparent <- function(thisColour, alpha = 180)
 
 category_factor <- c("stable", "middle", "dynamic")
 category_factor_plot <- c("Stable 10%", "Middle 80%", "Dynamic 10%")
-category_colour <- c("Stable 10%" = "green3", "Middle 80%" = "grey60", "Dynamic 10%" = "deeppink3")
+category_colour <- c("Stable 10%" = "green3", "Middle 80%" = "grey30", "Dynamic 10%" = "deeppink3")
 
 options(scipen = 100)
 
@@ -156,31 +156,31 @@ mclapply(seq_along(dataset), function(xx) {
     geom_point(mapping = aes(x = Quantile,
                              y = log2alpha0.05),
                position = position_dodge(0.9),
-               shape = "-", colour  = "grey40", size = 20) +
+               shape = "-", colour  = "grey80", size = 24) +
     guides(fill = guide_legend(direction = "horizontal",
                                label.position = "top",
                                label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
                                nrow = 1,
                                byrow = TRUE)) +
-    geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                               xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+    geom_segment(mapping = aes(x = 0.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07,
+                               xend = 1.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07),
                  colour = quantileColours[1],
                  inherit.aes = F, size = 5) +
-    geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                               xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+    geom_segment(mapping = aes(x = 1.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07,
+                               xend = 2.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07),
                  colour = quantileColours[2],
                  inherit.aes = F, size = 5) +
-    geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                               xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+    geom_segment(mapping = aes(x = 2.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07,
+                               xend = 3.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07),
                  colour = quantileColours[3],
                  inherit.aes = F, size = 5) +
-    geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1,
-                               xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1),
+    geom_segment(mapping = aes(x = 3.55, y = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07,
+                               xend = 4.45, yend = min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07),
                  colour = quantileColours[4],
                  inherit.aes = F, size = 5) +
 #    geom_boxplot(data = data.frame(quantile_lines = factor(levels(bargraph_df$Quantile),
 #                                                                  levels = levels(bargraph_df$Quantile)),
-#                                   yval = rep(min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.1, times = quantileLast)),
+#                                   yval = rep(min(c(bargraph_df$log2ObsExp, bargraph_df$log2alpha0.05))-0.07, times = quantileLast)),
 #                 mapping = aes(x = quantile_lines,
 #                               y = yval,
 #                               colour = quantile_lines),
@@ -190,25 +190,30 @@ mclapply(seq_along(dataset), function(xx) {
 #                        labels = "") +
     labs(y = bquote("Log"[2]*"(observed/expected) genes in quantile")) +
 #    scale_y_continuous(limits = c(-0.8, 0.8)) +
-    scale_x_discrete(position = "bottom") +
-    theme_bw() +
-    theme(axis.line.y = element_line(size = 1, colour = "black"),
-          axis.ticks.y = element_line(size = 1, colour = "black"),
-          axis.text.y = element_text(size = 25, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
-          axis.title.y = element_text(size = 25, colour = "black"),
-          axis.ticks.x = element_blank(),
-          axis.text.x = element_text(size = 28, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
-          axis.title.x = element_blank(),
-          panel.grid = element_blank(),
-          panel.border = element_blank(),
-          panel.background = element_blank(),
-          #legend.position = "none",
-          #legend.position = c(0.05, 0.30),
-          legend.background = element_rect(fill = "transparent"),
-          legend.key = element_rect(colour = "transparent",
-                                    fill = "transparent"),
-          plot.margin = unit(c(5.5, 5.5, 40.5, 5.5), "pt"),
-          plot.title = element_text(size = 14, colour = "black", hjust = 0.5)) +
+  scale_x_discrete(position = "bottom") +
+  guides(fill = guide_legend(direction = "horizontal",
+                             label.position = "top",
+                             label.theme = element_text(size = 20, hjust = 0, vjust = 0.5, angle = 90),
+                             nrow = 1,
+                             byrow = TRUE)) +
+  theme_bw() +
+  theme(axis.line.y = element_line(size = 1, colour = "black"),
+        axis.ticks.y = element_line(size = 1, colour = "black"),
+        axis.text.y = element_text(size = 25, colour = "black", hjust = 0.5, vjust = 0.5, angle = 90),
+        axis.title.y = element_text(size = 25, colour = "black"),
+        axis.ticks.x = element_blank(),
+        axis.text.x = element_text(size = 32, colour = "black", hjust = 0.5, vjust = 0.5, angle = 180),
+        axis.title.x = element_blank(),
+        panel.grid = element_blank(),
+        panel.border = element_blank(),
+        panel.background = element_blank(),
+        #legend.position = "none",
+        #legend.position = c(0.05, 0.30),
+        legend.background = element_rect(fill = "transparent"),
+        legend.key = element_rect(colour = "transparent",
+                                  fill = "transparent"),
+        plot.margin = unit(c(5.5, 5.5, 40.5, 5.5), "pt"),
+        plot.title = element_text(size = 24, colour = "black", hjust = 0.5)) +
     ggtitle(bquote(.(dataset[xx]) ~ "triad movement categories in" ~
                    .(sub("_\\w+$", "", libName)) ~ "quantiles" ~
                    "(" * .(featRegion) * ")" ~
@@ -221,14 +226,14 @@ mclapply(seq_along(dataset), function(xx) {
                 "quantiles_by_", libName, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
          plot = bp,
-         height = 8, width = 12)
+         height = 8, width = 15)
   } else {
   ggsave(paste0(plotDir,
                 "combined_bargraph_", dataset[xx], "_stable_dynamic_triad_representation_among_", quantileLast,
                 "quantiles_by_log2_", libName, "_control_in_", featRegion, "_of_genes_in_", genomeName, "_",
                 region, "_hypergeomTestRes_minConditions", minConditions, ".pdf"),
          plot = bp,
-         height = 8, width = 12)
+         height = 8, width = 15)
   }
 #}
 }, mc.cores = length(dataset), mc.preschedule = F)

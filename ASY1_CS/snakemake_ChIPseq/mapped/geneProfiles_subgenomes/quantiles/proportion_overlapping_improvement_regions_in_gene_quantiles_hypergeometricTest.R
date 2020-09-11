@@ -90,7 +90,7 @@ quantile_genes_list <- lapply(quantileFirst:quantileLast, function(x) {
 rm(featuresDF); gc()
 
 # Load selective sweep regions assocaited with modern wheat improvement (MIRs)
-MIRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/221118_download/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
+MIRs <- read.table(paste0("/home/ajt200/analysis/wheat/annotation/He_Akhunov_2019_NatGenet_1000exomes_SNPs/",
                           "Table_S11_41588_2019_382_MOESM11_ESM.tsv"),
                    header = T, sep = "\t", stringsAsFactors = F)
 colnames(MIRs) <- c("chr", "start", "end", "populations", "num_populations")

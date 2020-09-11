@@ -13,7 +13,7 @@
 # length(genome_NLRs) [m] + ( length(genome_genes) - length(genome_NLRs)) [n]
 
 # Usage 
-# ./proportion_NLRs_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'bodies' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
+# ./proportion_NLRs_in_gene_quantiles_hypergeometricTest.R 'ASY1_CS_Rep1_ChIP' 'genes' 1 4 'genomewide' 'Agenome_Bgenome_Dgenome' 100000
 
 library(methods)
 library(plotrix)
@@ -25,7 +25,7 @@ library(gridExtra)
 library(extrafont)
 
 #libName <- "ASY1_CS_Rep1_ChIP"
-#featRegion <- "bodies"
+#featRegion <- "genes"
 #quantileFirst <- 1
 #quantileLast <- 4
 #region <- "genomewide"
@@ -76,7 +76,6 @@ if(libName %in% "cMMb") {
                                   sub("_\\w+$", "", libName), "_in_", featRegion, "_of_genes_in_",
                                   genomeName, "_", region, "_WesternEurope.txt"),
                            header = T, sep = "\t", row.names = NULL, stringsAsFactors = F)
-
 }
 featuresDF$featureID <- sub(pattern = "\\.\\d+", replacement = "",
                             x = featuresDF$featureID)
