@@ -4,7 +4,7 @@
 # chloroplast, and mitochondrial genomes, and the control sequences described in
 # README_chloroplast_Lambda_pUC19_control_sequences.txt
 # to create one bismark-indexable reference genome (wheat_v1.0_incl_organelles_controls.fa)
-# NOTE: FASTA header lines have been shorted for chloroplast, mitochrondrion, lambda and pUC19
+# NOTE: FASTA header lines have been shortened for chloroplast, mitochrondrion, lambda and pUC19
 # in wheat_v1.0_incl_organelles_controls.fa
 
 faDir=separate_nuclear_organelles_controls
