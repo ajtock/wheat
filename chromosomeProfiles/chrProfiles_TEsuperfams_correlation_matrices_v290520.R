@@ -1,8 +1,8 @@
-#!/applications/R/R-3.5.0/bin/Rscript
+#!/applications/R/R-4.0.0/bin/Rscript
 
 # author: Andy Tock
 # contact: ajt200@cam.ac.uk
-# date: 28.04.2020
+# date: 29.05.2020
 
 # Create and plot correlation matrices of chromosome profiles for
 # log2(ChIP/input), cM/Mb, MNase, RNA-seq, DNA methylation,

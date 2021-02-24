@@ -1,8 +1,8 @@
-#!/applications/R/R-3.5.0/bin/Rscript
+#!/applications/R/R-4.0.0/bin/Rscript
 
 # author: Andy Tock
 # contact: ajt200@cam.ac.uk
-# date: 28.04.2020
+# date: 29.05.2020
 
 # Create and plot correlation matrices of chromosome profiles for
 # log2(ChIP/input), cM/Mb, MNase, RNA-seq, DNA methylation,
@@ -217,13 +217,13 @@ paths <- c(
            paste0(geneDir, "NLR_gene_frequency_per_", winName, "_", smoothing, ".txt"),
            paste0(geneDir, "meiotic_gene_frequency_per_", winName, "_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Mariner_DTT_", smoothing, ".txt"),
-           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Unclassified_with_TIRs_DTX_", smoothing, ".txt"),
+#           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Unclassified_with_TIRs_DTX_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Mutator_DTM_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Harbinger_DTH_", smoothing, ".txt"),
-           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_CACTA_DTC_", smoothing, ".txt"),
-           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_hAT_DTA_", smoothing, ".txt"),
+#           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_CACTA_DTC_", smoothing, ".txt"),
+#           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_hAT_DTA_", smoothing, ".txt"),
 #           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Helitrons_DHH_", smoothing, ".txt"),
-           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_SINE_SIX_", smoothing, ".txt"),
+#           paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_SINE_SIX_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_LINE_RIX_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Copia_LTR_RLC_", smoothing, ".txt"),
            paste0(superfamDir, "TE_frequency_per_", winName, "_superfamily_Gypsy_LTR_RLG_", smoothing, ".txt")
@@ -248,17 +248,17 @@ profileNames <- c(
                   "mCHH",
                   "MNase",
                   "Genes",
-                  "Defense response genes",
-                  "NLR-encoding genes",
-                  "Meiotic genes",
+                  "Defense response",
+                  "NLR-encoding",
+                  "Meiotic",
                   "Mariner",
-                  "Unclassified with TIRs",
+#                  "Unclassified with TIRs",
                   "Mutator",
                   "Harbinger",
-                  "CACTA",
-                  "hAT",
+#                  "CACTA",
+#                  "hAT",
 #                  "Helitron",
-                  "SINE",
+#                  "SINE",
                   "LINE",
                   "Copia LTR",
                   "Gypsy LTR"
@@ -437,7 +437,7 @@ ggObj <- ggplot(data = corDat,
   geom_tile() +
 #  geom_text(mapping = aes(X2, X1, label = value), size = 5) +
   geom_text(data = corDatSig,
-            mapping = aes(X2, X1, label = value), size = 5) +
+            mapping = aes(X2, X1, label = value), size = 8) +
   scale_fill_gradient2(name = bquote("Spearman's" ~ italic(r[s])),
                        low = "blue", mid = "white", high = "red",
                        midpoint = 0, breaks = seq(-1, 1, by = 0.4), limits = c(-1, 1)) +
@@ -447,14 +447,14 @@ ggObj <- ggplot(data = corDat,
   guides(fill = guide_colourbar(barwidth = 40, barheight = 6,
                                 title.position = "top", title.hjust = 0.5)) +
   theme_bw() +
-  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0, size = 25, colour = "black"),
-        axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1, size = 25, colour = "black"),
+  theme(axis.text.x = element_text(angle = 45, vjust = 0.5, hjust = 0, size = 39, colour = "black"),
+        axis.text.y = element_text(angle = 0, vjust = 1, hjust = 1, size = 39, colour = "black"),
         panel.grid.major = element_blank(),
         panel.border = element_blank(),
         panel.background = element_blank(),
         axis.ticks = element_blank(),
         legend.title = element_text(size = 40),
-        legend.text = element_text(size = 36),
+        legend.text = element_text(size = 40),
         legend.justification = c(1, 0),
         legend.position = c(0.65, 0.05),
         legend.direction = "horizontal",
@@ -467,5 +467,5 @@ ggObj <- ggplot(data = corDat,
 ggsave(paste0(plotDir,
               "Spearman_correlation_matrix_", winName,
               "_log2ChIPcontrol_cMMb_MNase_DNAmeth_genes_TEsuperfams_in_",
-              paste0(genomeName, collapse = "_"), "_genome_", region, "_", smoothing, ".pdf"),
+              paste0(genomeName, collapse = "_"), "_genome_", region, "_", smoothing, "_qVals.pdf"),
        plot = ggObj, height = 20, width = 20)
