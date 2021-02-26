@@ -6,9 +6,9 @@
 # For all-chr plot, change xblocks height to 14.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 190221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 190221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
-# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 190221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R CENH3 CENH3_ChIP_SRR1686799 DMC1 DMC1_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 dodgerblue limegreen 250221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R H3K27me1 H3K27me1_Rep1_ChIP H3K27me3 H3K27me3_ChIP_SRR6350666 MNase MNase_Rep1 input H3_input_SRR6350669 both 1Mb 1000000 15 navy firebrick1 250221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_histoneMod_IWGSCinput_x2_cMMb_step1Mb_defense_response_genes_altColours_MAPQ0_XM0.R H3K4me1 H3K4me1_Rep1_ChIP_SRR8126618 H3K27ac H3K27ac_Rep1_ChIP_SRR8126621 input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 magenta3 goldenrod1 250221 'Gypsy_LTR_RLG_subfamily_RLG_famc8.3' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "CENH3_ChIP_SRR1686799"
 #libNameChIPA <- "CENH3"
@@ -24,7 +24,7 @@
 #N <- 15
 #colourA <- "dodgerblue"
 #colourB <- "limegreen"
-#date <- "190221"
+#date <- "250221"
 #superfam <- "Gypsy_LTR_RLG_subfamily_RLG_famc8.3"
 #chrName <- unlist(strsplit("chr3A,chr3B,chr3D",
 #                           split = ","))
@@ -121,7 +121,7 @@ if(libNameChIPA %in% c("H3K4me3_ChIP_SRR6350668",
                         align, "/bg/")
 } else {
   covDirChIPA <- paste0("/home/ajt200/analysis/wheat/",
-                        markChIPA, "/snakemake_ChIPseq_MAPQ0/mapped/",
+                        markChIPA, "/snakemake_ChIPseq_MAPQ0_XM0/mapped/",
                         align, "/bg/")
 }
 profileChIPA <- read.table(paste0(covDirChIPA, libNameChIPA, "_MappedOn_wheat_v1.0_lowXM_",
@@ -191,7 +191,7 @@ if(libNameChIPB %in% c("H3K4me3_ChIP_SRR6350668",
                         align, "/bg/")
 } else {
   covDirChIPB <- paste0("/home/ajt200/analysis/wheat/",
-                        markChIPB, "/snakemake_ChIPseq_MAPQ0/mapped/",
+                        markChIPB, "/snakemake_ChIPseq_MAPQ0_XM0/mapped/",
                         align, "/bg/")
 }
 profileChIPB <- read.table(paste0(covDirChIPB, libNameChIPB, "_MappedOn_wheat_v1.0_lowXM_",
@@ -313,12 +313,12 @@ profileControlA <- data.frame(chr = as.character(profileControlA$V1),
 ## ControlB profile
 if(libNameControlB == "MNase_Rep1") {
   covDirControlB <- paste0("/home/ajt200/analysis/wheat/",
-                           "MNase/snakemake_ChIPseq_MAPQ0/mapped/", align, "/bg/")
+                           "MNase/snakemake_ChIPseq_MAPQ0_XM0/mapped/", align, "/bg/")
   profileControlB <- read.table(paste0(covDirControlB, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
                                        align, "_sort_norm_binSize", winName, ".bedgraph"))
 } else if(libNameControlB == "H3_input_SRR6350669") {
   covDirControlB <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                           "input/snakemake_ChIPseq_MAPQ0/mapped/", align, "/bg/")
+                           "input/snakemake_ChIPseq_MAPQ0_XM0/mapped/", align, "/bg/")
   profileControlB <- read.table(paste0(covDirControlB, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
                                        align, "_sort_norm_binSize", winName, ".bedgraph"))
 } else {
