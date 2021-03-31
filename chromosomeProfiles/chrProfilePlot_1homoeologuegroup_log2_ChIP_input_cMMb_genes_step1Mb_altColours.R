@@ -5,7 +5,7 @@
 # Change xblocks height to 46.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_libnorm_ChIP_input_cMMb_genes_step1Mb_altColours.R DMC1 DMC1_Rep1_ChIP ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 limegreen darkgreen 310321 '_MAPQ0_XM6' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_log2_ChIP_input_cMMb_genes_step1Mb_altColours.R DMC1 DMC1_Rep1_ChIP ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 limegreen darkgreen 310321 '_MAPQ0_XM6' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "DMC1"
 #libNameChIPA <- "DMC1_Rep1_ChIP"
@@ -352,10 +352,10 @@ profileControlB <- data.frame(chr = as.character(profileControlB$V1),
 
 ## ChIPA
 # Get coverage within each window
-#profileChIPA <- data.frame(chr = as.character(profileChIPA$chr),
-#                           window = as.numeric(profileChIPA$window),
-#                           CPM = as.numeric(profileChIPA$CPM),
-#                           stringsAsFactors = F)
+profileChIPA <- data.frame(chr = as.character(profileChIPA$chr),
+                           window = as.numeric(profileChIPA$window),
+                           CPM = as.numeric(log2((profileChIPA$CPM+1)/(profileControlA$CPM+1))),
+                           stringsAsFactors = F)
                         
 chrProfilesChIPA <- mclapply(seq_along(chrs), function(x) {
   profileChIPA[profileChIPA$chr == chrs[x],]
@@ -382,10 +382,10 @@ filt_chrProfilesChIPA <- mclapply(seq_along(chrProfilesChIPA), function(x) {
 
 ## ChIPB
 # Get coverage within each window
-#profileChIPB <- data.frame(chr = as.character(profileChIPB$chr),
-#                           window = as.numeric(profileChIPB$window),
-#                           CPM = as.numeric(profileChIPB$CPM),
-#                           stringsAsFactors = F)
+profileChIPB <- data.frame(chr = as.character(profileChIPB$chr),
+                           window = as.numeric(profileChIPB$window),
+                           CPM = as.numeric(log2((profileChIPB$CPM+1)/(profileControlB$CPM+1))),
+                           stringsAsFactors = F)
                         
 chrProfilesChIPB <- mclapply(seq_along(chrs), function(x) {
   profileChIPB[profileChIPB$chr == chrs[x],]
@@ -410,66 +410,32 @@ filt_chrProfilesChIPB <- mclapply(seq_along(chrProfilesChIPB), function(x) {
              stringsAsFactors = F)
 }, mc.cores = length(chrProfilesChIPB))
 
-## ControlA
-# Get coverage within each window
-#profileControlA <- data.frame(chr = as.character(profileControlA$chr),
-#                              window = as.numeric(profileControlA$window),
-#                              CPM = as.numeric(profileControlA$CPM),
-#                              stringsAsFactors = F)
-                        
-chrProfilesControlA <- mclapply(seq_along(chrs), function(x) {
-  profileControlA[profileControlA$chr == chrs[x],]
-}, mc.cores = length(chrs))
-
-# Calculate moving average of current window, ((N/2)-0.5) previous windows,
-# and ((N/2)-0.5) subsequent windows
-# (the higher N is, the greater the smoothing)
-flank <- (N/2)-0.5
-# Define MA filter coefficients
-f <- rep(1/N, N)
-
-filt_chrProfilesControlA <- mclapply(seq_along(chrProfilesControlA), function(x) {
-  filt_chrProfile <- stats::filter(x = chrProfilesControlA[[x]]$CPM,
-                                   filter = f,
-                                   sides = 2)
-  filt_chrProfile[1:flank] <- filt_chrProfile[flank+1]
-  filt_chrProfile[(length(filt_chrProfile)-flank+1):length(filt_chrProfile)] <- filt_chrProfile[(length(filt_chrProfile)-flank)]
-  data.frame(chr = as.character(chrProfilesControlA[[x]]$chr),
-             window = as.integer(chrProfilesControlA[[x]]$window),
-             filt_CPM = as.numeric(filt_chrProfile),
-             stringsAsFactors = F)
-}, mc.cores = length(chrProfilesControlA))
-
 
 minCPM_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
   function(x) {
     min(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
-          filt_chrProfilesChIPB[[x]]$filt_CPM,
-          filt_chrProfilesControlA[[x]]$filt_CPM))
+          filt_chrProfilesChIPB[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-minCPM_chrs <- 40
+minCPM_chrs <- -0.4
 maxCPM_chrs <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
   function(x) {
     max(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
-          filt_chrProfilesChIPB[[x]]$filt_CPM,
-          filt_chrProfilesControlA[[x]]$filt_CPM))+1
+          filt_chrProfilesChIPB[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-maxCPM_chrs <- 100
+maxCPM_chrs <- 0.4
 
 minCPM <- min(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
     min(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
-          filt_chrProfilesChIPB[[x]]$filt_CPM,
-          filt_chrProfilesControlA[[x]]$filt_CPM))
+          filt_chrProfilesChIPB[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-minCPM <- 40
+minCPM <- -0.4
 maxCPM <- max(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
     max(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
-          filt_chrProfilesChIPB[[x]]$filt_CPM,
-          filt_chrProfilesControlA[[x]]$filt_CPM))+1
+          filt_chrProfilesChIPB[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-maxCPM <- 100
+maxCPM <- 0.4
 
 # Feature frequency chromosome profiles
 #featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
@@ -571,14 +537,16 @@ maxFeatureB <- max(unlist(mclapply(which(chrs %in% chrName),
 
 # Plot
 pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
-           "_", libNameChIPA, "_", libNameChIPB, "_", libNameControlA,
+           "_log2_", libNameChIPA, "_", libNameControlA,
+           "_log2_", libNameChIPB, "_", libNameControlB,
            "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
+#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ2_XM6.pdf"),
            "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
     height = 4, width = 10*length(chrName))
 par(mfrow = c(1, length(chrName)))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
 for(x in which(chrs %in% chrName)) {
-  chrPartitionPlotCov3l_feature2(chrx = which(chrs %in% chrName),
+  chrPartitionPlotCov2l_feature2(chrx = which(chrs %in% chrName),
                                  title = sub("c", "C", chrs[x]),
                                  cenStart = centromereStart[x],
                                  cenEnd = centromereEnd[x],
@@ -589,35 +557,36 @@ for(x in which(chrs %in% chrName)) {
                                  col1A = colourA,
                                  dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
                                  col1B = colourB,
-                                 dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
-                                 col1C = "red",
+#                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ2_XM6"),
                                  Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
                                  min1 = minCPM,
                                  max1 = maxCPM,
                                  legendLoc = "topright",
-                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input", "cM/Mb", "Genes"),
+                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Genes"),
                                  xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                  dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                  col2A = "cyan2",
                                  dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                  col2B = "grey80",
                                  Ylab2 = "",
-                                 min2A = minFeatureA,
+                                 min2A = 0-maxFeatureA,
                                  max2A = maxFeatureA,
-                                 min2B = minFeatureB,
+                                 min2B = 0-maxFeatureB,
                                  max2B = maxFeatureB)
 }
 dev.off()
 
 pdf(paste0(plotDir, "Wheat",
-           "_", libNameChIPA, "_", libNameChIPB, "_", libNameControlA,
+           "_log2_", libNameChIPA, "_", libNameControlA,
+           "_log2_", libNameChIPB, "_", libNameControlB,
            "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
+#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ2_XM6.pdf"),
            "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
     height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
 par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrs)) {
-  chrPartitionPlotCov3l_feature2(chrx = which(chrs %in% chrs),
+  chrPartitionPlotCov2l_feature2(chrx = which(chrs %in% chrs),
                                  title = sub("c", "C", chrs[x]),
                                  cenStart = centromereStart[x],
                                  cenEnd = centromereEnd[x],
@@ -628,22 +597,21 @@ for(x in which(chrs %in% chrs)) {
                                  col1A = colourA,
                                  dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
                                  col1B = colourB,
-                                 dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
-                                 col1C = "red",
+#                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ2_XM6"),
                                  Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
                                  min1 = minCPM_chrs,
                                  max1 = maxCPM_chrs,
                                  legendLoc = "topright",
-                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input", "cM/Mb", "Genes"),
+                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "cM/Mb", "Genes"),
                                  xplot2 = filt_chrProfilesFeatureA[[x]]$window,
                                  dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
                                  col2A = "cyan2",
                                  dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
                                  col2B = "grey80",
                                  Ylab2 = "",
-                                 min2A = 0,
+                                 min2A = 0-maxFeatureA_chrs,
                                  max2A = maxFeatureA_chrs,
-                                 min2B = 0,
+                                 min2B = 0-maxFeatureB_chrs,
                                  max2B = maxFeatureB_chrs)
 }
 dev.off()
