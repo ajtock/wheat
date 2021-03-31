@@ -540,8 +540,8 @@ pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB,
            "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ23_XM6.pdf"),
-#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
+#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ23_XM6.pdf"),
+           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
     height = 4, width = 10*length(chrName))
 par(mfrow = c(1, length(chrName)))
 par(mar = c(5.0, 9.0, 2.1, 9.0))
@@ -557,8 +557,8 @@ for(x in which(chrs %in% chrName)) {
                                  col1A = colourA,
                                  dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
                                  col1B = colourB,
-                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ23_XM6"),
-#                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
+#                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ23_XM6"),
+                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
                                  min1 = minCPM,
                                  max1 = maxCPM,
                                  legendLoc = "topright",
@@ -580,8 +580,8 @@ pdf(paste0(plotDir, "Wheat",
            "_log2_", libNameChIPA, "_", libNameControlA,
            "_log2_", libNameChIPB, "_", libNameControlB,
            "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ23_XM6.pdf"),
-#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
+#           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, "_MAPQ23_XM6.pdf"),
+           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
     height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
 par(mar = c(5.0, 6.0, 2.1, 6.0))
@@ -597,8 +597,8 @@ for(x in which(chrs %in% chrs)) {
                                  col1A = colourA,
                                  dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
                                  col1B = colourB,
-                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ23_XM6"),
-#                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
+#                                 Ylab1 = bquote(.(toupper(align)) ~ "MAPQ23_XM6"),
+                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2))),
                                  min1 = minCPM_chrs,
                                  max1 = maxCPM_chrs,
                                  legendLoc = "topright",
