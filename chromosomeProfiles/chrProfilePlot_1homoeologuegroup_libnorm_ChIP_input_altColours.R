@@ -5,7 +5,7 @@
 # Change xblocks height to 46.0 in chrPartitionPlotCov2_feature2 function
 
 # Usage:
-# ./chrProfilePlot_1homoeologuegroup_libnorm_ChIP_input_cMMb_genes_step1Mb_altColours.R DMC1 DMC1_Rep1_ChIP ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 limegreen darkgreen 120421 '_MAPQ0_XM6' 'chr3A,chr3B,chr3D'
+# ./chrProfilePlot_1homoeologuegroup_libnorm_ChIP_input_altColours.R DMC1 DMC1_Rep1_ChIP ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 input H3_input_SRR6350669 both 1Mb 1000000 15 limegreen darkgreen 120421 '_MAPQ0_XM6' 'chr3A,chr3B,chr3D'
 
 #markChIPA <- "DMC1"
 #libNameChIPA <- "DMC1_Rep1_ChIP"
@@ -447,14 +447,14 @@ minCPM_chrs <- min(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
           filt_chrProfilesChIPB[[x]]$filt_CPM,
           filt_chrProfilesControlA[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-#minCPM_chrs <- 40
+minCPM_chrs <- 50
 maxCPM_chrs <- max(unlist(mclapply(seq_along(filt_chrProfilesChIPA),
   function(x) {
     max(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
           filt_chrProfilesChIPB[[x]]$filt_CPM,
           filt_chrProfilesControlA[[x]]$filt_CPM))+1
 }, mc.cores = length(filt_chrProfilesChIPA))))
-#maxCPM_chrs <- 100
+maxCPM_chrs <- 90
 
 minCPM <- min(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
@@ -462,14 +462,14 @@ minCPM <- min(unlist(mclapply(which(chrs %in% chrName),
           filt_chrProfilesChIPB[[x]]$filt_CPM,
           filt_chrProfilesControlA[[x]]$filt_CPM))
 }, mc.cores = length(filt_chrProfilesChIPA))))
-#minCPM <- 40
+minCPM <- 50
 maxCPM <- max(unlist(mclapply(which(chrs %in% chrName),
   function(x) {
     max(c(filt_chrProfilesChIPA[[x]]$filt_CPM,
           filt_chrProfilesChIPB[[x]]$filt_CPM,
           filt_chrProfilesControlA[[x]]$filt_CPM))+1
 }, mc.cores = length(filt_chrProfilesChIPA))))
-#maxCPM <- 100
+maxCPM <- 90
 
 # Feature frequency chromosome profiles
 #featureA <- read.table(paste0("/home/ajt200/analysis/wheat/chromosomeProfiles/cMMb/cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist",
@@ -572,80 +572,62 @@ maxFeatureB <- max(unlist(mclapply(which(chrs %in% chrName),
 # Plot
 pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_", libNameChIPA, "_", libNameChIPB, "_", libNameControlA,
-           "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
+           "_", align, "_chrPlot_winSize", winName, "_smooth", N,
+           "_v", date, params, ".pdf"),
     height = 4, width = 8*length(chrName))
 par(mfrow = c(1, length(chrName)))
 #par(mar = c(5.0, 9.0, 2.1, 9.0))
 par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrName)) {
-  chrPartitionPlotCov3lCPM_feature2(chrx = which(chrs %in% chrName),
-                                 title = sub("c", "C", chrs[x]),
-                                 cenStart = centromereStart[x],
-                                 cenEnd = centromereEnd[x],
-#                                 rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
-#                                 rug1Col = "grey40",
-                                 xplot1 = filt_chrProfilesChIPA[[x]]$window,
-                                 dat1A = filt_chrProfilesChIPA[[x]]$filt_CPM,
-                                 col1A = colourA,
-                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
-                                 col1B = colourB,
-                                 dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
-                                 col1C = "red",
-                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2)) ~ "(CPM)"),
-                                 min1 = minCPM,
-                                 max1 = maxCPM,
-                                 legendLoc = "topright",
-                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input", "cM/Mb", "Genes"),
-                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
-                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                 col2A = "cyan2",
-                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                 col2B = "grey80",
-                                 Ylab2 = "",
-                                 min2A = minFeatureA,
-                                 max2A = maxFeatureA,
-                                 min2B = minFeatureB,
-                                 max2B = maxFeatureB)
+  chrPartitionPlotCov3lCPM(chrx = which(chrs %in% chrName),
+                           title = sub("c", "C", chrs[x]),
+                           cenStart = centromereStart[x],
+                           cenEnd = centromereEnd[x],
+#                           rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+#                           rug1Col = "grey40",
+                           xplot1 = filt_chrProfilesChIPA[[x]]$window,
+                           dat1A = filt_chrProfilesChIPA[[x]]$filt_CPM,
+                           col1A = colourA,
+                           dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
+                           col1B = colourB,
+                           dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
+                           col1C = makeTransparent("red"),
+                           Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2)) ~ "(CPM)"),
+                           min1 = minCPM,
+                           max1 = maxCPM,
+                           legendLoc = "topright",
+                           legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input")
+                          )
 }
 dev.off()
 
 pdf(paste0(plotDir, "Wheat",
            "_", libNameChIPA, "_", libNameChIPB, "_", libNameControlA,
-           "_", align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
-           "_CSxRenan_step1Mb_IWGSCanalysis_v", date, params, ".pdf"),
+           "_", align, "_chrPlot_winSize", winName, "_smooth", N,
+           "_v", date, params, ".pdf"),
     height = 4*7, width = 8*3)
 par(mfrow = c(7, 3))
 par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrs)) {
-  chrPartitionPlotCov3lCPM_feature2(chrx = which(chrs %in% chrs),
-                                 title = sub("c", "C", chrs[x]),
-                                 cenStart = centromereStart[x],
-                                 cenEnd = centromereEnd[x],
-#                                 rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
-#                                 rug1Col = "grey40",
-                                 xplot1 = filt_chrProfilesChIPA[[x]]$window,
-                                 dat1A = filt_chrProfilesChIPA[[x]]$filt_CPM,
-                                 col1A = colourA,
-                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
-                                 col1B = colourB,
-                                 dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
-                                 col1C = "red",
-                                 Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2)) ~ "(CPM)"),
-                                 min1 = minCPM_chrs,
-                                 max1 = maxCPM_chrs,
-                                 legendLoc = "topright",
-                                 legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input", "cM/Mb", "Genes"),
-                                 xplot2 = filt_chrProfilesFeatureA[[x]]$window,
-                                 dat2A = filt_chrProfilesFeatureA[[x]]$filt_feature,
-                                 col2A = "cyan2",
-                                 dat2B = filt_chrProfilesFeatureB[[x]]$filt_feature,
-                                 col2B = "grey80",
-                                 Ylab2 = "",
-                                 min2A = 0,
-                                 max2A = maxFeatureA_chrs,
-                                 min2B = 0,
-                                 max2B = maxFeatureB_chrs)
+  chrPartitionPlotCov3lCPM(chrx = which(chrs %in% chrs),
+                           title = sub("c", "C", chrs[x]),
+                           cenStart = centromereStart[x],
+                           cenEnd = centromereEnd[x],
+#                           rug1 = markers[markers$chromosome == chrs[x],]$physicalPosition,
+#                           rug1Col = "grey40",
+                           xplot1 = filt_chrProfilesChIPA[[x]]$window,
+                           dat1A = filt_chrProfilesChIPA[[x]]$filt_CPM,
+                           col1A = colourA,
+                           dat1B = filt_chrProfilesChIPB[[x]]$filt_CPM,
+                           col1B = colourB,
+                           dat1C = filt_chrProfilesControlA[[x]]$filt_CPM,
+                           col1C = makeTransparent("red"),
+                           Ylab1 = bquote(.(toupper(align)) ~ .(substring(params, 2)) ~ "(CPM)"),
+                           min1 = minCPM_chrs,
+                           max1 = maxCPM_chrs,
+                           legendLoc = "topright",
+                           legendLabs = c(sub("_\\w+", "", markChIPA), sub("_\\w+", "", markChIPB), "Input")
+                          )
 }
 dev.off()
 
