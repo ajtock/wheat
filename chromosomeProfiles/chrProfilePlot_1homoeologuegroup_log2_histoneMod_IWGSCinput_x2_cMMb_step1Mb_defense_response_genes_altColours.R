@@ -1,4 +1,4 @@
-#!/applications/R/R-3.5.0/bin/Rscript
+#!/applications/R/R-4.0.0/bin/Rscript
 
 # Plot smoothed library-size-normalized coverage in windows along chromosomes
 
@@ -568,9 +568,10 @@ pdf(paste0(plotDir, "Wheat_", paste0(chrName, collapse = "_"),
            "_log2_", libNameChIPB, "_", libNameControlB, "_",
            align, "_featureFreq_chrPlot_winSize", winName, "_smooth", N,
            "_CSxRenan_step1Mb_IWGSCanalysis_v", date, ".pdf"),
-    height = 4, width = 10*length(chrName))
+    height = 4, width = 8*length(chrName))
 par(mfrow = c(1, length(chrName)))
-par(mar = c(5.0, 9.0, 2.1, 9.0))
+#par(mar = c(5.0, 9.0, 2.1, 9.0))
+par(mar = c(5.0, 6.0, 2.1, 6.0))
 for(x in which(chrs %in% chrName)) {
   chrPartitionPlotCov2_feature2(chrx = which(chrs %in% chrName),
                                 title = sub("c", "C", chrs[x]),
@@ -583,7 +584,8 @@ for(x in which(chrs %in% chrName)) {
                                 col1A = colourA,
                                 dat1B = filt_chrProfilesChIPB[[x]]$filt_log2CPM,
                                 col1B = colourB,
-                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+#                                Ylab1 = bquote("Log"[2]*"(ChIP/control)"),
+                                Ylab1 = "",
                                 min1A = -max((minCPMA*-1), maxCPMA),
                                 max1A = max((minCPMA*-1), maxCPMA),
                                 min1B = -max((minCPMB*-1), maxCPMB),
