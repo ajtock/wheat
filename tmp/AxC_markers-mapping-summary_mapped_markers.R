@@ -5,16 +5,25 @@
 # crossover rates (cM/Mb)
 
 # Usage:
-#  
+# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both
 
-#args <- commandArgs(trailingOnly = T)
+#markChIP <- "ASY1_CS"
+#libNameChIP <- "ASY1_CS_Rep1_ChIP"
+#markControl <- "input"
+#libNameControl <- "H3_input_SRR6350669"
+#align <- both
 
+args <- commandArgs(trailingOnly = T)
+markChIP <- args[1]
+libNameChIP <- args[2]
+markControl <- args[3]
+libNameControl <- args[4]
+align <- args[5]
 
 options(stringsAsFactors = F)
 library(data.table)
 library(parallel)
 library(GenomicRanges)
-
 
 # Genomic definitions
 winSize <- 1
@@ -51,18 +60,41 @@ for(i in unique(tab$chr)) {
   interGR <- c(interGR, inter_chr_GR)
 }
 
+## ChIP profile
+if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
+                     "H3K27me3_ChIP_SRR6350666",
+                     "H3K36me3_ChIP_SRR6350670",
+                     "H3K9ac_ChIP_SRR6350667",
+                     "CENH3_ChIP_SRR1686799",
+                     "H3_input_SRR6350669")) {
+  covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       align, "/bg/")
+} else if(libNameChIP %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
+                             "H3K27ac_Rep1_ChIP_SRR8126621")) {
+  covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
+                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       align, "/bg/")
+} else {
+  covDirChIP <- paste0("/home/ajt200/analysis/wheat/",
+                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       align, "/bg/")
+}
+ChIP <- read.table(paste0(covDirChIP, libNameChIP, "_MappedOn_wheat_v1.0_lowXM_",
+                          align, "_sort_norm.perbase"))
+
 # Load table of normalised ChIP coverage values             
-ASY1 <- read.table("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/bg/ASY1_CS_Rep1_ChIP_MappedOn_wheat_v1.0_lowXM_both_sort_norm.bedgraph",
-                   header = F)
-ChIP <- ASY1
+#ASY1 <- read.table("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/bg/ASY1_CS_Rep1_ChIP_MappedOn_wheat_v1.0_lowXM_both_sort_norm.perbase",
+#                   header = F)
+#ChIP <- ASY1
 
 # Function to convert coverage table into GRanges
 makeGR <- function(bedgraph) {
   GRanges(seqnames = bedgraph[,1],
-          ranges = IRanges(start = bedgraph[,2]+1,
-                           end = bedgraph[,3]),
+          ranges = IRanges(start = bedgraph[,2],
+                           end = bedgraph[,2]),
           strand = "*",
-          val = bedgraph[,4])
+          val = bedgraph[,3])
 }
 
 ChIP_GR <- makeGR(bedgraph = ChIP)
@@ -95,21 +127,28 @@ inter_ChIP_GR_exp_list <- lapply(1:length(inter_ChIP_GR), function(x) {
 #}, mc.cores = detectCores(), mc.preschedule = T)
 
 
+
+
+## Control profile
+if(libNameControl == "MNase_Rep1") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/",
+                          "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
+  Control <- read.table(paste0(covDirControl, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
+                               align, "_sort_norm_binSize", winName, ".perbase"))
+} else if(libNameControl == "H3_input_SRR6350669") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+                          "input/snakemake_ChIPseq/mapped/", align, "/bg/")
+  Control <- read.table(paste0(covDirControl, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
+                               align, "_sort_norm_binSize", winName, ".perbase"))
+} else {
+  if(!(libNameControl %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
+    stop("libNameControl is neither MNase_Rep1 nor H3_input_SRR6350669")
+  }
+}
+
+
 chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
 
-
-# Get coverage value ("val") ranges that overlap each marker interval in interGR
-fOverlapsStrand <- function(chr_featGR, chr_tabGR_str) {
-  ## Note: findOverlaps() approach does not work where a window does not overlap
-  ##       any positions in chr_tabGR, which can occur with smaller genomeBinSize
-  # Identify overlapping windows and midpoint coordinates
-  fOverlaps_str <- findOverlaps(query = chr_featGR,
-                                subject = chr_tabGR_str,
-                                type = "any",
-                                select = "all",
-                                ignore.strand = T)
-  fOverlaps_str
-}
 
 
                    
