@@ -82,14 +82,17 @@ fOverlaps_ChIP <- fOverlaps(interGR = interGR, datGR = ChIP_GR)
 inter_ChIP_GR <- ChIP_GR[subjectHits(fOverlaps_ChIP)]
 #inter_ChIP_GR_win <- inter_ChIP_GR[width(inter_ChIP_GR) > 1]
 
-inter_ChIP_GR_exp_list <- mclapply(1:length(inter_ChIP_GR), function(x) {
+#inter_ChIP_GR_exp_list <- mclapply(1:length(inter_ChIP_GR), function(x) {
+inter_ChIP_GR_exp_list <- lapply(1:length(inter_ChIP_GR), function(x) {
+  print(x)
   tmp <- rep(inter_ChIP_GR[x], width(inter_ChIP_GR[x]))
   for(i in 1:width(inter_ChIP_GR[x])) {
     ranges(tmp[i]) <- IRanges(start = start(tmp[i]) + i - 1,
                               end = start(tmp[i]) + i - 1)
   }
   tmp
-}, mc.cores = detectCores(), mc.preschedule = T)
+})
+#}, mc.cores = detectCores(), mc.preschedule = T)
 
 
 chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
