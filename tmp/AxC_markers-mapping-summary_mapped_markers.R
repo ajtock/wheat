@@ -11,7 +11,7 @@
 #libNameChIP <- "ASY1_CS_Rep1_ChIP"
 #markControl <- "input"
 #libNameControl <- "H3_input_SRR6350669"
-#align <- both
+#align <- "both"
 
 args <- commandArgs(trailingOnly = T)
 markChIP <- args[1]
@@ -50,7 +50,7 @@ for(i in unique(tab$chr)) {
   tab_chr <- tab[tab$chr == i,]
   inter_chr_GR <- GRanges(seqnames = c(tab_chr$chr),
                           ranges = IRanges(start = c(1, tab_chr[-nrow(tab_chr),]$pos+1),
-                                           end = c(tab_chr$pos)),
+                                           end = tab_chr$pos),
                           strand = "*",
                           physical_marker = tab_chr$physical_marker,
                           wt_marker = tab_chr$control_marker,
@@ -60,24 +60,32 @@ for(i in unique(tab$chr)) {
   interGR <- c(interGR, inter_chr_GR)
 }
 
+#interGR_poswidths <- interGR[width(interGR) > 0]
+quantile(width(interGR), probs = c(0.1))
+pdf("marker_interval_widths_hist.pdf")
+hist(width(interGR), breaks = 100000, xlim = c(0, 1e6))
+dev.off()
+
+
+
 ## ChIP profile
 if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
-                     "H3K27me3_ChIP_SRR6350666",
-                     "H3K36me3_ChIP_SRR6350670",
-                     "H3K9ac_ChIP_SRR6350667",
-                     "CENH3_ChIP_SRR1686799",
-                     "H3_input_SRR6350669")) {
+                      "H3K27me3_ChIP_SRR6350666",
+                      "H3K36me3_ChIP_SRR6350670",
+                      "H3K9ac_ChIP_SRR6350667",
+                      "CENH3_ChIP_SRR1686799",
+                      "H3_input_SRR6350669")) {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       markChIP, "/snakemake_ChIPseq/mapped/",
                        align, "/bg/")
 } else if(libNameChIP %in% c("H3K4me1_Rep1_ChIP_SRR8126618",
                              "H3K27ac_Rep1_ChIP_SRR8126621")) {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_seedlings_Li_2019_Genome_Biol/",
-                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       markChIP, "/snakemake_ChIPseq/mapped/",
                        align, "/bg/")
 } else {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/",
-                       markChIP, "/snakemake_ChIPseq_MAPQ0_XM6_normNone/mapped/",
+                       markChIP, "/snakemake_ChIPseq/mapped/",
                        align, "/bg/")
 }
 ChIP <- read.table(paste0(covDirChIP, libNameChIP, "_MappedOn_wheat_v1.0_lowXM_",
