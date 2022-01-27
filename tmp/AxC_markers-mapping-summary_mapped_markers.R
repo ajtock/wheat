@@ -26,6 +26,7 @@ options(stringsAsFactors = F)
 library(data.table)
 library(parallel)
 library(GenomicRanges)
+library(dplyr)
 library(plyr)
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
@@ -285,8 +286,11 @@ makeDF_x_list <- mclapply(1:length(interGR), function(x) {
            interNum = x)
 }, mc.cores = detectCores(), mc.preschedule = T)
 
+makeDF <- dplyr::bind_rows(makeDF_x_list, .id = "column_label")
 
 
+
+  chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
 
 
 # Function to calculate among-read agreement for a given feature x
