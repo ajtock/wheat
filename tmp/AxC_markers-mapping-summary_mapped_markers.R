@@ -5,12 +5,12 @@
 # crossover rates (cM/Mb)
 
 # Usage:
-# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both 1000
+# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input input_SRR6350669 both 1000
 
 #markChIP <- "ASY1_CS"
 #libNameChIP <- "ASY1_CS_Rep1_ChIP"
 #markControl <- "input"
-#libNameControl <- "H3_input_SRR6350669"
+#libNameControl <- "input_SRR6350669"
 #align <- "both"
 #genomeBinSize <- 1000
 
@@ -96,7 +96,7 @@ if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
                       "H3K36me3_ChIP_SRR6350670",
                       "H3K9ac_ChIP_SRR6350667",
                       "CENH3_ChIP_SRR1686799",
-                      "H3_input_SRR6350669")) {
+                      "input_SRR6350669")) {
   covDirChIP <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
                        markChIP, "/snakemake_ChIPseq/mapped/",
                        align, "/bg/")
@@ -168,14 +168,14 @@ if(libNameControl == "MNase_Rep1") {
                           "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
   Control <- read.table(paste0(covDirControl, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
                                align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
-} else if(libNameControl == "H3_input_SRR6350669") {
+} else if(libNameControl == "input_SRR6350669") {
   covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
                           "input/snakemake_ChIPseq/mapped/", align, "/bg/")
-  Control <- read.table(paste0(covDirControl, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
+  Control <- read.table(paste0(covDirControl, "input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
                                align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
 } else {
-  if(!(libNameControl %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
-    stop("libNameControl is neither MNase_Rep1 nor H3_input_SRR6350669")
+  if(!(libNameControl %in% c("MNase_Rep1", "input_SRR6350669"))) {
+    stop("libNameControl is neither MNase_Rep1 nor input_SRR6350669")
   }
 }
 Control <- read.table(paste0(covDirControl, libNameControl, "_MappedOn_wheat_v1.0_lowXM_",
@@ -290,9 +290,18 @@ makeDF_x_list <- mclapply(1:length(interGR), function(x) {
 
 makeDF <- dplyr::bind_rows(makeDF_x_list, .id = "column_label")
 
-colnames(makeDF[colnames(makeDF) == "ChIP"]) <- libNameChIP
-colnames(makeDF[colnames(makeDF) == "Control"]) <- libNameControl
-colnames(makeDF[colnames(makeDF) == "log2val"]) <- paste0("log2_", libNameChIP, "_", libNameControl)
+makeDF <- makeDF[,c(-1, -6)]
+
+colnames(makeDF) <- c("chr",
+                      colnames(makeDF)[2:9],
+                      markChIP, markControl,
+                      paste0("log2_", markChIP, "_", markControl))
+
+write.table(makeDF,
+            file = paste0("AxC_mapped_marker_intervals_",
+                          libNameChIP, "_", libNameControl, "_",
+                          align, "_binSize", genomeBinName, ".tsv"),
+             quote = F, sep = "\t", row.names = F, col.names = T)
 
 
 ##inter_ChIP_GR <- ChIP_GR[subjectHits(fOverlaps_ChIP)]
@@ -309,4 +318,3 @@ colnames(makeDF[colnames(makeDF) == "log2val"]) <- paste0("log2_", libNameChIP, 
 ##  tmp
 ##})
 ###}, mc.cores = detectCores(), mc.preschedule = T)
-
