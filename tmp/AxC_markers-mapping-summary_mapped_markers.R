@@ -156,14 +156,78 @@ ChIP_chrLenValsDT <- rbindlist(chrLenValsList)
 ChIP <- rbind.fill(ChIP, ChIP_chrLenValsDT)
 ChIP <- ChIP[order(ChIP$V1, ChIP$V2),]
 
-ChIP <- data.frame(chr = as.character(ChIP$V1),
-                   window = as.integer(ChIP$V2+1),
-                   CPM = as.numeric(ChIP$V4),
-                   stringsAsFactors = F)
-
 colnames(ChIP) <- c("chr", "start", "end", "val")
 
 ChIP$start <- ChIP$start+1
+
+
+## Control profile
+if(libNameControl == "MNase_Rep1") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/",
+                          "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
+  Control <- read.table(paste0(covDirControl, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
+                               align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
+} else if(libNameControl == "H3_input_SRR6350669") {
+  covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
+                          "input/snakemake_ChIPseq/mapped/", align, "/bg/")
+  Control <- read.table(paste0(covDirControl, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
+                               align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
+} else {
+  if(!(libNameControl %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
+    stop("libNameControl is neither MNase_Rep1 nor H3_input_SRR6350669")
+  }
+}
+Control <- read.table(paste0(covDirControl, libNameControl, "_MappedOn_wheat_v1.0_lowXM_",
+                             align, "_sort_norm_binSize", genomeBinName , ".bedgraph"))
+
+# Rows where the difference between end and start coordinates is > genomeBinSize
+Control_bigWins <- Control[Control$V3-Control$V2 > genomeBinSize,]
+# Rows where the difference between end and start coordinates is == genomeBinSize
+Control <- Control[Control$V3-Control$V2 == genomeBinSize,]
+
+# Create a list of big windows, each split into windows of genomeBinSize,
+# or < genomeBinSize if at chromosome end
+Control_bigWinsList <- mclapply(seq_along(1:dim(Control_bigWins)[1]), function(x) {
+  bigWinsSplit <- seq(from = Control_bigWins[x,]$V2,
+                      to = Control_bigWins[x,]$V3,
+                      by = genomeBinSize)
+
+  if(bigWinsSplit[length(bigWinsSplit)] < Control_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(Control_bigWins[x,]$V1),
+               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
+                                 bigWinsSplit[length(bigWinsSplit)])),
+               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize,
+                                 Control_bigWins[x,]$V3)),
+               V4 = as.numeric(Control_bigWins[x,]$V4))
+  } else if (bigWinsSplit[length(bigWinsSplit)] == Control_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(Control_bigWins[x,]$V1),
+               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
+               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize),
+               V4 = as.numeric(Control_bigWins[x,]$V4))
+  }
+}, mc.cores = detectCores(), mc.preschedule = T)
+
+Control_bigWinsDT <- rbindlist(Control_bigWinsList)
+Control <- rbind.fill(Control, Control_bigWinsDT)
+Control <- Control[order(Control$V1, Control$V2),]
+
+chrLenValsList <- mclapply(seq_along(chrs), function (x) {
+  chrProfileControl <- Control[Control$V1 == chrs[x],]
+  if(chrProfileControl[dim(chrProfileControl)[1],]$V3 < chrLens[x]) {
+    data.frame(V1 = chrs[x],
+               V2 = as.integer(chrProfileControl[dim(chrProfileControl)[1],]$V3),
+               V3 = as.integer(chrLens[x]),
+               V4 = as.numeric(chrProfileControl[dim(chrProfileControl)[1],]$V4))
+  }
+}, mc.cores = detectCores(), mc.preschedule = F)
+Control_chrLenValsDT <- rbindlist(chrLenValsList)
+Control <- rbind.fill(Control, Control_chrLenValsDT)
+Control <- Control[order(Control$V1, Control$V2),]
+
+colnames(Control) <- c("chr", "start", "end", "val")
+
+Control$start <- Control$start+1
+
 
 # Function to convert coverage table into GRanges
 makeGR <- function(bedgraph) {
@@ -175,6 +239,8 @@ makeGR <- function(bedgraph) {
 }
 
 ChIP_GR <- makeGR(bedgraph = ChIP)
+
+Control_GR <- makeGR(bedgraph = Control)
 
 # Function to find coverage windows that overlap marker intervals
 fOverlaps <- function(interGR, datGR) {
@@ -194,6 +260,9 @@ makeDFx <- function(fOverlaps_obj, ChIP_GR, Control_GR, inter_GR, interNum) {
 
   ChIP_GR_x <- ChIP_GR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
   ChIP_GR_x_VPB <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/genomeBinSize)
+
+  Control_GR_x <- Control_GR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
+  Control_GR_x_VPB <- sum(Control_GR_x$val) / (sum(width(Control_GR_x))/genomeBinSize)
 
 }
 
