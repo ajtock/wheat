@@ -265,15 +265,17 @@ fOverlaps_Control <- fOverlaps(interGR = interGR, datGR = Control_GR)
 makeDF_x <- function(fOverlaps_ChIP, fOverlaps_Control, ChIP_GR, Control_GR, interGR, interNum) {
 
   ChIP_GR_x <- ChIP_GR[subjectHits(fOverlaps_ChIP[queryHits(fOverlaps_ChIP) == interNum])]
-  ChIP_GR_x_VPK <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/1e3)
+#  ChIP_GR_x_VPB <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/1e3)
+  ChIP_GR_x_VPB <- mean(ChIP_GR_x$val, na.rm = T) 
 
   Control_GR_x <- Control_GR[subjectHits(fOverlaps_Control[queryHits(fOverlaps_Control) == interNum])]
-  Control_GR_x_VPK <- sum(Control_GR_x$val) / (sum(width(Control_GR_x))/1e3)
+#  Control_GR_x_VPB <- sum(Control_GR_x$val) / (sum(width(Control_GR_x))/1e3)
+  Control_GR_x_VPB <- mean(Control_GR_x$val, na.rm = T) 
 
   data.frame(interGR[interNum],
-             ChIP = ChIP_GR_x_VPK,
-             Control = Control_GR_x_VPK,
-             log2val = log2( (ChIP_GR_x_VPK+1) / (Control_GR_x_VPK+1) ) )
+             ChIP = ChIP_GR_x_VPB,
+             Control = Control_GR_x_VPB,
+             log2val = log2( (ChIP_GR_x_VPB+1) / (Control_GR_x_VPB+1) ) )
 }
 
 # Apply makeDF_x function to each range in interGR
@@ -288,176 +290,23 @@ makeDF_x_list <- mclapply(1:length(interGR), function(x) {
 
 makeDF <- dplyr::bind_rows(makeDF_x_list, .id = "column_label")
 
+colnames(makeDF[colnames(makeDF) == "ChIP"]) <- libNameChIP
+colnames(makeDF[colnames(makeDF) == "Control"]) <- libNameControl
+colnames(makeDF[colnames(makeDF) == "log2val"]) <- paste0("log2_", libNameChIP, "_", libNameControl)
 
 
-  chr_fk_df_rev <- dplyr::bind_rows(makeDFx_list_rev, .id = "column_label")
-
-
-# Function to calculate among-read agreement for a given feature x
-makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
-
-  chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
-
-  if(length(chr_tabGR_str_x) > 0) {
-
-    chr_tabGR_str_x <- sortSeqlevels(chr_tabGR_str_x)
-    chr_tabGR_str_x <- sort(chr_tabGR_str_x, by = ~ read + start)
-
-    df_str_x <- data.frame(pos = start(chr_tabGR_str_x),
-                           read = chr_tabGR_str_x$read,
-                           call = chr_tabGR_str_x$call)
-
-for(i in 
-
-
-chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
-
-inter_ChIP_GR <- ChIP_GR[subjectHits(fOverlaps_ChIP)]
-#inter_ChIP_GR_win <- inter_ChIP_GR[width(inter_ChIP_GR) > 1]
-
-#inter_ChIP_GR_exp_list <- mclapply(1:length(inter_ChIP_GR), function(x) {
-inter_ChIP_GR_exp_list <- lapply(1:length(inter_ChIP_GR), function(x) {
-  print(x)
-  tmp <- rep(inter_ChIP_GR[x], width(inter_ChIP_GR[x]))
-  for(i in 1:width(inter_ChIP_GR[x])) {
-    ranges(tmp[i]) <- IRanges(start = start(tmp[i]) + i - 1,
-                              end = start(tmp[i]) + i - 1)
-  }
-  tmp
-})
-#}, mc.cores = detectCores(), mc.preschedule = T)
-
-
-
-
-## Control profile
-if(libNameControl == "MNase_Rep1") {
-  covDirControl <- paste0("/home/ajt200/analysis/wheat/",
-                          "MNase/snakemake_ChIPseq/mapped/", align, "/bg/")
-  Control <- read.table(paste0(covDirControl, "MNase_Rep1_MappedOn_wheat_v1.0_lowXM_",
-                               align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
-} else if(libNameControl == "H3_input_SRR6350669") {
-  covDirControl <- paste0("/home/ajt200/analysis/wheat/epigenomics_shoot_leaf_IWGSC_2018_Science/",
-                          "input/snakemake_ChIPseq/mapped/", align, "/bg/")
-  Control <- read.table(paste0(covDirControl, "H3_input_SRR6350669_MappedOn_wheat_v1.0_lowXM_",
-                               align, "_sort_norm_binSize", genomeBinName, ".bedgraph"))
-} else {
-  if(!(libNameControl %in% c("MNase_Rep1", "H3_input_SRR6350669"))) {
-    stop("libNameControl is neither MNase_Rep1 nor H3_input_SRR6350669")
-  }
-}
-Control <- read.table(paste0(covDirControl, libNameControl, "_MappedOn_wheat_v1.0_lowXM_",
-                             align, "_sort_norm_binSize", genomeBinName , ".bedgraph"))
-
-# Rows where the difference between end and start coordinates is > genomeBinSize
-Control_bigWins <- Control[Control$V3-Control$V2 > genomeBinSize,]
-# Rows where the difference between end and start coordinates is == genomeBinSize
-Control <- Control[Control$V3-Control$V2 == genomeBinSize,]
-
-# Create a list of big windows, each split into windows of genomeBinSize,
-# or < genomeBinSize if at chromosome end
-Control_bigWinsList <- mclapply(seq_along(1:dim(Control_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = Control_bigWins[x,]$V2,
-                      to = Control_bigWins[x,]$V3,
-                      by = genomeBinSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < Control_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(Control_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize,
-                                 Control_bigWins[x,]$V3)),
-               V4 = as.numeric(Control_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == Control_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(Control_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize),
-               V4 = as.numeric(Control_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores(), mc.preschedule = T)
-
-Control_bigWinsDT <- rbindlist(Control_bigWinsList)
-Control <- rbind.fill(Control, Control_bigWinsDT)
-Control <- Control[order(Control$V1, Control$V2),]
-
-chrLenValsList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileControl <- Control[Control$V1 == chrs[x],]
-  if(chrProfileControl[dim(chrProfileControl)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileControl[dim(chrProfileControl)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileControl[dim(chrProfileControl)[1],]$V4))
-  }
-}, mc.cores = detectCores(), mc.preschedule = F)
-Control_chrLenValsDT <- rbindlist(chrLenValsList)
-Control <- rbind.fill(Control, Control_chrLenValsDT)
-Control <- Control[order(Control$V1, Control$V2),]
-
-Control <- data.frame(chr = as.character(Control$V1),
-                      window = as.integer(Control$V2+1),
-                      CPM = as.numeric(Control$V4),
-                      stringsAsFactors = F)
-
-colnames(Control) <- c("chr", "start", "end", "val")
-
-Control$start <- Control$start+1
-
-Control_GR <- makeGR(bedgraph = Control)
-
-
-chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
-
-
-
-                   
-
-# Rows where the difference between end and start coordinates is > genomeBinSize
-ASY1_bigWins <- ASY1[ASY1$V3-ASY1$V2 > genomeBinSize,]
-# Rows where the difference between end and start coordinates is == genomeBinSize
-ASY1 <- ASY1[ASY1$V3-ASY1$V2 == genomeBinSize,]
-
-# Create a list of big windows, each split into windows of genomeBinSize,
-# or < genomeBinSize if at chromosome end
-ASY1_bigWinsList <- mclapply(seq_along(1:dim(ASY1_bigWins)[1]), function(x) {
-  bigWinsSplit <- seq(from = ASY1_bigWins[x,]$V2,
-                      to = ASY1_bigWins[x,]$V3,
-                      by = genomeBinSize)
-
-  if(bigWinsSplit[length(bigWinsSplit)] < ASY1_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(ASY1_bigWins[x,]$V1),
-               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
-                                 bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize,
-                                 ASY1_bigWins[x,]$V3)),
-               V4 = as.numeric(ASY1_bigWins[x,]$V4))
-  } else if (bigWinsSplit[length(bigWinsSplit)] == ASY1_bigWins[x,]$V3) {
-    data.frame(V1 = as.character(ASY1_bigWins[x,]$V1),
-               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize),
-               V4 = as.numeric(ASY1_bigWins[x,]$V4))
-  }
-}, mc.cores = detectCores())
- 
-ASY1_bigWinsDT <- rbindlist(ASY1_bigWinsList)
-ASY1 <- rbind.fill(ASY1, ASY1_bigWinsDT)
-ASY1 <- ASY1[order(ASY1$V1, ASY1$V2),]
-
-chrLenValsAList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileChIP <- ASY1[ASY1$V1 == chrs[x],]
-  if(chrProfileChIP[dim(chrProfileChIP)[1],]$V3 < chrLens[x]) {
-    data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileChIP[dim(chrProfileChIP)[1],]$V3),
-               V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileChIP[dim(chrProfileChIP)[1],]$V4))
-  }
-}, mc.cores = detectCores())
-ASY1_chrLenValsADT <- rbindlist(chrLenValsAList)
-ASY1 <- rbind.fill(ASY1, ASY1_chrLenValsADT)
-ASY1 <- ASY1[order(ASY1$V1, ASY1$V2),]
-
-ASY1 <- data.frame(chr = as.character(ASY1$V1),
-                           window = as.integer(ASY1$V2+1),
-                           CPM = as.numeric(ASY1$V4),
-                           stringsAsFactors = F)
-
+##inter_ChIP_GR <- ChIP_GR[subjectHits(fOverlaps_ChIP)]
+###inter_ChIP_GR_win <- inter_ChIP_GR[width(inter_ChIP_GR) > 1]
+##
+###inter_ChIP_GR_exp_list <- mclapply(1:length(inter_ChIP_GR), function(x) {
+##inter_ChIP_GR_exp_list <- lapply(1:length(inter_ChIP_GR), function(x) {
+##  print(x)
+##  tmp <- rep(inter_ChIP_GR[x], width(inter_ChIP_GR[x]))
+##  for(i in 1:width(inter_ChIP_GR[x])) {
+##    ranges(tmp[i]) <- IRanges(start = start(tmp[i]) + i - 1,
+##                              end = start(tmp[i]) + i - 1)
+##  }
+##  tmp
+##})
+###}, mc.cores = detectCores(), mc.preschedule = T)
 
