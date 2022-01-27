@@ -187,11 +187,15 @@ fOverlaps <- function(interGR, datGR) {
 }
 
 fOverlaps_ChIP <- fOverlaps(interGR = interGR, datGR = ChIP_GR)
+fOverlaps_Control <- fOverlaps(interGR = interGR, datGR = Control_GR)
 
 # Function to calculate average per-base values for a given interval x
-makeDFx <- function(fOverlaps_obj, datGR, interGR, interNum) {
+makeDFx <- function(fOverlaps_obj, ChIP_GR, Control_GR, inter_GR, interNum) {
 
-  datGR_x <- datGR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
+  ChIP_GR_x <- ChIP_GR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
+  ChIP_GR_x_VPB <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/genomeBinSize)
+
+}
 
 
 # Function to calculate among-read agreement for a given feature x
