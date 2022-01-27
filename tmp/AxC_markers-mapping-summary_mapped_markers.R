@@ -5,13 +5,14 @@
 # crossover rates (cM/Mb)
 
 # Usage:
-# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both
+# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input H3_input_SRR6350669 both 1000
 
 #markChIP <- "ASY1_CS"
 #libNameChIP <- "ASY1_CS_Rep1_ChIP"
 #markControl <- "input"
 #libNameControl <- "H3_input_SRR6350669"
 #align <- "both"
+#genomeBinSize <- 1000
 
 args <- commandArgs(trailingOnly = T)
 markChIP <- args[1]
@@ -19,11 +20,24 @@ libNameChIP <- args[2]
 markControl <- args[3]
 libNameControl <- args[4]
 align <- args[5]
+genomeBinSize <- as.integer(args[6])
 
 options(stringsAsFactors = F)
 library(data.table)
 library(parallel)
 library(GenomicRanges)
+
+if(floor(log10(genomeBinSize)) + 1 < 4) {
+  genomeBinName <- paste0(genomeBinSize, "bp")
+  genomeBinNamePlot <- paste0(genomeBinSize, "-bp")
+} else if(floor(log10(genomeBinSize)) + 1 >= 4 &
+          floor(log10(genomeBinSize)) + 1 <= 6) {
+  genomeBinName <- paste0(genomeBinSize/1e3, "kb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e3, "-kb")
+} else if(floor(log10(genomeBinSize)) + 1 >= 7) {
+  genomeBinName <- paste0(genomeBinSize/1e6, "Mb")
+  genomeBinNamePlot <- paste0(genomeBinSize/1e6, "-Mb")
+}
 
 # Genomic definitions
 winSize <- 1
@@ -61,11 +75,18 @@ for(i in unique(tab$chr)) {
 }
 
 #interGR_poswidths <- interGR[width(interGR) > 0]
-quantile(width(interGR), probs = c(0.1))
+quantile(width(interGR), probs = seq(0, 1, 0.05))
+#          0%           5%          10%          15%          20%          25% 
+#        0.00        86.80       263.60       773.20      2502.60      7338.50 
+#         30%          35%          40%          45%          50%          55% 
+#    22745.90     61824.75    101485.60    145696.75    214491.50    297267.35 
+#         60%          65%          70%          75%          80%          85% 
+#   413309.40    532912.60    703690.50    970857.50   1340466.00   1869535.45 
+#         90%          95%         100% 
+#  3301806.00   8655394.25 703285697.00 
 pdf("marker_interval_widths_hist.pdf")
 hist(width(interGR), breaks = 100000, xlim = c(0, 1e6))
 dev.off()
-
 
 
 ## ChIP profile
@@ -89,7 +110,7 @@ if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
                        align, "/bg/")
 }
 ChIP <- read.table(paste0(covDirChIP, libNameChIP, "_MappedOn_wheat_v1.0_lowXM_",
-                          align, "_sort_norm.perbase"))
+                          align, "_sort_norm_binSize", genomeBinName , ".bedgraph"))
 
 # Load table of normalised ChIP coverage values             
 #ASY1 <- read.table("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/bg/ASY1_CS_Rep1_ChIP_MappedOn_wheat_v1.0_lowXM_both_sort_norm.perbase",
