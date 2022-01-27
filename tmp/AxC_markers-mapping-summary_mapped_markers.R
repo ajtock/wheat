@@ -299,9 +299,9 @@ Control <- rbind.fill(Control, Control_chrLenValsDT)
 Control <- Control[order(Control$V1, Control$V2),]
 
 Control <- data.frame(chr = as.character(Control$V1),
-                   window = as.integer(Control$V2+1),
-                   CPM = as.numeric(Control$V4),
-                   stringsAsFactors = F)
+                      window = as.integer(Control$V2+1),
+                      CPM = as.numeric(Control$V4),
+                      stringsAsFactors = F)
 
 colnames(Control) <- c("chr", "start", "end", "val")
 
