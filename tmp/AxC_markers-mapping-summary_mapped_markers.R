@@ -26,6 +26,7 @@ options(stringsAsFactors = F)
 library(data.table)
 library(parallel)
 library(GenomicRanges)
+library(plyr)
 
 if(floor(log10(genomeBinSize)) + 1 < 4) {
   genomeBinName <- paste0(genomeBinSize, "bp")
@@ -40,7 +41,6 @@ if(floor(log10(genomeBinSize)) + 1 < 4) {
 }
 
 # Genomic definitions
-winSize <- 1
 chrs <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,1])
 chrs <- chrs[-length(chrs)]
 chrLens <- as.vector(read.table("/home/ajt200/analysis/wheat/sRNAseq_meiocyte_Martin_Moore/snakemake_sRNAseq/data/index/wheat_v1.0.fa.sizes")[,2])
@@ -112,18 +112,66 @@ if(libNameChIP %in% c("H3K4me3_ChIP_SRR6350668",
 ChIP <- read.table(paste0(covDirChIP, libNameChIP, "_MappedOn_wheat_v1.0_lowXM_",
                           align, "_sort_norm_binSize", genomeBinName , ".bedgraph"))
 
-# Load table of normalised ChIP coverage values             
-#ASY1 <- read.table("/home/ajt200/analysis/wheat/ASY1_CS/snakemake_ChIPseq/mapped/both/bg/ASY1_CS_Rep1_ChIP_MappedOn_wheat_v1.0_lowXM_both_sort_norm.perbase",
-#                   header = F)
-#ChIP <- ASY1
+# Rows where the difference between end and start coordinates is > genomeBinSize
+ChIP_bigWins <- ChIP[ChIP$V3-ChIP$V2 > genomeBinSize,]
+# Rows where the difference between end and start coordinates is == genomeBinSize
+ChIP <- ChIP[ChIP$V3-ChIP$V2 == genomeBinSize,]
+
+# Create a list of big windows, each split into windows of genomeBinSize,
+# or < genomeBinSize if at chromosome end
+ChIP_bigWinsList <- mclapply(seq_along(1:dim(ChIP_bigWins)[1]), function(x) {
+  bigWinsSplit <- seq(from = ChIP_bigWins[x,]$V2,
+                      to = ChIP_bigWins[x,]$V3,
+                      by = genomeBinSize)
+
+  if(bigWinsSplit[length(bigWinsSplit)] < ChIP_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(ChIP_bigWins[x,]$V1),
+               V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
+                                 bigWinsSplit[length(bigWinsSplit)])),
+               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize,
+                                 ChIP_bigWins[x,]$V3)),
+               V4 = as.numeric(ChIP_bigWins[x,]$V4))
+  } else if (bigWinsSplit[length(bigWinsSplit)] == ChIP_bigWins[x,]$V3) {
+    data.frame(V1 = as.character(ChIP_bigWins[x,]$V1),
+               V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
+               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize),
+               V4 = as.numeric(ChIP_bigWins[x,]$V4))
+  }
+}, mc.cores = detectCores(), mc.preschedule = T)
+
+ChIP_bigWinsDT <- rbindlist(ChIP_bigWinsList)
+ChIP <- rbind.fill(ChIP, ChIP_bigWinsDT)
+ChIP <- ChIP[order(ChIP$V1, ChIP$V2),]
+
+chrLenValsList <- mclapply(seq_along(chrs), function (x) {
+  chrProfileChIP <- ChIP[ChIP$V1 == chrs[x],]
+  if(chrProfileChIP[dim(chrProfileChIP)[1],]$V3 < chrLens[x]) {
+    data.frame(V1 = chrs[x],
+               V2 = as.integer(chrProfileChIP[dim(chrProfileChIP)[1],]$V3),
+               V3 = as.integer(chrLens[x]),
+               V4 = as.numeric(chrProfileChIP[dim(chrProfileChIP)[1],]$V4))
+  }
+}, mc.cores = detectCores(), mc.preschedule = F)
+ChIP_chrLenValsDT <- rbindlist(chrLenValsList)
+ChIP <- rbind.fill(ChIP, ChIP_chrLenValsDT)
+ChIP <- ChIP[order(ChIP$V1, ChIP$V2),]
+
+ChIP <- data.frame(chr = as.character(ChIP$V1),
+                   window = as.integer(ChIP$V2+1),
+                   CPM = as.numeric(ChIP$V4),
+                   stringsAsFactors = F)
+
+colnames(ChIP) <- c("chr", "start", "end", "val")
+
+ChIP$start <- ChIP$start+1
 
 # Function to convert coverage table into GRanges
 makeGR <- function(bedgraph) {
   GRanges(seqnames = bedgraph[,1],
           ranges = IRanges(start = bedgraph[,2],
-                           end = bedgraph[,2]),
+                           end = bedgraph[,3]),
           strand = "*",
-          val = bedgraph[,3])
+          val = bedgraph[,4])
 }
 
 ChIP_GR <- makeGR(bedgraph = ChIP)
@@ -139,6 +187,31 @@ fOverlaps <- function(interGR, datGR) {
 }
 
 fOverlaps_ChIP <- fOverlaps(interGR = interGR, datGR = ChIP_GR)
+
+# Function to calculate average per-base values for a given interval x
+makeDFx <- function(fOverlaps_obj, datGR, interGR, interNum) {
+
+  datGR_x <- datGR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
+
+
+# Function to calculate among-read agreement for a given feature x
+makeDFx_strand <- function(fOverlaps_str, chr_tabGR_str, chr_featGR, featNum) {
+
+  chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
+
+  if(length(chr_tabGR_str_x) > 0) {
+
+    chr_tabGR_str_x <- sortSeqlevels(chr_tabGR_str_x)
+    chr_tabGR_str_x <- sort(chr_tabGR_str_x, by = ~ read + start)
+
+    df_str_x <- data.frame(pos = start(chr_tabGR_str_x),
+                           read = chr_tabGR_str_x$read,
+                           call = chr_tabGR_str_x$call)
+
+for(i in 
+
+
+chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_str) == featNum])]
 
 inter_ChIP_GR <- ChIP_GR[subjectHits(fOverlaps_ChIP)]
 #inter_ChIP_GR_win <- inter_ChIP_GR[width(inter_ChIP_GR) > 1]
@@ -182,29 +255,29 @@ chr_tabGR_str_x <- chr_tabGR_str[subjectHits(fOverlaps_str[queryHits(fOverlaps_s
 
                    
 
-# Rows where the difference between end and start coordinates is > winSize
-ASY1_bigWins <- ASY1[ASY1$V3-ASY1$V2 > winSize,]
-# Rows where the difference between end and start coordinates is == winSize
-ASY1 <- ASY1[ASY1$V3-ASY1$V2 == winSize,]
+# Rows where the difference between end and start coordinates is > genomeBinSize
+ASY1_bigWins <- ASY1[ASY1$V3-ASY1$V2 > genomeBinSize,]
+# Rows where the difference between end and start coordinates is == genomeBinSize
+ASY1 <- ASY1[ASY1$V3-ASY1$V2 == genomeBinSize,]
 
-# Create a list of big windows, each split into windows of winSize,
-# or < winSize if at chromosome end
+# Create a list of big windows, each split into windows of genomeBinSize,
+# or < genomeBinSize if at chromosome end
 ASY1_bigWinsList <- mclapply(seq_along(1:dim(ASY1_bigWins)[1]), function(x) {
   bigWinsSplit <- seq(from = ASY1_bigWins[x,]$V2,
                       to = ASY1_bigWins[x,]$V3,
-                      by = winSize)
+                      by = genomeBinSize)
 
   if(bigWinsSplit[length(bigWinsSplit)] < ASY1_bigWins[x,]$V3) {
     data.frame(V1 = as.character(ASY1_bigWins[x,]$V1),
                V2 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)],
                                  bigWinsSplit[length(bigWinsSplit)])),
-               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+winSize,
+               V3 = as.integer(c(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize,
                                  ASY1_bigWins[x,]$V3)),
                V4 = as.numeric(ASY1_bigWins[x,]$V4))
   } else if (bigWinsSplit[length(bigWinsSplit)] == ASY1_bigWins[x,]$V3) {
     data.frame(V1 = as.character(ASY1_bigWins[x,]$V1),
                V2 = as.integer(bigWinsSplit[-length(bigWinsSplit)]),
-               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+winSize),
+               V3 = as.integer(bigWinsSplit[-length(bigWinsSplit)]+genomeBinSize),
                V4 = as.numeric(ASY1_bigWins[x,]$V4))
   }
 }, mc.cores = detectCores())
@@ -214,12 +287,12 @@ ASY1 <- rbind.fill(ASY1, ASY1_bigWinsDT)
 ASY1 <- ASY1[order(ASY1$V1, ASY1$V2),]
 
 chrLenValsAList <- mclapply(seq_along(chrs), function (x) {
-  chrProfileChIPA <- ASY1[ASY1$V1 == chrs[x],]
-  if(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V3 < chrLens[x]) {
+  chrProfileChIP <- ASY1[ASY1$V1 == chrs[x],]
+  if(chrProfileChIP[dim(chrProfileChIP)[1],]$V3 < chrLens[x]) {
     data.frame(V1 = chrs[x],
-               V2 = as.integer(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V3),
+               V2 = as.integer(chrProfileChIP[dim(chrProfileChIP)[1],]$V3),
                V3 = as.integer(chrLens[x]),
-               V4 = as.numeric(chrProfileChIPA[dim(chrProfileChIPA)[1],]$V4))
+               V4 = as.numeric(chrProfileChIP[dim(chrProfileChIP)[1],]$V4))
   }
 }, mc.cores = detectCores())
 ASY1_chrLenValsADT <- rbindlist(chrLenValsAList)
