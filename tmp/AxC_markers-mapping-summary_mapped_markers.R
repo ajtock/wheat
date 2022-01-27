@@ -228,6 +228,10 @@ colnames(Control) <- c("chr", "start", "end", "val")
 
 Control$start <- Control$start+1
 
+stopifnot(identical(ChIP$chr, Control$chr))
+stopifnot(identical(ChIP$start, Control$start))
+stopifnot(identical(ChIP$end, Control$end))
+
 
 # Function to convert coverage table into GRanges
 makeGR <- function(bedgraph) {
@@ -253,18 +257,36 @@ fOverlaps <- function(interGR, datGR) {
 }
 
 fOverlaps_ChIP <- fOverlaps(interGR = interGR, datGR = ChIP_GR)
+
 fOverlaps_Control <- fOverlaps(interGR = interGR, datGR = Control_GR)
 
 # Function to calculate average per-base values for a given interval x
-makeDFx <- function(fOverlaps_obj, ChIP_GR, Control_GR, inter_GR, interNum) {
+makeDF_x <- function(fOverlaps_ChIP, fOverlaps_Control, ChIP_GR, Control_GR, interGR, interNum) {
 
-  ChIP_GR_x <- ChIP_GR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
-  ChIP_GR_x_VPB <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/genomeBinSize)
+  ChIP_GR_x <- ChIP_GR[subjectHits(fOverlaps_ChIP[queryHits(fOverlaps_ChIP) == interNum])]
+  ChIP_GR_x_VPK <- sum(ChIP_GR_x$val) / (sum(width(ChIP_GR_x))/1e3)
 
-  Control_GR_x <- Control_GR[subjectHits(fOverlaps_obj[queryHits(fOverlaps_obj) == interNum])]
-  Control_GR_x_VPB <- sum(Control_GR_x$val) / (sum(width(Control_GR_x))/genomeBinSize)
+  Control_GR_x <- Control_GR[subjectHits(fOverlaps_Control[queryHits(fOverlaps_Control) == interNum])]
+  Control_GR_x_VPK <- sum(Control_GR_x$val) / (sum(width(Control_GR_x))/1e3)
 
+  data.frame(interGR[interNum],
+             ChIP = ChIP_GR_x_VPK,
+             Control = Control_GR_x_VPK,
+             log2val = log2( (ChIP_GR_x_VPK+1) / (Control_GR_x_VPK+1) ) )
 }
+
+# Apply makeDF_x function to each range in interGR
+makeDF_x_list <- mclapply(1:length(interGR), function(x) {
+  makeDF_x(fOverlaps_ChIP = fOverlaps_ChIP,
+           fOverlaps_Control = fOverlaps_Control,
+           ChIP_GR = ChIP_GR,
+           Control_GR = Control_GR,
+           interGR = interGR,
+           interNum = x)
+}, mc.cores = detectCores(), mc.preschedule = T)
+
+
+
 
 
 # Function to calculate among-read agreement for a given feature x
