@@ -106,8 +106,6 @@ mC_GR <- makeGR(bedgraph = mC)
 #                                ignore.strand = T)
 #  fOverlaps_obj
 #}
-#
-#fOverlaps_mC <- fOverlaps(interGR = interGR, datGR = mC_GR)
 
 makeDF <- NULL
 for(chrName in seqlevels(interGR)) {
