@@ -89,7 +89,7 @@ inter_DNAmeth_DF <- read.table(paste0("AxC_mapped_marker_intervals_", DNAmeth_na
 stopifnot(identical(inter_ChIP_DF, inter_DNAmeth_DF))
 stopifnot(all.equal(inter_ChIP_DF, inter_DNAmeth_DF))
 
-makeDF <- data.frame(inter_DF,
+makeDF <- data.frame(inter_ChIP_DF,
                      ChIP_DF,
                      DNAmeth_DF)
 
