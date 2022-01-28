@@ -5,7 +5,7 @@
 # crossover rates (cM/Mb)
 
 # Usage:
-# ./AxC_markers-mapping-summary_mapped_markers.R ASY1_CS ASY1_CS_Rep1_ChIP input input_SRR6350669 both 1000
+# ./append_ChIP_input.GR ASY1_CS ASY1_CS_Rep1_ChIP input input_SRR6350669 both 1000
 
 #markChIP <- "ASY1_CS"
 #libNameChIP <- "ASY1_CS_Rep1_ChIP"
