@@ -21,6 +21,7 @@ library(pscl) # zeroinfl included
 library(vcd) # goodfit included
 library(qualityTools) # qqPlot included
 library(stats4) # mle (for estimating parameters by maximum likelihood) included
+library(dplyr)
 #library(segmentSeq)
 #library(GenomicRanges)
 
@@ -44,8 +45,44 @@ plotDir <- "plots/"
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load cM/Mb data
+dat <- read.table("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl.tsv", header = T)
+colnames(dat)
+# [1] "chr"                 "start"               "end"
+# [4] "width"               "physical_marker"     "wt_marker"
+# [7] "wt_cM"               "fancm_marker"        "fancm_cM"
+#[10] "log2_ASY1_CS_input"  "log2_DMC1_input"     "log2_H3K4me1_input"
+#[13] "log2_H3K4me3_MNase"  "log2_H3K27ac_input"  "log2_H3K27me3_input"
+#[16] "log2_H3K36me3_input" "log2_H3K9me2_MNase"  "log2_H3K27me1_MNase"
+#[19] "log2_CENH3_input"    "mCpG"                "mCHG"
+#[22] "mCHH"
+colnames(dat) <- c(colnames(dat)[1:9],
+                   "ASY1", "DMC1", "H3K4me1", "H3K4me3", "H3K27ac",
+                   "H3K27me3", "H3K36me3", "H3K9me2", "H3K27me1",
+                   "CENH3", "mCG", "mCHG", "mCHH")
 
-write.table(makeDF,
-            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl.tsv"),
-             quote = F, sep = "\t", row.names = F, col.names = T)
+
+dat <- data.frame(dat,
+                  
+
+
+# Inspect distribution of cMMb:
+# 1. by plotting the empirical density and the empirical cumulative distribution function (ECDF)
+pdf(paste0(plotDir, "cMMb_plotdist.pdf"))
+fitdistrplus::plotdist(dat$cMMb, histo = T, demp = T)
+dev.off()
+
+# Plot with offset of +1
+# "non-positive values not allowed for the 'Gamma' family"
+pdf(paste0(plotDir, "cMMb_plus1_plotdist.pdf"))
+fitdistrplus::plotdist(dat$cMMb+1, histo = T, demp = T)
+dev.off()
+
+# Plot with offset of +1e-06
+# "non-positive values not allowed for the 'Gamma' family"
+pdf(paste0(plotDir, "cMMb_plus1e-06_plotdist.pdf"))
+fitdistrplus::plotdist(dat$cMMb+1e-06, histo = T, demp = T)
+dev.off()
+
+
+
 

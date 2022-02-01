@@ -89,11 +89,36 @@ inter_DNAmeth_DF <- read.table(paste0("AxC_mapped_marker_intervals_", DNAmeth_na
 stopifnot(identical(inter_ChIP_DF, inter_DNAmeth_DF))
 stopifnot(all.equal(inter_ChIP_DF, inter_DNAmeth_DF))
 
-makeDF <- data.frame(inter_ChIP_DF,
-                     ChIP_DF,
-                     DNAmeth_DF)
+tab <- data.frame(inter_ChIP_DF,
+                  ChIP_DF,
+                  DNAmeth_DF)
+
+tab <- tab[ with(tab, base::order(chr, start, end)) , ]
+
+makeDF <- data.frame()
+for(i in unique(tab$chr)) {
+  print(i)
+  tab_chr <- tab[tab$chr == i,]
+
+  tab_chr <- data.frame(tab_chr,
+                        wt_cM_inter = c(NA, tab_chr$wt_cM[ 2 : ( nrow(tab_chr) ) ] - tab_chr$wt_cM[ 1 : ( nrow(tab_chr) - 1 )] ),
+                        fancm_cM_inter = c(NA, tab_chr$fancm_cM[ 2 : ( nrow(tab_chr) ) ] - tab_chr$fancm_cM[ 1 : ( nrow(tab_chr) - 1 )] ))
+
+  tab_chr <- tab_chr[-1,]
+
+  tab_chr <- data.frame(tab_chr,
+                        wt_cMMb_inter = tab_chr$wt_cM_inter / ( tab_chr$width / 1e6),
+                        fancm_cMMb_inter = tab_chr$fancm_cM_inter / ( tab_chr$width / 1e6))
+
+  tab_chr <- tab_chr[-which(tab_chr$wt_cM == 0 & tab_chr$fancm_cM == 0),]
+
+  tab_chr <- data.frame(tab_chr,
+                        fancm_minus_wt_cM_inter = tab_chr$fancm_cM_inter - tab_chr$wt_cM_inter,
+                        fancm_minus_wt_cMMb_inter = tab_chr$fancm_cMMb_inter - tab_chr$wt_cMMb_inter)
+
+  makeDF <- base::rbind(makeDF, tab_chr)
+}
 
 write.table(makeDF,
-            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl.tsv"),
-             quote = F, sep = "\t", row.names = F, col.names = T)
-
+            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl_cMMb.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
