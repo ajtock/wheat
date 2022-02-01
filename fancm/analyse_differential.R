@@ -45,42 +45,54 @@ plotDir <- "plots/"
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load cM/Mb data
-dat <- read.table("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl.tsv", header = T)
+dat <- read.table("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl_cMMb.tsv", header = T)
 colnames(dat)
-# [1] "chr"                 "start"               "end"
-# [4] "width"               "physical_marker"     "wt_marker"
-# [7] "wt_cM"               "fancm_marker"        "fancm_cM"
-#[10] "log2_ASY1_CS_input"  "log2_DMC1_input"     "log2_H3K4me1_input"
-#[13] "log2_H3K4me3_MNase"  "log2_H3K27ac_input"  "log2_H3K27me3_input"
-#[16] "log2_H3K36me3_input" "log2_H3K9me2_MNase"  "log2_H3K27me1_MNase"
-#[19] "log2_CENH3_input"    "mCpG"                "mCHG"
-#[22] "mCHH"
+# [1] "chr"                       "start"
+# [3] "end"                       "width"
+# [5] "physical_marker"           "wt_marker"
+# [7] "wt_cM"                     "fancm_marker"
+# [9] "fancm_cM"                  "log2_ASY1_CS_input"
+#[11] "log2_DMC1_input"           "log2_H3K4me1_input"
+#[13] "log2_H3K4me3_MNase"        "log2_H3K27ac_input"
+#[15] "log2_H3K27me3_input"       "log2_H3K36me3_input"
+#[17] "log2_H3K9me2_MNase"        "log2_H3K27me1_MNase"
+#[19] "log2_CENH3_input"          "mCpG"
+#[21] "mCHG"                      "mCHH"
+#[23] "wt_cM_inter"               "fancm_cM_inter"
+#[25] "wt_cMMb_inter"             "fancm_cMMb_inter"
+#[27] "fancm_minus_wt_cM_inter"   "fancm_minus_wt_cMMb_inter"
+
 colnames(dat) <- c(colnames(dat)[1:9],
                    "ASY1", "DMC1", "H3K4me1", "H3K4me3", "H3K27ac",
                    "H3K27me3", "H3K36me3", "H3K9me2", "H3K27me1",
-                   "CENH3", "mCG", "mCHG", "mCHH")
+                   "CENH3", "mCG", "mCHG", "mCHH",
+                   colnames(dat)[23:ncol(dat)])
 
+pdf(paste0(plotDir, "hist_width_inter.pdf"))
+hist(dat$width, breaks = 100)
+dev.off()
 
-dat <- data.frame(dat,
-                  
+pdf(paste0(plotDir, "hist_fancm_minus_wt_cM_inter.pdf"))
+hist(dat$fancm_minus_wt_cM_inter, breaks = 100)
+dev.off()
 
+pdf(paste0(plotDir, "hist_fancm_minus_wt_cMMb_inter.pdf"))
+hist(dat$fancm_minus_wt_cMMb_inter, breaks = 100)
+dev.off()
 
-# Inspect distribution of cMMb:
+# Inspect distribution of fancm_minus_wt_cMMb_inter:
 # 1. by plotting the empirical density and the empirical cumulative distribution function (ECDF)
-pdf(paste0(plotDir, "cMMb_plotdist.pdf"))
-fitdistrplus::plotdist(dat$cMMb, histo = T, demp = T)
+pdf(paste0(plotDir, "fancm_minus_wt_cMMb_inter_plotdist.pdf"))
+fitdistrplus::plotdist(dat$fancm_minus_wt_cMMb_inter, histo = T, demp = T)
 dev.off()
 
-# Plot with offset of +1
-# "non-positive values not allowed for the 'Gamma' family"
-pdf(paste0(plotDir, "cMMb_plus1_plotdist.pdf"))
-fitdistrplus::plotdist(dat$cMMb+1, histo = T, demp = T)
-dev.off()
-
-# Plot with offset of +1e-06
-# "non-positive values not allowed for the 'Gamma' family"
-pdf(paste0(plotDir, "cMMb_plus1e-06_plotdist.pdf"))
-fitdistrplus::plotdist(dat$cMMb+1e-06, histo = T, demp = T)
+# Plot random gamma distribution
+set.seed(9382)
+pdf(paste0(plotDir, "random_normal_n", length(dat$fancm_minus_wt_cMMb_inter), "_plotdist.pdf"))
+fitdistrplus::plotdist(rnorm(n = length(dat$fancm_minus_wt_cMMb_inter),
+                             mean = mean(dat$fancm_minus_wt_cMMb_inter),
+                             sd = sd(dat$fancm_minus_wt_cMMb_inter)),
+                       histo = T, demp = T)
 dev.off()
 
 

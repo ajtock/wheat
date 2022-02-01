@@ -112,6 +112,8 @@ for(i in unique(tab$chr)) {
 
   tab_chr <- tab_chr[-which(tab_chr$wt_cM == 0 & tab_chr$fancm_cM == 0),]
 
+  tab_chr <- tab_chr[-which(tab_chr$width < 1000),]
+
   tab_chr <- data.frame(tab_chr,
                         fancm_minus_wt_cM_inter = tab_chr$fancm_cM_inter - tab_chr$wt_cM_inter,
                         fancm_minus_wt_cMMb_inter = tab_chr$fancm_cMMb_inter - tab_chr$wt_cMMb_inter)
