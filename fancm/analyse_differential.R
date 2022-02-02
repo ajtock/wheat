@@ -371,7 +371,8 @@ write.table(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df,
 # model residual deviance to the null deviance, to give an
 # R-squared value (the closer to 1 the better the model)
 # https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
-with(summary(glmNormal_l2fc_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+glmNormal_l2fc_fancm_wt_cMMb_inter_R2 <- with(summary(glmNormal_l2fc_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+glmNormal_l2fc_fancm_wt_cMMb_inter_R2
 #[1] 0.4593947
 
 # Disable scientific notation for plotting
@@ -379,45 +380,48 @@ options("scipen"=100)
 
 # Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_l2fc_fancm_wt_cMMb_inter_select)
 pdf(paste0(plotDir, "glmNormal_l2fc_fancm_wt_cMMb_inter_observed_predicted.pdf"),
-    height = 5, width = 10)
-#plot(x = round((dat$start+dat$end)/2),
-plot(x = 1:nrow(dat),
-     y = glmNormal_l2fc_fancm_wt_cMMb_inter_select$y,
-     xlab = "", ylab = "",
-     xaxt = "n", yaxt = "n",
-     type = "l", lwd = 2, col = "red")
-#lines(x = round((dat$start+dat$end)/2),
-lines(x = 1:nrow(dat),
-      y = glmNormal_l2fc_fancm_wt_cMMb_inter_predict$fit,
-      lty = 2, lwd = 2, col = "black")
-axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-#     at = round((dat$start+dat$end)/2),
-#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
-     at = 1:nrow(dat),
-     labels = 1:nrow(dat))
-axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
-mtext(side = 2, line = 2, cex = 1, text = "L2FC cM/Mb")
-mtext(side = 3, line = 2, cex = 0.75,
-      text = "Normal GLM: L2FC cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
-box(lwd = 1.5)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"),
-       col = "white",
-       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+    height = 3*length(unique(dat$chr)), width = 10)
+par(mfrow = c(length(unique(dat$chr)), 1))
+for(i in unique(dat$chr)) {
+  row_indices <- which(dat$chr == i)
+  dat_chr <- dat[row_indices,]
+  plot(x = round((dat_chr$start+dat_chr$end)/2),
+       y = glmNormal_l2fc_fancm_wt_cMMb_inter_select$y[row_indices],
+       xlab = "", ylab = "",
+       xaxt = "n", yaxt = "n",
+       type = "l", lwd = 2, col = "red")
+  lines(x = round((dat_chr$start+dat_chr$end)/2),
+        y = glmNormal_l2fc_fancm_wt_cMMb_inter_predict$fit[row_indices],
+        lty = 2, lwd = 2, col = "black")
+  axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+       at = round((dat_chr$start+dat_chr$end)/2),
+       labels = round(round((dat_chr$start+dat_chr$end)/2)/1e6, digits = 3))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
+  mtext(side = 2, line = 2, cex = 1, text = "L2FC cM/Mb")
+  mtext(side = 3, line = 2, cex = 0.75,
+        text = "Normal GLM: L2FC cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
+  mtext(side = 3, line = 0.5, cex = 0.75,
+        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cMMb_inter_R2, digits = 2))))
+  box(lwd = 1.5)
+  legend("topleft",
+         legend = c("Observed", "Predicted"),
+         text.col = c("red", "black"),
+         col = "white",
+         ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+}
 dev.off()
 
 
 ## glmNormal_l2fc_fancm_wt_cM_inter
 # First fit model using normal (Gaussian) distribution
 glmNormal_l2fc_fancm_wt_cM_inter <- glm2(formula = l2fc_fancm_wt_cM_inter ~
-                                                     (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
-                                                      H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
-                                                      CENH3 + mCG + mCHG + mCHH + width)^2,
-                                           data = dat,
-                                           family = gaussian(),
-                                           control = glm.control(maxit = 100000))
+                                                   (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
+                                                    H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
+                                                    CENH3 + mCG + mCHG + mCHH + width)^2,
+                                         data = dat,
+                                         family = gaussian(),
+                                         control = glm.control(maxit = 100000))
 
 summary(glmNormal_l2fc_fancm_wt_cM_inter)
 
@@ -453,7 +457,8 @@ write.table(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df,
 # model residual deviance to the null deviance, to give an
 # R-squared value (the closer to 1 the better the model)
 # https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
-with(summary(glmNormal_l2fc_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+glmNormal_l2fc_fancm_wt_cM_inter_R2 <- with(summary(glmNormal_l2fc_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+glmNormal_l2fc_fancm_wt_cM_inter_R2
 #[1] 0.1165355
 
 # Disable scientific notation for plotting
@@ -461,33 +466,36 @@ options("scipen"=100)
 
 # Plot observed differential cM and expected differential cM by GLM (glmNormal_l2fc_fancm_wt_cM_inter_select)
 pdf(paste0(plotDir, "glmNormal_l2fc_fancm_wt_cM_inter_observed_predicted.pdf"),
-    height = 5, width = 10)
-#plot(x = round((dat$start+dat$end)/2),
-plot(x = 1:nrow(dat),
-     y = glmNormal_l2fc_fancm_wt_cM_inter_select$y,
-     xlab = "", ylab = "",
-     xaxt = "n", yaxt = "n",
-     type = "l", lwd = 2, col = "red")
-#lines(x = round((dat$start+dat$end)/2),
-lines(x = 1:nrow(dat),
-      y = glmNormal_l2fc_fancm_wt_cM_inter_predict$fit,
-      lty = 2, lwd = 2, col = "black")
-axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-#     at = round((dat$start+dat$end)/2),
-#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
-     at = 1:nrow(dat),
-     labels = 1:nrow(dat))
-axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
-mtext(side = 2, line = 2, cex = 1, text = "L2FC cM")
-mtext(side = 3, line = 2, cex = 0.75,
-      text = "Normal GLM: L2FC cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
-box(lwd = 1.5)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"),
-       col = "white",
-       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+    height = 3*length(unique(dat$chr)), width = 10)
+par(mfrow = c(length(unique(dat$chr)), 1))
+for(i in unique(dat$chr)) {
+  row_indices <- which(dat$chr == i)
+  dat_chr <- dat[row_indices,]
+  plot(x = round((dat_chr$start+dat_chr$end)/2),
+       y = glmNormal_l2fc_fancm_wt_cM_inter_select$y[row_indices],
+       xlab = "", ylab = "",
+       xaxt = "n", yaxt = "n",
+       type = "l", lwd = 2, col = "red")
+  lines(x = round((dat_chr$start+dat_chr$end)/2),
+        y = glmNormal_l2fc_fancm_wt_cM_inter_predict$fit[row_indices],
+        lty = 2, lwd = 2, col = "black")
+  axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+       at = round((dat_chr$start+dat_chr$end)/2),
+       labels = round(round((dat_chr$start+dat_chr$end)/2)/1e6, digits = 3))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
+  mtext(side = 2, line = 2, cex = 1, text = "L2FC cM")
+  mtext(side = 3, line = 2, cex = 0.75,
+        text = "Normal GLM: L2FC cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+  mtext(side = 3, line = 0.5, cex = 0.75,
+        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cM_inter_R2, digits = 2))))
+  box(lwd = 1.5)
+  legend("topleft",
+         legend = c("Observed", "Predicted"),
+         text.col = c("red", "black"),
+         col = "white",
+         ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+}
 dev.off()
 
 
@@ -535,7 +543,8 @@ write.table(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df,
 # model residual deviance to the null deviance, to give an
 # R-squared value (the closer to 1 the better the model)
 # https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
-with(summary(glmNormal_diff_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+glmNormal_diff_fancm_wt_cMMb_inter_R2 <- with(summary(glmNormal_diff_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+glmNormal_diff_fancm_wt_cMMb_inter_R2
 #[1] 0.8144616
 
 # Disable scientific notation for plotting
@@ -543,46 +552,48 @@ options("scipen"=100)
 
 # Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_diff_fancm_wt_cMMb_inter_select)
 pdf(paste0(plotDir, "glmNormal_diff_fancm_wt_cMMb_inter_observed_predicted.pdf"),
-    height = 5, width = 10)
-#plot(x = round((dat$start+dat$end)/2),
-plot(x = 1:nrow(dat),
-     y = glmNormal_diff_fancm_wt_cMMb_inter_select$y,
-     xlab = "", ylab = "",
-     xaxt = "n", yaxt = "n",
-     type = "l", lwd = 2, col = "red")
-#lines(x = round((dat$start+dat$end)/2),
-lines(x = 1:nrow(dat),
-      y = glmNormal_diff_fancm_wt_cMMb_inter_predict$fit,
-      lty = 2, lwd = 2, col = "black")
-axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-#     at = round((dat$start+dat$end)/2),
-#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
-     at = 1:nrow(dat),
-     labels = 1:nrow(dat))
-axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
-mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
-mtext(side = 3, line = 2, cex = 0.75,
-      text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
-box(lwd = 1.5)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"),
-       col = "white",
-       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+    height = 3*length(unique(dat$chr)), width = 10)
+par(mfrow = c(length(unique(dat$chr)), 1))
+for(i in unique(dat$chr)) {
+  row_indices <- which(dat$chr == i)
+  dat_chr <- dat[row_indices,]
+  plot(x = round((dat_chr$start+dat_chr$end)/2),
+       y = glmNormal_diff_fancm_wt_cMMb_inter_select$y[row_indices],
+       xlab = "", ylab = "",
+       xaxt = "n", yaxt = "n",
+       type = "l", lwd = 2, col = "red")
+  lines(x = round((dat_chr$start+dat_chr$end)/2),
+        y = glmNormal_diff_fancm_wt_cMMb_inter_predict$fit[row_indices],
+        lty = 2, lwd = 2, col = "black")
+  axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+       at = round((dat_chr$start+dat_chr$end)/2),
+       labels = round(round((dat_chr$start+dat_chr$end)/2)/1e6, digits = 3))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
+  mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
+  mtext(side = 3, line = 2, cex = 0.75,
+        text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+  mtext(side = 3, line = 0.5, cex = 0.75,
+        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cMMb_inter_R2, digits = 2))))
+  box(lwd = 1.5)
+  legend("topleft",
+         legend = c("Observed", "Predicted"),
+         text.col = c("red", "black"),
+         col = "white",
+         ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+}
 dev.off()
-
 
 
 ## glmNormal_diff_fancm_wt_cM_inter
 # First fit model using normal (Gaussian) distribution
 glmNormal_diff_fancm_wt_cM_inter <- glm2(formula = diff_fancm_wt_cM_inter ~
-                                                     (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
-                                                      H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
-                                                      CENH3 + mCG + mCHG + mCHH + width)^2,
-                                           data = dat,
-                                           family = gaussian(),
-                                           control = glm.control(maxit = 100000))
+                                                   (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
+                                                    H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
+                                                    CENH3 + mCG + mCHG + mCHH + width)^2,
+                                         data = dat,
+                                         family = gaussian(),
+                                         control = glm.control(maxit = 100000))
 
 summary(glmNormal_diff_fancm_wt_cM_inter)
 
@@ -618,7 +629,8 @@ write.table(glmNormal_diff_fancm_wt_cM_inter_coeffs_df,
 # model residual deviance to the null deviance, to give an
 # R-squared value (the closer to 1 the better the model)
 # https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
-with(summary(glmNormal_diff_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+glmNormal_diff_fancm_wt_cM_inter_R2 <- with(summary(glmNormal_diff_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+glmNormal_diff_fancm_wt_cM_inter_R2
 #[1] 0.1375247
 
 # Disable scientific notation for plotting
@@ -626,32 +638,35 @@ options("scipen"=100)
 
 # Plot observed differential cM and expected differential cM by GLM (glmNormal_diff_fancm_wt_cM_inter_select)
 pdf(paste0(plotDir, "glmNormal_diff_fancm_wt_cM_inter_observed_predicted.pdf"),
-    height = 5, width = 10)
-#plot(x = round((dat$start+dat$end)/2),
-plot(x = 1:nrow(dat),
-     y = glmNormal_diff_fancm_wt_cM_inter_select$y,
-     xlab = "", ylab = "",
-     xaxt = "n", yaxt = "n",
-     type = "l", lwd = 2, col = "red")
-#lines(x = round((dat$start+dat$end)/2),
-lines(x = 1:nrow(dat),
-      y = glmNormal_diff_fancm_wt_cM_inter_predict$fit,
-      lty = 2, lwd = 2, col = "black")
-axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-#     at = round((dat$start+dat$end)/2),
-#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
-     at = 1:nrow(dat),
-     labels = 1:nrow(dat))
-axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
-mtext(side = 2, line = 2, cex = 1, text = "Differential cM")
-mtext(side = 3, line = 2, cex = 0.75,
-      text = "Normal GLM: Differential cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
-box(lwd = 1.5)
-legend("topleft",
-       legend = c("Observed", "Predicted"),
-       text.col = c("red", "black"),
-       col = "white",
-       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+    height = 3*length(unique(dat$chr)), width = 10)
+par(mfrow = c(length(unique(dat$chr)), 1))
+for(i in unique(dat$chr)) {
+  row_indices <- which(dat$chr == i)
+  dat_chr <- dat[row_indices,]
+  plot(x = round((dat_chr$start+dat_chr$end)/2),
+       y = glmNormal_diff_fancm_wt_cM_inter_select$y[row_indices],
+       xlab = "", ylab = "",
+       xaxt = "n", yaxt = "n",
+       type = "l", lwd = 2, col = "red")
+  lines(x = round((dat_chr$start+dat_chr$end)/2),
+        y = glmNormal_diff_fancm_wt_cM_inter_predict$fit[row_indices],
+        lty = 2, lwd = 2, col = "black")
+  axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+       at = round((dat_chr$start+dat_chr$end)/2),
+       labels = round(round((dat_chr$start+dat_chr$end)/2)/1e6, digits = 3))
+  axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+  mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
+  mtext(side = 2, line = 2, cex = 1, text = "Differential cM")
+  mtext(side = 3, line = 2, cex = 0.75,
+        text = "Normal GLM: Differential cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+  mtext(side = 3, line = 0.5, cex = 0.75,
+        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cM_inter_R2, digits = 2))))
+  box(lwd = 1.5)
+  legend("topleft",
+         legend = c("Observed", "Predicted"),
+         text.col = c("red", "black"),
+         col = "white",
+         ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+}
 dev.off()
 
