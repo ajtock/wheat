@@ -399,10 +399,12 @@ for(i in unique(dat$chr)) {
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
   mtext(side = 2, line = 2, cex = 1, text = "L2FC cM/Mb")
-  mtext(side = 3, line = 2, cex = 0.75,
-        text = "Normal GLM: L2FC cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
-  mtext(side = 3, line = 0.5, cex = 0.75,
-        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cMMb_inter_R2, digits = 2))))
+  if(i == unique(dat$chr)[1]) {
+    mtext(side = 3, line = 2, cex = 0.75,
+          text = "Normal GLM: L2FC cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
+    mtext(side = 3, line = 0.5, cex = 0.75,
+          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cMMb_inter_R2, digits = 2))))
+  }
   box(lwd = 1.5)
   legend("topleft",
          legend = c("Observed", "Predicted"),
@@ -485,10 +487,12 @@ for(i in unique(dat$chr)) {
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
   mtext(side = 2, line = 2, cex = 1, text = "L2FC cM")
-  mtext(side = 3, line = 2, cex = 0.75,
-        text = "Normal GLM: L2FC cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
-  mtext(side = 3, line = 0.5, cex = 0.75,
-        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cM_inter_R2, digits = 2))))
+  if(i == unique(dat$chr)[1]) {
+    mtext(side = 3, line = 2, cex = 0.75,
+          text = "Normal GLM: L2FC cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+    mtext(side = 3, line = 0.5, cex = 0.75,
+          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_l2fc_fancm_wt_cM_inter_R2, digits = 2))))
+  }
   box(lwd = 1.5)
   legend("topleft",
          legend = c("Observed", "Predicted"),
@@ -571,10 +575,12 @@ for(i in unique(dat$chr)) {
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
   mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
-  mtext(side = 3, line = 2, cex = 0.75,
-        text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
-  mtext(side = 3, line = 0.5, cex = 0.75,
-        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cMMb_inter_R2, digits = 2))))
+  if(i == unique(dat$chr)[1]) {
+    mtext(side = 3, line = 2, cex = 0.75,
+          text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+    mtext(side = 3, line = 0.5, cex = 0.75,
+          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cMMb_inter_R2, digits = 2))))
+  }
   box(lwd = 1.5)
   legend("topleft",
          legend = c("Observed", "Predicted"),
@@ -657,10 +663,12 @@ for(i in unique(dat$chr)) {
   axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
   mtext(side = 1, line = 2.5, cex = 1, text = paste0(i, " coordinates (Mb)"))
   mtext(side = 2, line = 2, cex = 1, text = "Differential cM")
-  mtext(side = 3, line = 2, cex = 0.75,
-        text = "Normal GLM: Differential cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
-  mtext(side = 3, line = 0.5, cex = 0.75,
-        text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cM_inter_R2, digits = 2))))
+  if(i == unique(dat$chr)[1]) {
+    mtext(side = 3, line = 2, cex = 0.75,
+          text = "Normal GLM: Differential cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+    mtext(side = 3, line = 0.5, cex = 0.75,
+          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cM_inter_R2, digits = 2))))
+  }
   box(lwd = 1.5)
   legend("topleft",
          legend = c("Observed", "Predicted"),
@@ -669,4 +677,3 @@ for(i in unique(dat$chr)) {
          ncol = 1, cex = 1, lwd = 1.5, bty = "n")
 }
 dev.off()
-
