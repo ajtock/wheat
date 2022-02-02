@@ -577,7 +577,7 @@ for(i in unique(dat$chr)) {
   mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
   if(i == unique(dat$chr)[1]) {
     mtext(side = 3, line = 2, cex = 0.75,
-          text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+          text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
     mtext(side = 3, line = 0.5, cex = 0.75,
           text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_diff_fancm_wt_cMMb_inter_R2, digits = 2))))
   }
