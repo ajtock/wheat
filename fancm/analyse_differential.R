@@ -327,11 +327,12 @@ ppcomp(list(diff_fancm_wt_cM_inter_fitdist_cauchy, diff_fancm_wt_cM_inter_fitdis
 dev.off()
 
 
+## glmNormal_l2fc_fancm_wt_cMMb_inter
 # First fit model using normal (Gaussian) distribution
 glmNormal_l2fc_fancm_wt_cMMb_inter <- glm2(formula = l2fc_fancm_wt_cMMb_inter ~
                                                      (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
                                                       H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
-                                                      CENH3 + mCG + mCHG + mCHH + width)^2,
+                                                      CENH3 + mCG + mCHG + mCHH)^2,
                                            data = dat,
                                            family = gaussian(),
                                            control = glm.control(maxit = 100000))
@@ -344,18 +345,313 @@ print(formula(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC))
 #print(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC$formula)
 glmNormal_l2fc_fancm_wt_cMMb_inter_formula <- formula(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC)
 glmNormal_l2fc_fancm_wt_cMMb_inter_select <- glm2(formula = formula(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC),
-                        data = dat,
-                        family = Gamma(link="inverse"),
-                        control = glm.control(maxit = 100000))
+                                                  data = dat,
+                                                  family = gaussian(),
+                                                  control = glm.control(maxit = 100000))
 stopifnot(identical(formula(glmNormal_l2fc_fancm_wt_cMMb_inter_select), formula(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC)))
 glmNormal_l2fc_fancm_wt_cMMb_inter_formula <- formula(glmNormal_l2fc_fancm_wt_cMMb_inter_select)
-# Estimate the shape parameter and adjust GLM coefficient estimates and predictions
-# See https://stats.stackexchange.com/questions/58497/using-r-for-glm-with-gamma-distribution
-glmNormal_l2fc_fancm_wt_cMMb_inter_shape <- gamma.shape(glmNormal_l2fc_fancm_wt_cMMb_inter_select)
 glmNormal_l2fc_fancm_wt_cMMb_inter_predict <- predict(glmNormal_l2fc_fancm_wt_cMMb_inter_select, type = "response",
-                            se = T, dispersion = 1/glmNormal_l2fc_fancm_wt_cMMb_inter_shape$alpha)
-glmNormal_l2fc_fancm_wt_cMMb_inter_summary <- summary(glmNormal_l2fc_fancm_wt_cMMb_inter_select, dispersion = 1/glmNormal_l2fc_fancm_wt_cMMb_inter_shape$alpha)
+                                                      se = T)
+glmNormal_l2fc_fancm_wt_cMMb_inter_summary <- summary(glmNormal_l2fc_fancm_wt_cMMb_inter_select)
 glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs <- glmNormal_l2fc_fancm_wt_cMMb_inter_summary$coefficients
 
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_stepAIC.RData")
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_formula, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_formula.RData")
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_select, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_select.RData")
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_predict, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_predict.RData")
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_summary, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_summary.RData")
+save(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs.RData")
+glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df <- data.frame(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs)
+colnames(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+write.table(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df,
+            file = "glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs.tsv",
+            quote = F, sep = "\t", row.names = T, col.names = T)
 
+# Evaluate model goodness-of-fit based on the ratio of the
+# model residual deviance to the null deviance, to give an
+# R-squared value (the closer to 1 the better the model)
+# https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
+with(summary(glmNormal_l2fc_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+#[1] 0.4593947
+
+# Disable scientific notation for plotting
+options("scipen"=100)
+
+# Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_l2fc_fancm_wt_cMMb_inter_select)
+pdf(paste0(plotDir, "glmNormal_l2fc_fancm_wt_cMMb_inter_observed_predicted.pdf"),
+    height = 5, width = 10)
+#plot(x = round((dat$start+dat$end)/2),
+plot(x = 1:nrow(dat),
+     y = glmNormal_l2fc_fancm_wt_cMMb_inter_select$y,
+     xlab = "", ylab = "",
+     xaxt = "n", yaxt = "n",
+     type = "l", lwd = 2, col = "red")
+#lines(x = round((dat$start+dat$end)/2),
+lines(x = 1:nrow(dat),
+      y = glmNormal_l2fc_fancm_wt_cMMb_inter_predict$fit,
+      lty = 2, lwd = 2, col = "black")
+axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+#     at = round((dat$start+dat$end)/2),
+#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+     at = 1:nrow(dat),
+     labels = 1:nrow(dat))
+axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
+mtext(side = 2, line = 2, cex = 1, text = "L2FC cM/Mb")
+mtext(side = 3, line = 2, cex = 0.75,
+      text = "Normal GLM: L2FC cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
+box(lwd = 1.5)
+legend("topleft",
+       legend = c("Observed", "Predicted"),
+       text.col = c("red", "black"),
+       col = "white",
+       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+dev.off()
+
+
+## glmNormal_l2fc_fancm_wt_cM_inter
+# First fit model using normal (Gaussian) distribution
+glmNormal_l2fc_fancm_wt_cM_inter <- glm2(formula = l2fc_fancm_wt_cM_inter ~
+                                                     (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
+                                                      H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
+                                                      CENH3 + mCG + mCHG + mCHH + width)^2,
+                                           data = dat,
+                                           family = gaussian(),
+                                           control = glm.control(maxit = 100000))
+
+summary(glmNormal_l2fc_fancm_wt_cM_inter)
+
+glmNormal_l2fc_fancm_wt_cM_inter_stepAIC <- stepAIC(object = glmNormal_l2fc_fancm_wt_cM_inter, direction = "both")
+print("stepAIC-selected model formula:")
+print(formula(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC))
+#print(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC$formula)
+glmNormal_l2fc_fancm_wt_cM_inter_formula <- formula(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC)
+glmNormal_l2fc_fancm_wt_cM_inter_select <- glm2(formula = formula(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC),
+                                                data = dat,
+                                                family = gaussian(),
+                                                control = glm.control(maxit = 100000))
+stopifnot(identical(formula(glmNormal_l2fc_fancm_wt_cM_inter_select), formula(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC)))
+glmNormal_l2fc_fancm_wt_cM_inter_formula <- formula(glmNormal_l2fc_fancm_wt_cM_inter_select)
+glmNormal_l2fc_fancm_wt_cM_inter_predict <- predict(glmNormal_l2fc_fancm_wt_cM_inter_select, type = "response",
+                                                    se = T)
+glmNormal_l2fc_fancm_wt_cM_inter_summary <- summary(glmNormal_l2fc_fancm_wt_cM_inter_select)
+glmNormal_l2fc_fancm_wt_cM_inter_coeffs <- glmNormal_l2fc_fancm_wt_cM_inter_summary$coefficients
+
+save(glmNormal_l2fc_fancm_wt_cM_inter_stepAIC, file = "glmNormal_l2fc_fancm_wt_cM_inter_stepAIC.RData")
+save(glmNormal_l2fc_fancm_wt_cM_inter_formula, file = "glmNormal_l2fc_fancm_wt_cM_inter_formula.RData")
+save(glmNormal_l2fc_fancm_wt_cM_inter_select, file = "glmNormal_l2fc_fancm_wt_cM_inter_select.RData")
+save(glmNormal_l2fc_fancm_wt_cM_inter_predict, file = "glmNormal_l2fc_fancm_wt_cM_inter_predict.RData")
+save(glmNormal_l2fc_fancm_wt_cM_inter_summary, file = "glmNormal_l2fc_fancm_wt_cM_inter_summary.RData")
+save(glmNormal_l2fc_fancm_wt_cM_inter_coeffs, file = "glmNormal_l2fc_fancm_wt_cM_inter_coeffs.RData")
+glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df <- data.frame(glmNormal_l2fc_fancm_wt_cM_inter_coeffs)
+colnames(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+write.table(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df,
+            file = "glmNormal_l2fc_fancm_wt_cM_inter_coeffs.tsv",
+            quote = F, sep = "\t", row.names = T, col.names = T)
+
+# Evaluate model goodness-of-fit based on the ratio of the
+# model residual deviance to the null deviance, to give an
+# R-squared value (the closer to 1 the better the model)
+# https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
+with(summary(glmNormal_l2fc_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+#[1] 0.1165355
+
+# Disable scientific notation for plotting
+options("scipen"=100)
+
+# Plot observed differential cM and expected differential cM by GLM (glmNormal_l2fc_fancm_wt_cM_inter_select)
+pdf(paste0(plotDir, "glmNormal_l2fc_fancm_wt_cM_inter_observed_predicted.pdf"),
+    height = 5, width = 10)
+#plot(x = round((dat$start+dat$end)/2),
+plot(x = 1:nrow(dat),
+     y = glmNormal_l2fc_fancm_wt_cM_inter_select$y,
+     xlab = "", ylab = "",
+     xaxt = "n", yaxt = "n",
+     type = "l", lwd = 2, col = "red")
+#lines(x = round((dat$start+dat$end)/2),
+lines(x = 1:nrow(dat),
+      y = glmNormal_l2fc_fancm_wt_cM_inter_predict$fit,
+      lty = 2, lwd = 2, col = "black")
+axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+#     at = round((dat$start+dat$end)/2),
+#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+     at = 1:nrow(dat),
+     labels = 1:nrow(dat))
+axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
+mtext(side = 2, line = 2, cex = 1, text = "L2FC cM")
+mtext(side = 3, line = 2, cex = 0.75,
+      text = "Normal GLM: L2FC cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+box(lwd = 1.5)
+legend("topleft",
+       legend = c("Observed", "Predicted"),
+       text.col = c("red", "black"),
+       col = "white",
+       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+dev.off()
+
+
+## glmNormal_diff_fancm_wt_cMMb_inter
+# First fit model using normal (Gaussian) distribution
+glmNormal_diff_fancm_wt_cMMb_inter <- glm2(formula = diff_fancm_wt_cMMb_inter ~
+                                                     (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
+                                                      H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
+                                                      CENH3 + mCG + mCHG + mCHH)^2,
+                                           data = dat,
+                                           family = gaussian(),
+                                           control = glm.control(maxit = 100000))
+
+summary(glmNormal_diff_fancm_wt_cMMb_inter)
+
+glmNormal_diff_fancm_wt_cMMb_inter_stepAIC <- stepAIC(object = glmNormal_diff_fancm_wt_cMMb_inter, direction = "both")
+print("stepAIC-selected model formula:")
+print(formula(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC))
+#print(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC$formula)
+glmNormal_diff_fancm_wt_cMMb_inter_formula <- formula(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC)
+glmNormal_diff_fancm_wt_cMMb_inter_select <- glm2(formula = formula(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC),
+                                                  data = dat,
+                                                  family = gaussian(),
+                                                  control = glm.control(maxit = 100000))
+stopifnot(identical(formula(glmNormal_diff_fancm_wt_cMMb_inter_select), formula(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC)))
+glmNormal_diff_fancm_wt_cMMb_inter_formula <- formula(glmNormal_diff_fancm_wt_cMMb_inter_select)
+glmNormal_diff_fancm_wt_cMMb_inter_predict <- predict(glmNormal_diff_fancm_wt_cMMb_inter_select, type = "response",
+                                                      se = T)
+glmNormal_diff_fancm_wt_cMMb_inter_summary <- summary(glmNormal_diff_fancm_wt_cMMb_inter_select)
+glmNormal_diff_fancm_wt_cMMb_inter_coeffs <- glmNormal_diff_fancm_wt_cMMb_inter_summary$coefficients
+
+save(glmNormal_diff_fancm_wt_cMMb_inter_stepAIC, file = "glmNormal_diff_fancm_wt_cMMb_inter_stepAIC.RData")
+save(glmNormal_diff_fancm_wt_cMMb_inter_formula, file = "glmNormal_diff_fancm_wt_cMMb_inter_formula.RData")
+save(glmNormal_diff_fancm_wt_cMMb_inter_select, file = "glmNormal_diff_fancm_wt_cMMb_inter_select.RData")
+save(glmNormal_diff_fancm_wt_cMMb_inter_predict, file = "glmNormal_diff_fancm_wt_cMMb_inter_predict.RData")
+save(glmNormal_diff_fancm_wt_cMMb_inter_summary, file = "glmNormal_diff_fancm_wt_cMMb_inter_summary.RData")
+save(glmNormal_diff_fancm_wt_cMMb_inter_coeffs, file = "glmNormal_diff_fancm_wt_cMMb_inter_coeffs.RData")
+glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df <- data.frame(glmNormal_diff_fancm_wt_cMMb_inter_coeffs)
+colnames(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+write.table(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df,
+            file = "glmNormal_diff_fancm_wt_cMMb_inter_coeffs.tsv",
+            quote = F, sep = "\t", row.names = T, col.names = T)
+
+# Evaluate model goodness-of-fit based on the ratio of the
+# model residual deviance to the null deviance, to give an
+# R-squared value (the closer to 1 the better the model)
+# https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
+with(summary(glmNormal_diff_fancm_wt_cMMb_inter_select), 1 - deviance/null.deviance)
+#[1] 0.8144616
+
+# Disable scientific notation for plotting
+options("scipen"=100)
+
+# Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_diff_fancm_wt_cMMb_inter_select)
+pdf(paste0(plotDir, "glmNormal_diff_fancm_wt_cMMb_inter_observed_predicted.pdf"),
+    height = 5, width = 10)
+#plot(x = round((dat$start+dat$end)/2),
+plot(x = 1:nrow(dat),
+     y = glmNormal_diff_fancm_wt_cMMb_inter_select$y,
+     xlab = "", ylab = "",
+     xaxt = "n", yaxt = "n",
+     type = "l", lwd = 2, col = "red")
+#lines(x = round((dat$start+dat$end)/2),
+lines(x = 1:nrow(dat),
+      y = glmNormal_diff_fancm_wt_cMMb_inter_predict$fit,
+      lty = 2, lwd = 2, col = "black")
+axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+#     at = round((dat$start+dat$end)/2),
+#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+     at = 1:nrow(dat),
+     labels = 1:nrow(dat))
+axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
+mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
+mtext(side = 3, line = 2, cex = 0.75,
+      text = "Normal GLM: Differential cM/Mb~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH)^2")
+box(lwd = 1.5)
+legend("topleft",
+       legend = c("Observed", "Predicted"),
+       text.col = c("red", "black"),
+       col = "white",
+       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+dev.off()
+
+
+
+## glmNormal_diff_fancm_wt_cM_inter
+# First fit model using normal (Gaussian) distribution
+glmNormal_diff_fancm_wt_cM_inter <- glm2(formula = diff_fancm_wt_cM_inter ~
+                                                     (ASY1 + DMC1 + H3K4me1 + H3K4me3 + H3K27ac +
+                                                      H3K27me3 + H3K36me3 + H3K9me2 + H3K27me1 +
+                                                      CENH3 + mCG + mCHG + mCHH + width)^2,
+                                           data = dat,
+                                           family = gaussian(),
+                                           control = glm.control(maxit = 100000))
+
+summary(glmNormal_diff_fancm_wt_cM_inter)
+
+glmNormal_diff_fancm_wt_cM_inter_stepAIC <- stepAIC(object = glmNormal_diff_fancm_wt_cM_inter, direction = "both")
+print("stepAIC-selected model formula:")
+print(formula(glmNormal_diff_fancm_wt_cM_inter_stepAIC))
+#print(glmNormal_diff_fancm_wt_cM_inter_stepAIC$formula)
+glmNormal_diff_fancm_wt_cM_inter_formula <- formula(glmNormal_diff_fancm_wt_cM_inter_stepAIC)
+glmNormal_diff_fancm_wt_cM_inter_select <- glm2(formula = formula(glmNormal_diff_fancm_wt_cM_inter_stepAIC),
+                                                data = dat,
+                                                family = gaussian(),
+                                                control = glm.control(maxit = 100000))
+stopifnot(identical(formula(glmNormal_diff_fancm_wt_cM_inter_select), formula(glmNormal_diff_fancm_wt_cM_inter_stepAIC)))
+glmNormal_diff_fancm_wt_cM_inter_formula <- formula(glmNormal_diff_fancm_wt_cM_inter_select)
+glmNormal_diff_fancm_wt_cM_inter_predict <- predict(glmNormal_diff_fancm_wt_cM_inter_select, type = "response",
+                                                    se = T)
+glmNormal_diff_fancm_wt_cM_inter_summary <- summary(glmNormal_diff_fancm_wt_cM_inter_select)
+glmNormal_diff_fancm_wt_cM_inter_coeffs <- glmNormal_diff_fancm_wt_cM_inter_summary$coefficients
+
+save(glmNormal_diff_fancm_wt_cM_inter_stepAIC, file = "glmNormal_diff_fancm_wt_cM_inter_stepAIC.RData")
+save(glmNormal_diff_fancm_wt_cM_inter_formula, file = "glmNormal_diff_fancm_wt_cM_inter_formula.RData")
+save(glmNormal_diff_fancm_wt_cM_inter_select, file = "glmNormal_diff_fancm_wt_cM_inter_select.RData")
+save(glmNormal_diff_fancm_wt_cM_inter_predict, file = "glmNormal_diff_fancm_wt_cM_inter_predict.RData")
+save(glmNormal_diff_fancm_wt_cM_inter_summary, file = "glmNormal_diff_fancm_wt_cM_inter_summary.RData")
+save(glmNormal_diff_fancm_wt_cM_inter_coeffs, file = "glmNormal_diff_fancm_wt_cM_inter_coeffs.RData")
+glmNormal_diff_fancm_wt_cM_inter_coeffs_df <- data.frame(glmNormal_diff_fancm_wt_cM_inter_coeffs)
+colnames(glmNormal_diff_fancm_wt_cM_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+write.table(glmNormal_diff_fancm_wt_cM_inter_coeffs_df,
+            file = "glmNormal_diff_fancm_wt_cM_inter_coeffs.tsv",
+            quote = F, sep = "\t", row.names = T, col.names = T)
+
+# Evaluate model goodness-of-fit based on the ratio of the
+# model residual deviance to the null deviance, to give an
+# R-squared value (the closer to 1 the better the model)
+# https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
+with(summary(glmNormal_diff_fancm_wt_cM_inter_select), 1 - deviance/null.deviance)
+#[1] 0.1375247
+
+# Disable scientific notation for plotting
+options("scipen"=100)
+
+# Plot observed differential cM and expected differential cM by GLM (glmNormal_diff_fancm_wt_cM_inter_select)
+pdf(paste0(plotDir, "glmNormal_diff_fancm_wt_cM_inter_observed_predicted.pdf"),
+    height = 5, width = 10)
+#plot(x = round((dat$start+dat$end)/2),
+plot(x = 1:nrow(dat),
+     y = glmNormal_diff_fancm_wt_cM_inter_select$y,
+     xlab = "", ylab = "",
+     xaxt = "n", yaxt = "n",
+     type = "l", lwd = 2, col = "red")
+#lines(x = round((dat$start+dat$end)/2),
+lines(x = 1:nrow(dat),
+      y = glmNormal_diff_fancm_wt_cM_inter_predict$fit,
+      lty = 2, lwd = 2, col = "black")
+axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+#     at = round((dat$start+dat$end)/2),
+#     labels = round(round((dat$start+dat$end)/2)/1e6, digits = 3))
+     at = 1:nrow(dat),
+     labels = 1:nrow(dat))
+axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+mtext(side = 1, line = 2, cex = 1, text = "Genomic window")
+mtext(side = 2, line = 2, cex = 1, text = "Differential cM")
+mtext(side = 3, line = 2, cex = 0.75,
+      text = "Normal GLM: Differential cM~(ASY1+DMC1+H3K4me1+H3K4me3+H3K27ac+H3K27me3+H3K36me3+H3K9me2+H3K27me1+CENH3+mCG+mCHG+mCHH+width)^2")
+box(lwd = 1.5)
+legend("topleft",
+       legend = c("Observed", "Predicted"),
+       text.col = c("red", "black"),
+       col = "white",
+       ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+dev.off()
 
