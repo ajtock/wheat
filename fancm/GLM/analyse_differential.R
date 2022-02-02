@@ -41,7 +41,9 @@ centromereEnd <- as.vector(read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_W
 chrPartitions <- read.table("/home/ajt200/analysis/wheat/wheat_IWGSC_WGA_v1.0_pseudomolecules/chromosome_partitions_IWGSC_2018_Science_Table_S29.txt",
                             header = TRUE)
 
+coefDir <- "coefficients/"
 plotDir <- "plots/"
+system(paste0("[ -d ", coefDir, " ] || mkdir ", coefDir))
 system(paste0("[ -d ", plotDir, " ] || mkdir ", plotDir))
 
 # Load cM/Mb data
@@ -361,11 +363,12 @@ save(glmNormal_l2fc_fancm_wt_cMMb_inter_select, file = "glmNormal_l2fc_fancm_wt_
 save(glmNormal_l2fc_fancm_wt_cMMb_inter_predict, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_predict.RData")
 save(glmNormal_l2fc_fancm_wt_cMMb_inter_summary, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_summary.RData")
 save(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs, file = "glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs.RData")
-glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df <- data.frame(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs)
-colnames(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df <- data.frame(Variable = rownames(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs),
+                                                           glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs)
+colnames(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df) <- c("Variable", "Estimate", "StdError", "z-value", "P-value")
 write.table(glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs_df,
-            file = "glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs.tsv",
-            quote = F, sep = "\t", row.names = T, col.names = T)
+            file = paste0(coefDir, "glmNormal_l2fc_fancm_wt_cMMb_inter_coeffs.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Evaluate model goodness-of-fit based on the ratio of the
 # model residual deviance to the null deviance, to give an
@@ -449,11 +452,12 @@ save(glmNormal_l2fc_fancm_wt_cM_inter_select, file = "glmNormal_l2fc_fancm_wt_cM
 save(glmNormal_l2fc_fancm_wt_cM_inter_predict, file = "glmNormal_l2fc_fancm_wt_cM_inter_predict.RData")
 save(glmNormal_l2fc_fancm_wt_cM_inter_summary, file = "glmNormal_l2fc_fancm_wt_cM_inter_summary.RData")
 save(glmNormal_l2fc_fancm_wt_cM_inter_coeffs, file = "glmNormal_l2fc_fancm_wt_cM_inter_coeffs.RData")
-glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df <- data.frame(glmNormal_l2fc_fancm_wt_cM_inter_coeffs)
-colnames(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df <- data.frame(Variable = rownames(glmNormal_l2fc_fancm_wt_cM_inter_coeffs),
+                                                         glmNormal_l2fc_fancm_wt_cM_inter_coeffs)
+colnames(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df) <- c("Variable", "Estimate", "StdError", "z-value", "P-value")
 write.table(glmNormal_l2fc_fancm_wt_cM_inter_coeffs_df,
-            file = "glmNormal_l2fc_fancm_wt_cM_inter_coeffs.tsv",
-            quote = F, sep = "\t", row.names = T, col.names = T)
+            file = paste0(coefDir, "glmNormal_l2fc_fancm_wt_cM_inter_coeffs.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Evaluate model goodness-of-fit based on the ratio of the
 # model residual deviance to the null deviance, to give an
@@ -537,11 +541,12 @@ save(glmNormal_diff_fancm_wt_cMMb_inter_select, file = "glmNormal_diff_fancm_wt_
 save(glmNormal_diff_fancm_wt_cMMb_inter_predict, file = "glmNormal_diff_fancm_wt_cMMb_inter_predict.RData")
 save(glmNormal_diff_fancm_wt_cMMb_inter_summary, file = "glmNormal_diff_fancm_wt_cMMb_inter_summary.RData")
 save(glmNormal_diff_fancm_wt_cMMb_inter_coeffs, file = "glmNormal_diff_fancm_wt_cMMb_inter_coeffs.RData")
-glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df <- data.frame(glmNormal_diff_fancm_wt_cMMb_inter_coeffs)
-colnames(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df <- data.frame(Variable = rownames(glmNormal_diff_fancm_wt_cMMb_inter_coeffs),
+                                                           glmNormal_diff_fancm_wt_cMMb_inter_coeffs)
+colnames(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df) <- c("Variable", "Estimate", "StdError", "z-value", "P-value")
 write.table(glmNormal_diff_fancm_wt_cMMb_inter_coeffs_df,
-            file = "glmNormal_diff_fancm_wt_cMMb_inter_coeffs.tsv",
-            quote = F, sep = "\t", row.names = T, col.names = T)
+            file = paste0(coefDir, "glmNormal_diff_fancm_wt_cMMb_inter_coeffs.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Evaluate model goodness-of-fit based on the ratio of the
 # model residual deviance to the null deviance, to give an
@@ -625,11 +630,12 @@ save(glmNormal_diff_fancm_wt_cM_inter_select, file = "glmNormal_diff_fancm_wt_cM
 save(glmNormal_diff_fancm_wt_cM_inter_predict, file = "glmNormal_diff_fancm_wt_cM_inter_predict.RData")
 save(glmNormal_diff_fancm_wt_cM_inter_summary, file = "glmNormal_diff_fancm_wt_cM_inter_summary.RData")
 save(glmNormal_diff_fancm_wt_cM_inter_coeffs, file = "glmNormal_diff_fancm_wt_cM_inter_coeffs.RData")
-glmNormal_diff_fancm_wt_cM_inter_coeffs_df <- data.frame(glmNormal_diff_fancm_wt_cM_inter_coeffs)
-colnames(glmNormal_diff_fancm_wt_cM_inter_coeffs_df) <- c("Estimate", "StdError", "z-value", "P-value")
+glmNormal_diff_fancm_wt_cM_inter_coeffs_df <- data.frame(Variable = rownames(glmNormal_diff_fancm_wt_cM_inter_coeffs),
+                                                         glmNormal_diff_fancm_wt_cM_inter_coeffs)
+colnames(glmNormal_diff_fancm_wt_cM_inter_coeffs_df) <- c("Variable", "Estimate", "StdError", "z-value", "P-value")
 write.table(glmNormal_diff_fancm_wt_cM_inter_coeffs_df,
-            file = "glmNormal_diff_fancm_wt_cM_inter_coeffs.tsv",
-            quote = F, sep = "\t", row.names = T, col.names = T)
+            file = paste0(coefDir, "glmNormal_diff_fancm_wt_cM_inter_coeffs.tsv"),
+            quote = F, sep = "\t", row.names = F, col.names = T)
 
 # Evaluate model goodness-of-fit based on the ratio of the
 # model residual deviance to the null deviance, to give an
