@@ -51,7 +51,10 @@ colnames(dat) <- c(colnames(dat)[1:9],
 
 profilesDF <- cbind(dat$diff_fancm_wt_cMMb_inter,
                     dat[,10:24])
-colnames(profilesDF)[1] <- "Diff_cMMb"
+profilesDF <- profilesDF[,-15]
+profilesDF <- data.frame("Diff_cMMb" = profilesDF[,1],
+                         "IWGSC_cMMb" = profilesDF[,ncol(profilesDF)],
+                         profilesDF[,c(-1,-ncol(profilesDF))])
 
 profileNames <- colnames(profilesDF)
 
@@ -98,26 +101,26 @@ corMatSig <- corMatSig[,-1]
 corDatSig <- melt(corMatSig)
 corDatSig <- corDatSig[-which(is.na(corDatSig[,3])),]
 
-## Standardise P-values to a sample size of 100 (q-values) as proposed by
-## Good (1982) Standardized tail-area probabilities. Journal of Computation and Simulation 16: 65-66
-## and summarised by Woolley (2003):
-## https://stats.stackexchange.com/questions/22233/how-to-choose-significance-level-for-a-large-data-set
-## http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.518.5341&rep=rep1&type=pdf
-## Woolley (2003): "Clearly, the meaningfulness of the p-value diminishes as the sample size increases";
-## Anne Z. (2012, Pearson eCollege, Denver): "In the real world, there are unlikely to be semi-partial correlations
-## that are exactly zero, which is the null hypothesis in testing significance of a regression coefficient."
-## Formally, the standardised p-value is defined as:
-## q = min(0.5, p * sqrt( (n/100) ))
-## Woolley (2003): "The value of 0.5 is somewhat arbitrary, though its purpose is to avoid q-values of greater than 1."
-#n <- dim(profilesDF)[1]
-#corDatSig$value <- sapply(corDatSig$value, function(x) {
-#  round(min(0.5, x * sqrt( (n/100) )),
-#        digits = 2)
-#})
-
+# Standardise P-values to a sample size of 100 (q-values) as proposed by
+# Good (1982) Standardized tail-area probabilities. Journal of Computation and Simulation 16: 65-66
+# and summarised by Woolley (2003):
+# https://stats.stackexchange.com/questions/22233/how-to-choose-significance-level-for-a-large-data-set
+# http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.518.5341&rep=rep1&type=pdf
+# Woolley (2003): "Clearly, the meaningfulness of the p-value diminishes as the sample size increases";
+# Anne Z. (2012, Pearson eCollege, Denver): "In the real world, there are unlikely to be semi-partial correlations
+# that are exactly zero, which is the null hypothesis in testing significance of a regression coefficient."
+# Formally, the standardised p-value is defined as:
+# q = min(0.5, p * sqrt( (n/100) ))
+# Woolley (2003): "The value of 0.5 is somewhat arbitrary, though its purpose is to avoid q-values of greater than 1."
+n <- dim(profilesDF)[1]
 corDatSig$value <- sapply(corDatSig$value, function(x) {
-  round(x, digits = 2)
+  round(min(0.5, x * sqrt( (n/100) )),
+        digits = 2)
 })
+
+#corDatSig$value <- sapply(corDatSig$value, function(x) {
+#  round(x, digits = 2)
+#})
 
 # Order the data.frame for plotting
 levels(corDatSig$X1) <- rev(profileNamesList) 
