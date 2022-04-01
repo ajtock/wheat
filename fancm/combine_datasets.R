@@ -1,4 +1,4 @@
-#!/applications/R/R-4.0.0/bin/Rscript
+#!/usr/bin/env Rscript
 
 # Combine signals of epigenetic marks and meiotic proteins, detected by ChIP-seq and BS-seq,
 # within physical marker intervals to enable correlations with wild type and fancm mutant
@@ -89,9 +89,29 @@ inter_DNAmeth_DF <- read.table(paste0("AxC_mapped_marker_intervals_", DNAmeth_na
 stopifnot(identical(inter_ChIP_DF, inter_DNAmeth_DF))
 stopifnot(all.equal(inter_ChIP_DF, inter_DNAmeth_DF))
 
+# Load tables of cM/Mb values calculated within marker intervals
+cMMb_names <- c(
+                "cMMb_iwgsc_refseqv1.0_mapping_data_minInterMarkerDist200bp_1Mb_unsmoothed",
+                "iwgsc_refseqv1.0_recombination_rate"
+               )
+cMMb_tab_list <- lapply(seq_along(cMMb_names), function(x) {
+  read.table(paste0("AxC_mapped_marker_intervals_", cMMb_names[x], ".tsv"),
+             header = T, colClasses = c(rep("NULL", 9), NA))
+})
+
+cMMb_DF <- dplyr::bind_cols(cMMb_tab_list)
+colnames(cMMb_DF) <- c("cMMb_1Mb", "cMMb_10Mb")
+
+inter_cMMb_DF <- read.table(paste0("AxC_mapped_marker_intervals_", cMMb_names[1], ".tsv"),
+                            header = T, colClasses = c(rep(NA, 9), rep("NULL", 1)))
+
+stopifnot(identical(inter_ChIP_DF, inter_cMMb_DF))
+stopifnot(all.equal(inter_ChIP_DF, inter_cMMb_DF))
+
 tab <- data.frame(inter_ChIP_DF,
                   ChIP_DF,
-                  DNAmeth_DF)
+                  DNAmeth_DF,
+                  cMMb_DF)
 
 tab <- tab[ with(tab, base::order(chr, start, end)) , ]
 
@@ -126,5 +146,5 @@ for(i in unique(tab$chr)) {
 }
 
 write.table(makeDF,
-            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_and_DNAmethyl_cMMb.tsv"),
+            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_DNAmethyl_cMMb.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
