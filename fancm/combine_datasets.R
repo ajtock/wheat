@@ -108,10 +108,29 @@ inter_cMMb_DF <- read.table(paste0("AxC_mapped_marker_intervals_", cMMb_names[1]
 stopifnot(identical(inter_ChIP_DF, inter_cMMb_DF))
 stopifnot(all.equal(inter_ChIP_DF, inter_cMMb_DF))
 
+# Load table of midpoint distances to the centromere calculated for marker intervals
+distToCEN_names <- c(
+                     "distanceToCEN"
+                    )
+distToCEN_tab_list <- lapply(seq_along(distToCEN_names), function(x) {
+  read.table(paste0("AxC_mapped_marker_intervals_", distToCEN_names[x], ".tsv"),
+             header = T, colClasses = c(rep("NULL", 9), NA))
+})
+
+distToCEN_DF <- dplyr::bind_cols(distToCEN_tab_list)
+
+inter_distToCEN_DF <- read.table(paste0("AxC_mapped_marker_intervals_", distToCEN_names[1], ".tsv"),
+                            header = T, colClasses = c(rep(NA, 9), rep("NULL", 1)))
+
+stopifnot(identical(inter_ChIP_DF, inter_distToCEN_DF))
+stopifnot(all.equal(inter_ChIP_DF, inter_distToCEN_DF))
+
+
 tab <- data.frame(inter_ChIP_DF,
                   ChIP_DF,
                   DNAmeth_DF,
-                  cMMb_DF)
+                  cMMb_DF,
+                  distToCEN_DF)
 
 tab <- tab[ with(tab, base::order(chr, start, end)) , ]
 
@@ -146,5 +165,5 @@ for(i in unique(tab$chr)) {
 }
 
 write.table(makeDF,
-            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_DNAmethyl_cMMb.tsv"),
+            file = paste0("AxC_mapped_marker_intervals_mean_ChIPseq_DNAmethyl_cMMb_distanceToCEN.tsv"),
             quote = F, sep = "\t", row.names = F, col.names = T)
