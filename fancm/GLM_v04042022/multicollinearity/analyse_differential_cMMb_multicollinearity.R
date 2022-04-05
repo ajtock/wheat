@@ -250,7 +250,7 @@ write.table(glmNormal_Diff_cMMb_coeffs_df,
 # https://stats.stackexchange.com/questions/46345/how-to-calculate-goodness-of-fit-in-glm-r/46358
 glmNormal_Diff_cMMb_R2 <- with(summary(glmNormal_Diff_cMMb_select), 1 - deviance/null.deviance)
 print(paste0("GLM R-squared: ", glmNormal_Diff_cMMb_R2))
-#GLM R-squared: 0.3941855
+#GLM R-squared: 0.394185473074066
 
 # Disable scientific notation for plotting
 options("scipen"=100)
