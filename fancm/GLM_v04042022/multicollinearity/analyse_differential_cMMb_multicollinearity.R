@@ -218,6 +218,11 @@ print(glmNormal_Diff_cMMb_vif)
 glmNormal_Diff_cMMb_stepAIC <- MASS::stepAIC(object = glmNormal_Diff_cMMb, direction = "both")
 print("stepAIC-selected model formula:")
 print(formula(glmNormal_Diff_cMMb_stepAIC))
+#Diff_cMMb ~ IWGSC_cMMb + DMC1 + H3K4me1 + H3K27ac + H3K27me3 + 
+#    H3K27me1 + CENH3 + mCG + mCHH + IWGSC_cMMb:DMC1 + IWGSC_cMMb:H3K4me1 + 
+#    IWGSC_cMMb:H3K27me3 + DMC1:H3K4me1 + DMC1:CENH3 + H3K4me1:CENH3 + 
+#    H3K27ac:H3K27me3 + H3K27ac:mCHH + H3K27me3:mCG + H3K27me3:mCHH + 
+#    H3K27me1:mCG + CENH3:mCHH + mCG:mCHH
 #print(glmNormal_Diff_cMMb_stepAIC$formula)
 glmNormal_Diff_cMMb_formula <- formula(glmNormal_Diff_cMMb_stepAIC)
 glmNormal_Diff_cMMb_select <- glm2(formula = formula(glmNormal_Diff_cMMb_stepAIC),
@@ -226,6 +231,12 @@ glmNormal_Diff_cMMb_select <- glm2(formula = formula(glmNormal_Diff_cMMb_stepAIC
                                    control = glm.control(maxit = 100000))
 stopifnot(identical(formula(glmNormal_Diff_cMMb_select), formula(glmNormal_Diff_cMMb_stepAIC)))
 glmNormal_Diff_cMMb_formula <- formula(glmNormal_Diff_cMMb_select)
+print(glmNormal_Diff_cMMb_formula)
+#Diff_cMMb ~ IWGSC_cMMb + DMC1 + H3K4me1 + H3K27ac + H3K27me3 + 
+#    H3K27me1 + CENH3 + mCG + mCHH + IWGSC_cMMb:DMC1 + IWGSC_cMMb:H3K4me1 + 
+#    IWGSC_cMMb:H3K27me3 + DMC1:H3K4me1 + DMC1:CENH3 + H3K4me1:CENH3 + 
+#    H3K27ac:H3K27me3 + H3K27ac:mCHH + H3K27me3:mCG + H3K27me3:mCHH + 
+#    H3K27me1:mCG + CENH3:mCHH + mCG:mCHH
 glmNormal_Diff_cMMb_predict <- predict(glmNormal_Diff_cMMb_select, type = "response",
                                        se = T)
 glmNormal_Diff_cMMb_summary <- summary(glmNormal_Diff_cMMb_select)
@@ -297,7 +308,8 @@ dev.off()
 # model performance on the test set
 
 # Define training (70%) and test (30%) subsets of dat
-set.seed(294502)
+#set.seed(294502)
+set.seed(100)
 index <- base::sample(1:nrow(dat), size = 0.7*nrow(dat))
 train <- dat[index,]
 test <- dat[-index,]
@@ -308,6 +320,7 @@ dim(test)
 # See https://advstats.psychstat.org/book/mregression/standardization.php
 # https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 x_cols <- colnames(dat)[which( !(colnames(dat) %in% c("chr", "start", "end", "Diff_cMMb") ) )]
+print(x_cols)
 
 # Apply preProcess only to the training data, and then use the results
 # to scale both the training and test data
@@ -320,10 +333,10 @@ test[,x_cols] <- stats::predict(pre_proc_val, newdata = test[,x_cols])
 summary(train)
 
 # Make model with selected predictors using the training and test sets of dat
-lmNormal_Diff_cMMb_train <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
+lmNormal_Diff_cMMb_train <- lm(formula = glmNormal_Diff_cMMb_formula,
                                 data = train)
-lmNormal_Diff_cMMb_test <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
-                              data = test)
+#lmNormal_Diff_cMMb_test <- lm(formula = glmNormal_Diff_cMMb_formula,
+#                              data = test)
 
 # Define function to compute model evaluation metrics
 eval_metrics <- function(model, dataFrame, predicted, observed) {
@@ -357,33 +370,33 @@ eval_metrics(model = lmNormal_Diff_cMMb_train,
              dataFrame = train,
              predicted = predictions_train,
              observed = "Diff_cMMb")
-#[1] "R-squared: 0.49"
-#[1] "Adjusted R-squared: 0.46"
-#[1] "RMSE: 115.02"
+#[1] "R-squared: 0.46"
+#[1] "Adjusted R-squared: 0.43"
+#[1] "RMSE: 117.11"
 eval_results(observed = train$Diff_cMMb,
              predicted = predictions_train,
              dataFrame = train)
 #   Rsquared     RMSE
-#1 0.4937219 115.0204
+#1 0.4713234 117.1117
 print(paste0("Train mean Diff_cMMb: ", mean(train$Diff_cMMb, na.rm = T)))
 print(paste0("Train median Diff_cMMb: ", median(train$Diff_cMMb, na.rm = T)))
 print(paste0("Train range Diff_cMMb: ", range(train$Diff_cMMb, na.rm = T)))
 
 
 # Get predicted Diff_cMMb values and evaluation metrics for the model using the test set
-predictions_test <- predict(lmNormal_Diff_cMMb_test, newdata = test)
-eval_metrics(model = lmNormal_Diff_cMMb_test,
+predictions_test <- predict(lmNormal_Diff_cMMb_train, newdata = test)
+eval_metrics(model = lmNormal_Diff_cMMb_train,
              dataFrame = test,
              predicted = predictions_test,
              observed = "Diff_cMMb")
-#[1] "R-squared: 0.66"
-#[1] "Adjusted R-squared: 0.61"
-#[1] "RMSE: 40.91"
+#[1] "R-squared: NA"
+#[1] "Adjusted R-squared: NA"
+#[1] "RMSE: 103.44"
 eval_results(observed = test$Diff_cMMb,
              predicted = predictions_test,
              dataFrame = test)
 #   Rsquared     RMSE
-#1 0.6626569 40.90989
+#1 -0.9962098 103.4385
 print(paste0("Test mean Diff_cMMb: ", mean(test$Diff_cMMb, na.rm = T)))
 print(paste0("Test median Diff_cMMb: ", median(test$Diff_cMMb, na.rm = T)))
 print(paste0("Test range Diff_cMMb: ", range(test$Diff_cMMb, na.rm = T)))
