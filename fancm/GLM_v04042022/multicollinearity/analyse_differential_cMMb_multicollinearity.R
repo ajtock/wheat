@@ -407,7 +407,7 @@ print(paste0("Test mean Diff_cMMb: ", mean(test$Diff_cMMb, na.rm = T)))
 print(paste0("Test median Diff_cMMb: ", median(test$Diff_cMMb, na.rm = T)))
 
 
-# Evaluted model performance when dat_scaled is subsetted by chromosome
+# Evaluate model performance when dat_scaled is subsetted by chromosome
 
 #pdf(paste0(plotDir, "glmNormal_Diff_cMMb_chr_observed_predicted_fit_per_chromosome.pdf"),
 #    height = 3*length(unique(dat_scaled$chr)), width = 10)
@@ -600,13 +600,6 @@ f <- formula(glmNormal_Diff_cMMb)
 
 # Use model.matrix to take advantage of f
 x <- model.matrix(f, dat_scaled_noNA)[,-1]
-all.equal(as.numeric(x[,2]), as.numeric(dat_scaled_noNA$DMC1))
-stopifnot(all.equal(as.numeric(x[,2]), as.numeric(dat_scaled_noNA$DMC1)))
-chr_x <- data.frame(chr = dat_scaled_noNA$chr,
-                    start = dat_scaled_noNA$start,
-                    end = dat_scaled_noNA$end, x)
-all.equal(as.numeric(x[,2]), as.numeric(chr_x[,5]))
-stopifnot(all.equal(as.numeric(x[,2]), as.numeric(chr_x[,5])))
 
 #x <- dat_scaled_noNA %>% dplyr::select(x_retained_new) %>%
 #  as.matrix()
@@ -618,6 +611,16 @@ y <- dat_scaled_noNA %>% dplyr::select(Diff_cMMb) %>%
 #  as.matrix()
 
 yx_mat <- cbind(y, x)
+
+all.equal(as.numeric(yx_mat[,1]), as.numeric(dat_scaled_noNA$Diff_cMMb))
+stopifnot(all.equal(as.numeric(yx_mat[,1]), as.numeric(dat_scaled_noNA$Diff_cMMb)))
+chr_yx_mat <- data.frame(chr = dat_scaled_noNA$chr,
+                         start = dat_scaled_noNA$start,
+                         end = dat_scaled_noNA$end,
+                         yx_mat)
+colnames(chr_yx_mat) <- gsub("\\.", ":", colnames(chr_yx_mat))
+all.equal(as.numeric(yx_mat[,1]), as.numeric(chr_yx_mat[,4]))
+stopifnot(all.equal(as.numeric(yx_mat[,1]), as.numeric(chr_yx_mat[,4])))
 
 ## caret
 # Set training control
@@ -711,30 +714,52 @@ rsq_enet <- cor(test[,1], predictions_test)^2
 print(rsq_enet)
 #[1] 0.003009041
 
-# Evaluted model performance when yx_mat is subsetted by chromosome
 
-for(chrName in unique(yx_mat$chr)) {
+# Evaluate model performance when yx_mat is subsetted by chromosome
 
+train_control <- caret::trainControl(method = "repeatedcv",
+                                     number = 10,
+                                     repeats = 5,
+                                     search = "random",
+                                     verboseIter = F)
+
+for(chrName in unique(chr_yx_mat$chr)) {
+
+  print("") 
   print(chrName)
-  yx_mat_notchr <- yx_mat[yx_mat$chr != chrName,]
-  yx_mat_chr <- yx_mat[yx_mat$chr == chrName,]
+  chr_yx_mat_notchr <- chr_yx_mat[chr_yx_mat$chr != chrName,-c(1:3)]
+  chr_yx_mat_chr <- chr_yx_mat[chr_yx_mat$chr == chrName,-c(1:3)]
 
-  lmNormal_Diff_cMMb_notchr <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
-                                  data = yx_mat_notchr)
-  predictions_notchr <- predict(lmNormal_Diff_cMMb_notchr, newdata = yx_mat_notchr)
-  predictions_chr <- predict(lmNormal_Diff_cMMb_notchr, newdata = yx_mat_chr)
+  elastic_net_notchr <- caret::train(Diff_cMMb ~ .,
+                                     data = chr_yx_mat_notchr,
+                                     method = "glmnet",
+                                     preProcess = c("center", "scale"),
+                                     tuneLength = 10,
+                                     trControl = train_control)
 
-  # Train
+  # Get predicted Diff_cMMb values and evaluation metrics for the model using the training set
   print(paste0("Train: Not ", chrName))
-  print(eval_results(observed = yx_mat_notchr$Diff_cMMb,
+  predictions_notchr <- predict(elastic_net_notchr, newdata = chr_yx_mat_notchr)
+  print(eval_results(observed = chr_yx_mat_notchr[,1],
                      predicted = predictions_notchr,
-                     dataFrame = yx_mat_notchr))
-
-  # Test
+                     dataFrame = chr_yx_mat_notchr))
+  # Check multiple R-squared
+  rsq_notchr <- cor(chr_yx_mat_notchr[,1], predictions_notchr)^2
+  print(paste0("R-squared: ", rsq_notchr))
+  
+  # Get coefficients
+  # https://stackoverflow.com/questions/40088228/how-to-retrieve-elastic-net-coefficients
+  coef_notchr <- predict.glmnet(elastic_net_notchr$finalModel, type = "coefficients", s = elastic_net_notchr$bestTune$lambda)
+  
+  # Get predicted Diff_cMMb values and evaluation metrics for the model using the test set
   print(paste0("Test: ", chrName))
-  print(eval_results(observed = yx_mat_chr$Diff_cMMb,
+  predictions_chr <- predict(elastic_net_notchr, newdata = chr_yx_mat_chr)
+  print(eval_results(observed = chr_yx_mat_chr[,1],
                      predicted = predictions_chr,
-                     dataFrame = yx_mat_chr))
+                     dataFrame = chr_yx_mat_chr))
+  # Check multiple R-squared
+  rsq_chr <- cor(chr_yx_mat_chr[,1], predictions_chr)^2
+  print(paste0("R-squared: ", rsq_chr))
 
 }
 
