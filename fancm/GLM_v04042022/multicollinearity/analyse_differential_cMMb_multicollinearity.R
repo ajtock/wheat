@@ -129,6 +129,8 @@ print(glmNormal_Diff_cMMb_vif)
 #  7.948335   9.796587   6.544193   1.347513   4.521296   9.716677   1.458983
 # First remove predictors with VIF > 7
 glmNormal_Diff_cMMb_vif_gt7 <- names(which(glmNormal_Diff_cMMb_vif > 7))
+print(glmNormal_Diff_cMMb_vif_gt7)
+#[1] "H3K4me3"  "H3K36me3" "H3K9me2"  "mCHG
 x_retained <- names(dat_scaled)[ which( !( names(dat_scaled) %in%
                                            c(glmNormal_Diff_cMMb_vif_gt7, "Diff_cMMb", "chr", "start", "end") ) ) ]
 print(x_retained)
@@ -308,8 +310,9 @@ dev.off()
 # model performance on the test set
 
 # Define training (70%) and test (30%) subsets of dat
-#set.seed(294502)
-set.seed(100)
+#set.seed(294502) # RMSE worse for test vs train
+#set.seed(294) # RMSE worse for test vs train
+set.seed(100) # RMSE better for test vs train, but negative R2, so overfitting
 index <- base::sample(1:nrow(dat), size = 0.7*nrow(dat))
 train <- dat[index,]
 test <- dat[-index,]
@@ -334,11 +337,12 @@ summary(train)
 
 # Make model with selected predictors using the training and test sets of dat
 lmNormal_Diff_cMMb_train <- lm(formula = glmNormal_Diff_cMMb_formula,
-                                data = train)
+                               data = train)
 #lmNormal_Diff_cMMb_test <- lm(formula = glmNormal_Diff_cMMb_formula,
 #                              data = test)
 
 # Define function to compute model evaluation metrics
+# From https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 eval_metrics <- function(model, dataFrame, predicted, observed) {
   resids <- dataFrame[,observed] - predicted
   resids2 <- resids**2
@@ -354,6 +358,7 @@ eval_metrics <- function(model, dataFrame, predicted, observed) {
 }
 
 # Define function to compute R-squared and RMSE from observed and predicted values
+# From https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
 eval_results <- function(observed, predicted, dataFrame) {
   SSE <- sum((predicted - observed)^2, na.rm = T)
   SST <- sum((observed - mean(observed))^2, na.rm = T)
@@ -378,9 +383,9 @@ eval_results(observed = train$Diff_cMMb,
              dataFrame = train)
 #   Rsquared     RMSE
 #1 0.4713234 117.1117
+print(paste0("Train range Diff_cMMb: ", range(train$Diff_cMMb, na.rm = T)))
 print(paste0("Train mean Diff_cMMb: ", mean(train$Diff_cMMb, na.rm = T)))
 print(paste0("Train median Diff_cMMb: ", median(train$Diff_cMMb, na.rm = T)))
-print(paste0("Train range Diff_cMMb: ", range(train$Diff_cMMb, na.rm = T)))
 
 
 # Get predicted Diff_cMMb values and evaluation metrics for the model using the test set
@@ -397,172 +402,339 @@ eval_results(observed = test$Diff_cMMb,
              dataFrame = test)
 #   Rsquared     RMSE
 #1 -0.9962098 103.4385
+print(paste0("Test range Diff_cMMb: ", range(test$Diff_cMMb, na.rm = T)))
 print(paste0("Test mean Diff_cMMb: ", mean(test$Diff_cMMb, na.rm = T)))
 print(paste0("Test median Diff_cMMb: ", median(test$Diff_cMMb, na.rm = T)))
-print(paste0("Test range Diff_cMMb: ", range(test$Diff_cMMb, na.rm = T)))
 
 
 # Evaluted model performance when dat_scaled is subsetted by chromosome
 
-pdf(paste0(plotDir, "glmNormal_Diff_cMMb_chr_observed_predicted_fit_per_chromosome.pdf"),
-    height = 3*length(unique(dat_scaled$chr)), width = 10)
-par(mar = c(5.1, 4.1, 5.1, 2.1))
-par(mfrow = c(length(unique(dat_scaled$chr)), 1))
+#pdf(paste0(plotDir, "glmNormal_Diff_cMMb_chr_observed_predicted_fit_per_chromosome.pdf"),
+#    height = 3*length(unique(dat_scaled$chr)), width = 10)
+#par(mar = c(5.1, 4.1, 5.1, 2.1))
+#par(mfrow = c(length(unique(dat_scaled$chr)), 1))
 
 for(chrName in unique(dat_scaled$chr)) {
 
   print(chrName)
-#  if( !( chrName %in% c("chr3B") ) ) {
-    dat_scaled_chr <- dat_scaled[dat_scaled$chr == chrName,]
-  
-    glmNormal_Diff_cMMb_chr <- glm2(formula = formula(glmNormal_Diff_cMMb_stepAIC),
-                                    data = dat_scaled_chr,
-                                    family = gaussian(),
-                                    control = glm.control(maxit = 100000))
-    glmNormal_Diff_cMMb_chr_formula <- formula(glmNormal_Diff_cMMb_chr)
-    glmNormal_Diff_cMMb_chr_predict <- predict(glmNormal_Diff_cMMb_chr, type = "response",
-                                               se = T)
-    glmNormal_Diff_cMMb_chr_summary <- summary(glmNormal_Diff_cMMb_chr)
-    glmNormal_Diff_cMMb_chr_coeffs <- glmNormal_Diff_cMMb_chr_summary$coefficients
-    glmNormal_Diff_cMMb_chr_R2 <- with(summary(glmNormal_Diff_cMMb_chr), 1 - deviance/null.deviance)
-    print(paste0(chrName, " GLM R-squared: ", glmNormal_Diff_cMMb_chr_R2))
-  
-    lmNormal_Diff_cMMb_chr <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
-                                 data = dat_scaled_chr)
-    predictions_chr <- predict(lmNormal_Diff_cMMb_chr, newdata = dat_scaled_chr)
-    eval_metrics(model = lmNormal_Diff_cMMb_chr,
-                 dataFrame = dat_scaled_chr,
-                 predicted = predictions_chr,
-                 observed = "Diff_cMMb")
-    print(paste0(chrName, " mean Diff_cMMb: ", mean(dat_scaled_chr$Diff_cMMb, na.rm = T)))
-    print(paste0(chrName, " median Diff_cMMb: ", median(dat_scaled_chr$Diff_cMMb, na.rm = T)))
-    print(paste0(chrName, " range Diff_cMMb: ",range(dat_scaled_chr$Diff_cMMb, na.rm = T)))
-  
-    # Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_Diff_cMMb_chr)
-    plot(x = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
-         y = glmNormal_Diff_cMMb_chr$y,
-         xlab = "", ylab = "",
-         xaxt = "n", yaxt = "n",
-         type = "l", lwd = 2, col = "red")
-    lines(x = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
-          y = glmNormal_Diff_cMMb_chr_predict$fit,
-          lty = 2, lwd = 2, col = "black")
-    axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
-         at = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
-         labels = round(round((dat_scaled_chr$start+dat_scaled_chr$end)/2)/1e6, digits = 3)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))])
-    axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
-    mtext(side = 1, line = 2.5, cex = 1, text = paste0(chrName, " coordinates (Mb)"))
-    mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
-    if(chrName == unique(dat_scaled$chr)[1]) {
-      mtext(side = 3, line = 1.5, cex = 0.75,
-            text = "Differential cM/Mb ~ IWGSC_cMMb + DMC1 + H3K4me1 + H3K27ac + H3K27me3 + H3K27me1 + CENH3 + mCG + mCHH + \nIWGSC_cMMb:DMC1 + IWGSC_cMMb:H3K4me1 + IWGSC_cMMb:H3K27me3 + DMC1:H3K4me1 + DMC1:CENH3 + H3K4me1:CENH3 + \nH3K27ac:H3K27me3 + H3K27ac:mCHH + H3K27me3:mCG + H3K27me3:mCHH + H3K27me1:mCG + CENH3:mCHH + mCG:mCHH")
-    }
-    mtext(side = 3, line = 0.5, cex = 0.75,
-          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_Diff_cMMb_chr_R2, digits = 2))))
-    box(lwd = 1.5)
-    legend("topleft",
-           legend = c("Observed", "Predicted"),
-           text.col = c("red", "black"),
-           col = "white",
-           ncol = 1, cex = 1, lwd = 1.5, bty = "n")
+  dat_scaled_notchr <- dat_scaled[dat_scaled$chr != chrName,]
+  dat_scaled_chr <- dat_scaled[dat_scaled$chr == chrName,]
 
-#  }
+  lmNormal_Diff_cMMb_notchr <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
+                                  data = dat_scaled_notchr)
+  predictions_notchr <- predict(lmNormal_Diff_cMMb_notchr, newdata = dat_scaled_notchr)
+  predictions_chr <- predict(lmNormal_Diff_cMMb_notchr, newdata = dat_scaled_chr)
+
+  # Train
+  print(paste0("Train: Not ", chrName))
+  print(eval_results(observed = dat_scaled_notchr$Diff_cMMb,
+                     predicted = predictions_notchr,
+                     dataFrame = dat_scaled_notchr))
+#  eval_metrics(model = lmNormal_Diff_cMMb_notchr,
+#               dataFrame = dat_scaled_notchr,
+#               predicted = predictions_notchr,
+#               observed = "Diff_cMMb")
+#  print(paste0("Not ", chrName, " range Diff_cMMb: ",range(dat_scaled_notchr$Diff_cMMb, na.rm = T)))
+#  print(paste0("Not ", chrName, " mean Diff_cMMb: ", mean(dat_scaled_notchr$Diff_cMMb, na.rm = T)))
+#  print(paste0("Not ", chrName, " median Diff_cMMb: ", median(dat_scaled_notchr$Diff_cMMb, na.rm = T)))
+
+  # Test
+  print(paste0("Test: ", chrName))
+  print(eval_results(observed = dat_scaled_chr$Diff_cMMb,
+                     predicted = predictions_chr,
+                     dataFrame = dat_scaled_chr))
+#  eval_metrics(model = lmNormal_Diff_cMMb_notchr,
+#               dataFrame = dat_scaled_chr,
+#               predicted = predictions_chr,
+#               observed = "Diff_cMMb")
+#  print(paste0(chrName, " range Diff_cMMb: ",range(dat_scaled_chr$Diff_cMMb, na.rm = T)))
+#  print(paste0(chrName, " mean Diff_cMMb: ", mean(dat_scaled_chr$Diff_cMMb, na.rm = T)))
+#  print(paste0(chrName, " median Diff_cMMb: ", median(dat_scaled_chr$Diff_cMMb, na.rm = T)))
 
 }
 
-dev.off()  
+#[1] "Train: Not chr1A"
+#   Rsquared     RMSE
+#1 0.5069203 98.13044
+#[1] "Test: chr1A"
+#   Rsquared     RMSE
+#1 -1.026902 203.0131
+#[1] "Train: Not chr1B"
+#   Rsquared     RMSE
+#1 0.4382848 113.0081
+#[1] "Test: chr1B"
+#    Rsquared     RMSE
+#1 -0.6467142 89.35516
+#[1] "Train: Not chr3B"
+#  Rsquared     RMSE
+#1  0.40054 110.8497
+#[1] "Test: chr3B"
+#   Rsquared     RMSE
+#1 0.3873569 57.25792
+#[1] "Train: Not chr3D"
+#   Rsquared     RMSE
+#1 0.4651321 97.26669
+#[1] "Test: chr3D"
+#   Rsquared     RMSE
+#1 -0.371429 311.1505
+#[1] "Train: Not chr4A"
+#   Rsquared     RMSE
+#1 0.4103125 111.3669
+#[1] "Test: chr4A"
+#   Rsquared     RMSE
+#1 -5.597665 74.48497
+#[1] "Train: Not chr5A"
+#   Rsquared     RMSE
+#1 0.4144653 110.1257
+#[1] "Test: chr5A"
+#    Rsquared     RMSE
+#1 -0.4471121 96.22146
+#[1] "Train: Not chr5B"
+#   Rsquared     RMSE
+#1 0.4333593 113.4836
+#[1] "Test: chr5B"
+#   Rsquared     RMSE
+#1 -1.471305 86.21773
+#[1] "Train: Not chr7A"
+#   Rsquared     RMSE
+#1 0.4165877 99.79174
+#[1] "Test: chr7A"
+#   Rsquared     RMSE
+#1 0.1128772 191.0032
+#[1] "Train: Not chr7B"
+#   Rsquared     RMSE
+#1 0.3979417 98.74289
+#[1] "Test: chr7B"
+#     Rsquared     RMSE
+#1 -0.06297312 242.5395
 
-#[1] "chr1A"                                                                                                                                   
-#[1] "chr1A GLM R-squared: 0.811459149894994"                                                                                                  
-#[1] "R-squared: 0.81"                                                                                                                         
-#[1] "Adjusted R-squared: 0.78"                                                                                                                
-#[1] "RMSE: 61.92"                                                                                                                             
-#[1] "chr1A mean Diff_cMMb: 11.2838954317006"                                                                                                  
-#[1] "chr1A median Diff_cMMb: 0"                                                                                                               
-#[1] "chr1A range Diff_cMMb: -1090.19607843137"                                                                                                
-#[2] "chr1A range Diff_cMMb: 1070.10710808179"                                                                                                 
+#    glmNormal_Diff_cMMb_chr <- glm2(formula = formula(glmNormal_Diff_cMMb_stepAIC),
+#                                    data = dat_scaled_chr,
+#                                    family = gaussian(),
+#                                    control = glm.control(maxit = 100000))
+#    glmNormal_Diff_cMMb_chr_formula <- formula(glmNormal_Diff_cMMb_chr)
+#    glmNormal_Diff_cMMb_chr_predict <- predict(glmNormal_Diff_cMMb_chr, type = "response",
+#                                               se = T)
+#    glmNormal_Diff_cMMb_chr_summary <- summary(glmNormal_Diff_cMMb_chr)
+#    glmNormal_Diff_cMMb_chr_coeffs <- glmNormal_Diff_cMMb_chr_summary$coefficients
+#    glmNormal_Diff_cMMb_chr_R2 <- with(summary(glmNormal_Diff_cMMb_chr), 1 - deviance/null.deviance)
+#    print(paste0(chrName, " GLM R-squared: ", glmNormal_Diff_cMMb_chr_R2))
+ 
+#    # Plot observed differential cM/Mb and expected differential cM/Mb by GLM (glmNormal_Diff_cMMb_chr)
+#    plot(x = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
+#         y = glmNormal_Diff_cMMb_chr$y,
+#         xlab = "", ylab = "",
+#         xaxt = "n", yaxt = "n",
+#         type = "l", lwd = 2, col = "red")
+#    lines(x = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
+#          y = glmNormal_Diff_cMMb_chr_predict$fit,
+#          lty = 2, lwd = 2, col = "black")
+#    axis(side = 1, cex.axis = 1, lwd.tick = 1.5,
+#         at = round((dat_scaled_chr$start+dat_scaled_chr$end)/2)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))],
+#         labels = round(round((dat_scaled_chr$start+dat_scaled_chr$end)/2)/1e6, digits = 3)[which(rownames(dat_scaled_chr) %in% names(glmNormal_Diff_cMMb_chr$y))])
+#    axis(side = 2, cex.axis = 1, lwd.tick = 1.5)
+#    mtext(side = 1, line = 2.5, cex = 1, text = paste0(chrName, " coordinates (Mb)"))
+#    mtext(side = 2, line = 2, cex = 1, text = "Differential cM/Mb")
+#    if(chrName == unique(dat_scaled$chr)[1]) {
+#      mtext(side = 3, line = 1.5, cex = 0.75,
+#            text = "Differential cM/Mb ~ IWGSC_cMMb + DMC1 + H3K4me1 + H3K27ac + H3K27me3 + H3K27me1 + CENH3 + mCG + mCHH + \nIWGSC_cMMb:DMC1 + IWGSC_cMMb:H3K4me1 + IWGSC_cMMb:H3K27me3 + DMC1:H3K4me1 + DMC1:CENH3 + H3K4me1:CENH3 + \nH3K27ac:H3K27me3 + H3K27ac:mCHH + H3K27me3:mCG + H3K27me3:mCHH + H3K27me1:mCG + CENH3:mCHH + mCG:mCHH")
+#    }
+#    mtext(side = 3, line = 0.5, cex = 0.75,
+#          text = bquote(italic("R")^2 ~ "=" ~ .(round(glmNormal_Diff_cMMb_chr_R2, digits = 2))))
+#    box(lwd = 1.5)
+#    legend("topleft",
+#           legend = c("Observed", "Predicted"),
+#           text.col = c("red", "black"),
+#           col = "white",
+#           ncol = 1, cex = 1, lwd = 1.5, bty = "n")
 
-#[1] "chr1B"                                                                                                                                   
-#[1] "chr1B GLM R-squared: 0.830295362945433"                                                                                                  
-#[1] "R-squared: 0.83"                                                                                                                         
-#[1] "Adjusted R-squared: 0.78"                                                                                                                
-#[1] "RMSE: 28.69"                                                                                                                             
-#[1] "chr1B mean Diff_cMMb: 5.96374538272841"                                                                                                  
-#[1] "chr1B median Diff_cMMb: 0"                                                                                                               
-#[1] "chr1B range Diff_cMMb: -221.32763720013"                                                                                                 
-#[2] "chr1B range Diff_cMMb: 609.837278106509"                                                                                                 
+#}
 
-#[1] "chr3B"                                                                                                                                   
-#[1] "chr3B GLM R-squared: 1"                                                                                                                  
-#[1] "R-squared: 1"                                                                                                                            
-#[1] "Adjusted R-squared: NaN"                                                                                                                 
-#[1] "RMSE: 0"                                                                                                                                 
-#[1] "chr3B mean Diff_cMMb: 14.3526535299572"                                                                                                  
-#[1] "chr3B median Diff_cMMb: 0"                                                                                                               
-#[1] "chr3B range Diff_cMMb: -34.0435953955425"                                                                                                
-#[2] "chr3B range Diff_cMMb: 390.447443181818"                                                                                                 
+#dev.off()
 
-#[1] "chr3D"                                                                                                                                   
-#[1] "chr3D GLM R-squared: 1"                                                                                                                  
-#[1] "R-squared: 1"                                                                                                                            
-#[1] "Adjusted R-squared: NaN"
-#[1] "RMSE: 0"
-#[1] "chr3D mean Diff_cMMb: -52.479531348282"
-#[1] "chr3D median Diff_cMMb: -0.0707662862978778"
-#[1] "chr3D range Diff_cMMb: -1236.42582300128"
-#[2] "chr3D range Diff_cMMb: 81.9100546892975"
 
-#[1] "chr4A"
-#[1] "chr4A GLM R-squared: 0.941898415256572"
-#[1] "R-squared: 0.94"
-#[1] "Adjusted R-squared: 0.84"
-#[1] "RMSE: 6.99"
-#[1] "chr4A mean Diff_cMMb: 6.90271389037834"
-#[1] "chr4A median Diff_cMMb: 0"
-#[1] "chr4A range Diff_cMMb: -23.3592020121676"
-#[2] "chr4A range Diff_cMMb: 133.532140490391"
 
-#[1] "chr5A"
-#[1] "chr5A GLM R-squared: 0.992554123261895"
-#[1] "R-squared: 0.99"
-#[1] "Adjusted R-squared: 0.98"
-#[1] "RMSE: 6.9"
-#[1] "chr5A mean Diff_cMMb: -13.6323876729907"
-#[1] "chr5A median Diff_cMMb: 0"
-#[1] "chr5A range Diff_cMMb: -505.925250683682"
-#[2] "chr5A range Diff_cMMb: 6.99293210537588"
+# Elastic net regression
+# https://www.datacamp.com/community/tutorials/tutorial-ridge-lasso-elastic-net
+# https://www.pluralsight.com/guides/linear-lasso-and-ridge-regression-with-r
+# "Elastic Net first emerged as a result of critique on lasso, whose variable selection
+# can be too dependent on data and thus unstable. The solution is to combine the penalties
+# of ridge regression and lasso to get the best of both worlds.
+# Can be done with caret::train() (for best tuning of the elastic net)
+# or glmnet::glmnet() (although does not allow for alpha to be tuned)
 
-#[1] "chr5B"
-#[1] "chr5B GLM R-squared: 0.628873941603701"
-#[1] "R-squared: 0.63"
-#[1] "Adjusted R-squared: 0.5"
-#[1] "RMSE: 33.41"
-#[1] "chr5B mean Diff_cMMb: 1.60868753217813"
-#[1] "chr5B median Diff_cMMb: 0"
-#[1] "chr5B range Diff_cMMb: -243.859649122807"
-#[2] "chr5B range Diff_cMMb: 357.236842105263"
+# Set seed for reproducibility
+set.seed(294321)
 
-#[1] "chr7A"
-#[1] "chr7A GLM R-squared: 0.921000668332116"
-#[1] "R-squared: 0.92"
-#[1] "Adjusted R-squared: 0.88"
-#[1] "RMSE: 57"
-#[1] "chr7A mean Diff_cMMb: -12.2119877893633"
-#[1] "chr7A median Diff_cMMb: 0"
-#[1] "chr7A range Diff_cMMb: -941.448382126348"
-#[2] "chr7A range Diff_cMMb: 883.687943262411"
+# As above, remove interaction terms with VIF > or ~ 5 (H3K4me1:H3K27me3 and H3K27me3:H3K27me1 are ~ 5)
+glmNormal_Diff_cMMb <- glm2(formula = Diff_cMMb ~
+                                      (IWGSC_cMMb + DMC1 + H3K4me1 + H3K27ac + H3K27me3 +
+                                       H3K27me1 + CENH3 + mCG + mCHH +
+                                       IWGSC_cMMb:DMC1 + IWGSC_cMMb:H3K4me1 + IWGSC_cMMb:H3K27me3 +
+                                       IWGSC_cMMb:H3K27me1 + IWGSC_cMMb:mCG +
+                                       DMC1:H3K4me1 + DMC1:CENH3 + DMC1:mCHH +
+                                       H3K4me1:CENH3 + H3K4me1:mCG + H3K4me1:mCHH +
+                                       H3K27ac:H3K27me3 + H3K27ac:mCHH +
+                                       H3K27me3:mCG + H3K27me3:mCHH +
+                                       H3K27me1:mCG + CENH3:mCHH + mCG:mCHH),
+                            data = dat_scaled,
+                            family = gaussian(),
+                            control = glm.control(maxit = 100000))
+summary(glmNormal_Diff_cMMb)
+glmNormal_Diff_cMMb_vif <- car::vif(mod = glmNormal_Diff_cMMb)
+print(glmNormal_Diff_cMMb_vif)
 
-#[1] "chr7B"
-#[1] "chr7B GLM R-squared: 0.995307776398281"
-#[1] "R-squared: 1"
-#[1] "Adjusted R-squared: 0.99"
-#[1] "RMSE: 16.03"
-#[1] "chr7B mean Diff_cMMb: 42.7394914241486"
-#[1] "chr7B median Diff_cMMb: 0.989689436654284"
-#[1] "chr7B range Diff_cMMb: -287.314236485031"
-#[2] "chr7B range Diff_cMMb: 1589.14342629482"
-#Warning messages:
-#1: In predict.lm(lmNormal_Diff_cMMb_chr, newdata = dat_scaled_chr) :
-#  prediction from a rank-deficient fit may be misleading
-#2: In predict.lm(lmNormal_Diff_cMMb_chr, newdata = dat_scaled_chr) :
-#  prediction from a rank-deficient fit may be misleading
+
+# Get response (y) and predictor (x) variables
+
+dat_scaled_noNA <- dat_scaled[-which(is.na(dat_scaled$IWGSC_cMMb)),]
+#x_retained_new <- x_retained[-which(x_retained %in% "ASY1")]
+#x_retained_new <- x_retained
+#dat_scaled_noNA <- dat_scaled_noNA[,c("Diff_cMMb", x_retained_new)]
+
+# Make interactions before using glmnet
+# Use .*. for all interactions
+#f <- glmNormal_Diff_cMMb_formula
+#f <- as.formula(Diff_cMMb ~ .*.)
+f <- formula(glmNormal_Diff_cMMb)
+
+# Use model.matrix to take advantage of f
+x <- model.matrix(f, dat_scaled_noNA)[,-1]
+all.equal(as.numeric(x[,2]), as.numeric(dat_scaled_noNA$DMC1))
+stopifnot(all.equal(as.numeric(x[,2]), as.numeric(dat_scaled_noNA$DMC1)))
+chr_x <- data.frame(chr = dat_scaled_noNA$chr,
+                    start = dat_scaled_noNA$start,
+                    end = dat_scaled_noNA$end, x)
+all.equal(as.numeric(x[,2]), as.numeric(chr_x[,5]))
+stopifnot(all.equal(as.numeric(x[,2]), as.numeric(chr_x[,5])))
+
+#x <- dat_scaled_noNA %>% dplyr::select(x_retained_new) %>%
+#  as.matrix()
+
+y <- dat_scaled_noNA %>% dplyr::select(Diff_cMMb) %>%
+  as.matrix()
+## Centre response variable (predictors will be standardized in the modelling function)
+#  scale(center = TRUE, scale = F) %>%
+#  as.matrix()
+
+yx_mat <- cbind(y, x)
+
+## caret
+# Set training control
+train_control <- caret::trainControl(method = "repeatedcv",
+                                     number = 10,
+                                     repeats = 5,
+                                     search = "random",
+                                     verboseIter = TRUE)
+
+# Train the model
+elastic_net_model <- caret::train(Diff_cMMb ~ .,
+                                  data = yx_mat,
+                                  method = "glmnet",
+                                  preProcess = c("center", "scale"),
+                                  tuneLength = 10,
+                                  trControl = train_control)
+
+# Best tuning parameters
+print(elastic_net_model$bestTune)
+#      alpha   lambda
+#3 0.1415154 5.607186
+
+predictions_model <- predict(elastic_net_model, newdata = yx_mat)
+eval_results(observed = yx_mat[,1],
+             predicted = predictions_model,
+             dataFrame = yx_mat)
+#   Rsquared     RMSE
+#1 0.3837174 110.9537
+
+# Check multiple R-squared
+rsq_enet <- cor(yx_mat[,1], predictions_model)^2
+print(rsq_enet)
+#[1] 0.3906411
+
+# Get coefficients
+# https://stackoverflow.com/questions/40088228/how-to-retrieve-elastic-net-coefficients
+predict.glmnet(elastic_net_model$finalModel, type = "coefficients", s = elastic_net_model$bestTune$lambda)
+
+# Train the model with training set
+
+# Set seed for reproducibility
+set.seed(294321)
+
+index <- sample(1:nrow(yx_mat), 0.7*nrow(yx_mat))
+
+train <- yx_mat[index,]
+test <- yx_mat[-index,] 
+dim(train)
+dim(test)
+
+elastic_net_train <- caret::train(Diff_cMMb ~ .,
+                                  data = train,
+                                  method = "glmnet",
+                                  preProcess = c("center", "scale"),
+                                  tuneLength = 10,
+                                  trControl = train_control)
+
+# Best tuning parameters
+print(elastic_net_train$bestTune)
+#      alpha   lambda
+#9 0.9205368 5.627408
+
+# Get predicted Diff_cMMb values and evaluation metrics for the model using the training set
+predictions_train <- predict(elastic_net_train, newdata = train)
+eval_results(observed = train[,1],
+             predicted = predictions_train,
+             dataFrame = train)
+#   Rsquared     RMSE
+#1 0.5234543 109.7188
+
+# Check multiple R-squared
+rsq_enet <- cor(train[,1], predictions_train)^2
+print(rsq_enet)
+#[1] 0.5530326
+
+# Get coefficients
+# https://stackoverflow.com/questions/40088228/how-to-retrieve-elastic-net-coefficients
+predict.glmnet(elastic_net_train$finalModel, type = "coefficients", s = elastic_net_train$bestTune$lambda)
+
+
+# Get predicted Diff_cMMb values and evaluation metrics for the model using the test set
+predictions_test <- predict(elastic_net_train, newdata = test)
+eval_results(observed = test[,1],
+             predicted = predictions_test,
+             dataFrame = test)
+#  Rsquared     RMSE
+#1 -1.65892 143.1755
+
+# Check multiple R-squared
+rsq_enet <- cor(test[,1], predictions_test)^2
+print(rsq_enet)
+#[1] 0.003009041
+
+# Evaluted model performance when yx_mat is subsetted by chromosome
+
+for(chrName in unique(yx_mat$chr)) {
+
+  print(chrName)
+  yx_mat_notchr <- yx_mat[yx_mat$chr != chrName,]
+  yx_mat_chr <- yx_mat[yx_mat$chr == chrName,]
+
+  lmNormal_Diff_cMMb_notchr <- lm(formula = formula(glmNormal_Diff_cMMb_stepAIC),
+                                  data = yx_mat_notchr)
+  predictions_notchr <- predict(lmNormal_Diff_cMMb_notchr, newdata = yx_mat_notchr)
+  predictions_chr <- predict(lmNormal_Diff_cMMb_notchr, newdata = yx_mat_chr)
+
+  # Train
+  print(paste0("Train: Not ", chrName))
+  print(eval_results(observed = yx_mat_notchr$Diff_cMMb,
+                     predicted = predictions_notchr,
+                     dataFrame = yx_mat_notchr))
+
+  # Test
+  print(paste0("Test: ", chrName))
+  print(eval_results(observed = yx_mat_chr$Diff_cMMb,
+                     predicted = predictions_chr,
+                     dataFrame = yx_mat_chr))
+
+}
+
