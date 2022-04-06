@@ -591,6 +591,7 @@ dat_scaled_noNA <- dat_scaled[-which(is.na(dat_scaled$IWGSC_cMMb)),]
 #x_retained_new <- x_retained[-which(x_retained %in% "ASY1")]
 #x_retained_new <- x_retained
 #dat_scaled_noNA <- dat_scaled_noNA[,c("Diff_cMMb", x_retained_new)]
+#dat_scaled_noNA <- dat_scaled_noNA[,c("chr", "start", "end", "Diff_cMMb", x_retained_new)]
 
 # Make interactions before using glmnet
 # Use .*. for all interactions
