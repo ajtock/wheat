@@ -725,7 +725,6 @@ train_control <- caret::trainControl(method = "repeatedcv",
 
 for(chrName in unique(chr_yx_mat$chr)) {
 
-  print("") 
   print(chrName)
   chr_yx_mat_notchr <- chr_yx_mat[chr_yx_mat$chr != chrName,-c(1:3)]
   chr_yx_mat_chr <- chr_yx_mat[chr_yx_mat$chr == chrName,-c(1:3)]
@@ -762,4 +761,94 @@ for(chrName in unique(chr_yx_mat$chr)) {
   print(paste0("R-squared: ", rsq_chr))
 
 }
+
+#[1] "chr1A"
+#[1] "Train: Not chr1A"
+#   Rsquared    RMSE
+#1 0.5464646 94.8011
+#[1] "R-squared: 0.551701921472571"
+#[1] "Test: chr1A"
+#   Rsquared     RMSE
+#1 -1.608615 230.3099
+#[1] "R-squared: 0.000921199589786472"
+
+#[1] "chr1B"
+#[1] "Train: Not chr1B"
+#   Rsquared     RMSE
+#1 0.4147219 116.2394
+#[1] "R-squared: 0.423832896038904"
+#[1] "Test: chr1B"
+#    Rsquared     RMSE
+#1 -0.4202612 82.98406
+#[1] "R-squared: 0.0058462769260737"
+
+#[1] "chr3B"
+#[1] "Train: Not chr3B"
+#   Rsquared     RMSE
+#1 0.3631823 115.0647
+#[1] "R-squared: 0.377452918490278"
+#[1] "Test: chr3B"
+#   Rsquared    RMSE
+#1 -29.74878 66.2177
+#[1] "R-squared: 0.0357449065787054"
+
+#[1] "chr3D"
+#[1] "Train: Not chr3D"
+#   Rsquared     RMSE
+#1 0.4499539 99.11673
+#[1] "R-squared: 0.453334515856469"
+#[1] "Test: chr3D"
+#    Rsquared     RMSE
+#1 -0.3970466 314.0432
+#[1] "R-squared: 0.720768243353715"
+
+#[1] "chr4A"
+#[1] "Train: Not chr4A"
+#   Rsquared     RMSE
+#1 0.2832092 123.5551
+#[1] "R-squared: 0.319539366911903"
+#[1] "Test: chr4A"
+#    Rsquared     RMSE
+#1 -0.3622466 33.84554
+#[1] "R-squared: 0.174236156624402"
+
+#[1] "chr5A"
+#[1] "Train: Not chr5A"
+#   Rsquared     RMSE
+#1 0.3887521 113.2201
+#[1] "R-squared: 0.397933534570345"
+#[1] "Test: chr5A"
+#    Rsquared     RMSE
+#1 0.03865381 78.42612
+#[1] "R-squared: 0.440833928680837"
+
+#[1] "chr5B"
+#[1] "Train: Not chr5B"
+#   Rsquared     RMSE
+#1 0.4291038 114.7685
+#[1] "R-squared: 0.429778045721987"
+#[1] "Test: chr5B"
+#   Rsquared     RMSE
+#1 -1.585631 88.18947
+#[1] "R-squared: 0.21993735324863"
+
+#[1] "chr7A"
+#[1] "Train: Not chr7A"
+#   Rsquared    RMSE
+#1 0.4055041 101.234
+#[1] "R-squared: 0.414962827209137"
+#[1] "Test: chr7A"
+#     Rsquared    RMSE
+#1 -0.01395344 204.201
+#[1] "R-squared: 0.0236612338185801"
+
+#[1] "chr7B"
+#[1] "Train: Not chr7B"
+#   Rsquared     RMSE
+#1 0.4222049 96.41576
+#[1] "R-squared: 0.422315655041149"
+#[1] "Test: chr7B"
+#    Rsquared     RMSE
+#1 -0.4181101 303.9824
+#[1] "R-squared: 0.000158881186752158"
 
